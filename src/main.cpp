@@ -1,51 +1,78 @@
 #include <iostream>
+#include <fstream>
 #include <glm/glm.hpp>
 
 #include <PixelType.hpp>
 #include <Surface.hpp>
-#include <Stream.hpp>
 #include <backend/opengl/Backend.hpp>
+#include <Device.hpp>
+#include <ResourceScope.hpp>
+#include <Draw.hpp>
 #include <Pipeline.hpp>
 
-/*namespace ag
-{
-	using namespace gl;
-	
-	// Lifts a lambda to operate on a signal
-	// creates a node
-	template <
-		typename D,
-		typename Fn, 
-		typename ... TValues,
-		typename R = std::result_of<Fn> > 
-	auto MakeStream() -> Stream <R, D>
-	{
+using GL = ag::opengl::OpenGLBackend;
 
+std::string loadShaderSource(const char* path)
+{
+	std::ifstream fileIn(path, std::ios::in);
+	if (!fileIn.is_open()) {
+		fmt::print("Could not open shader file {}", path);
+		throw std::runtime_error("Could not open shader file");
 	}
-}*/
+	std::string str;
+	str.assign(
+		(std::istreambuf_iterator<char>(fileIn)),
+		std::istreambuf_iterator<char>());
+	return str;
+}
+
+struct Pipelines
+{
+	Pipelines(ag::Device<GL>& device)
+	{
+		reload(device);
+	}
+
+	void reload(ag::Device<GL>& device)
+	{
+		ag::opengl::GraphicsPipelineInfo info;
+		auto VSSource = loadShaderSource("../examples/shaders/default.vert");
+		auto PSSource = loadShaderSource("../examples/shaders/default.frag");
+		info.VSSource = VSSource.c_str();
+		info.PSSource = PSSource.c_str();
+		pipeline = device.createGraphicsPipeline(info);
+	}
+
+	ag::GraphicsPipeline<GL> pipeline;
+};
 
 int main()
 {
-	glbinding::Binding::initialize();
+	using namespace glm;
+	ag::opengl::OpenGLBackend gl;
+	ag::DeviceOptions opts;
+	ag::Device<GL> device(gl, opts);
 
-	using D = ag::opengl::OpenGLBackend;
-	D backend;
+	Pipelines pp(device);
 
-	ag::Pipeline<D> pp(backend);
+	auto tex = device.createTexture2D<ag::RGBA8>({ 1280, 1024 });
+	glm::vec3 vbo_data[] = {
+		{0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f},
+		{1.0f, 0.0f, 0.0f} };
+	auto vbo = device.createBuffer(gsl::span<glm::vec3>(vbo_data));
 
-	auto& frameTrigger = ag::variable(pp, 0.0);
-	auto& color = ag::constant<glm::vec4>(pp, {0.0f, 0.0f, 1.0f, 1.0f});
-	auto& size = ag::constant<glm::uvec2>(pp, { 1280, 720 });
-	auto& rt = ag::clearRT<ag::RGBA8>(pp, size, color);
-	ag::displayRT<D>(pp, rt);
-
-	auto color2 = ag::apply(
-		pp, 
-		[](glm::vec4 c) -> glm::vec4 {
-			return c + glm::vec4{1.0f, 0.0f, 0.0f, 0.0f};
-		}, color);
-
-	pp.schedule(color);
+	device.run([&]() {
+		auto out = device.getOutputSurface();
+		device.clear(out, vec4(1.0, 0.0, 1.0, 1.0));
+		device.clear(out, vec4(0.0, 1.0, 1.0, 1.0));
+		
+		ag::draw(
+			device,
+			out,
+			ag::DrawArrays(ag::PrimitiveType::Triangles, vbo)
+			);
+	});
 
 	return 0;
 }

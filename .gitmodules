@@ -13,3 +13,9 @@
 	path = ext/glfw
 	
 	url = https://github.com/glfw/glfw.git
+[submodule "ext/glslang"]
+	path = ext/glslang
+	url = https://github.com/KhronosGroup/glslang.git
+[submodule "ext/GSL"]
+	path = ext/GSL
+	url = https://github.com/Microsoft/GSL.git

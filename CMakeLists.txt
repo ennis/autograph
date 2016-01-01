@@ -14,26 +14,31 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory(ext/)
 
-file(
-	GLOB
-	AUTOGRAPH_SOURCES
-	src/*.cpp
-	src/backend/opengl/*.cpp)
+file(GLOB AG_SOURCES_CORE src/*.cpp)
+file(GLOB AG_SOURCES_OPENGL src/backend/opengl/*.cpp)
+file(GLOB AG_SOURCES_OPENGL_FX src/backend/opengl/fx/*.cpp)
+source_group("Source files\\Core" FILES ${AG_SOURCES_CORE})
+source_group("Source files\\OpenGL" FILES  ${AG_SOURCES_OPENGL})
+source_group("Source files\\OpenGL\\FX" FILES ${AG_SOURCES_OPENGL_FX})
 
-file(
-	GLOB
-	AUTOGRAPH_HEADERS
-	src/*.hpp
-	src/backend/opengl/*.hpp)
+file(GLOB AG_HEADERS_CORE src/*.hpp)
+file(GLOB AG_HEADERS_OPENGL src/backend/opengl/*.hpp)
+file(GLOB AG_HEADERS_OPENGL_FX src/backend/opengl/fx/*.hpp)
+source_group("Header files\\Core" FILES ${AG_HEADERS_CORE})
+source_group("Header files\\OpenGL" FILES ${AG_HEADERS_OPENGL})
+source_group("Header files\\OpenGL\\FX" FILES ${AG_HEADERS_OPENGL_FX})
 
-include_directories(
-	src/)
+include_directories(src/)
 
 add_executable(
 	autograph
-	${AUTOGRAPH_SOURCES}
-	${AUTOGRAPH_HEADERS}
+	${AG_SOURCES_CORE}
+	${AG_SOURCES_OPENGL}
+	${AG_SOURCES_OPENGL_FX}
+	${AG_HEADERS_CORE}
+	${AG_HEADERS_OPENGL}
+	${AG_HEADERS_OPENGL_FX}
 	)
 
-target_link_libraries(autograph cppformat glbinding glfw)
-target_include_directories(autograph PRIVATE ext/glm)
+target_link_libraries(autograph cppformat glloadgen glfw ${GLFW_LIBRARIES})
+target_include_directories(autograph PRIVATE ext/glm ext/GSL/include)

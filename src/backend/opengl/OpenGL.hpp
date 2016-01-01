@@ -1,7 +1,6 @@
 #ifndef OPENGL_HPP
 #define OPENGL_HPP
 
-#include <glbinding/gl/gl.h>
-#include <glbinding/Binding.h>
+#include <gl_core_4_5.hpp>
 
 #endif
