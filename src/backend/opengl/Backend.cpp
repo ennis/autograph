@@ -269,7 +269,7 @@ namespace ag
 			{
 				fmt::print("===============================================================\n");
 				fmt::print("Shader compilation error (stage: {})\n", getShaderStageName(stage));
-				fmt::print("Compilation log follows:\n{}\n\n", infoLog.str());
+				fmt::print("Compilation log follows:\n\n{}\n\n", infoLog.str());
 				return 0;
 			}
 			gl::AttachShader(program_obj, shader_obj);
@@ -336,7 +336,7 @@ namespace ag
 				if (link_error) {
 					fmt::print("===============================================================\n");
 					fmt::print("Shader link error\n");
-					fmt::print("Compilation log follows:\n{}\n\n", linkInfoLog.str());
+					fmt::print("Compilation log follows:\n\n{}\n\n", linkInfoLog.str());
 				}
 			}
 

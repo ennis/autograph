@@ -25,7 +25,7 @@ public:
 
 	shared_resource(T handle_) : 
 		handle(handle_),
-		shared_block(new SharedBlock())
+		shared_block(new SharedBlock)
 	{
 	}
 
@@ -49,7 +49,7 @@ public:
 		deinit();
 	}
 
-	shared_resource<T, Deleter>& operator=(const shared_resource<T>& right)
+	shared_resource& operator=(const shared_resource& right)
 	{
 		deinit();
 		shared_block = right.shared_block;
@@ -59,7 +59,7 @@ public:
 		return *this;
 	}
 
-	shared_resource<T, Deleter>& operator=(shared_resource<T>&& right)
+	shared_resource& operator=(shared_resource&& right)
 	{
 		deinit();
 		shared_block = right.shared_block;
@@ -97,7 +97,10 @@ private:
 	}
 
 	struct SharedBlock {
-		std::atomic_uint32_t strong_refs = 1;
+		SharedBlock() : strong_refs(1)
+		{}
+
+		std::atomic_uint strong_refs;
 	};
 
 	SharedBlock* shared_block;

@@ -28,7 +28,7 @@ namespace ag
 	struct Buffer : public RawBuffer<D>
 	{
 		Buffer(shared_resource<typename D::BufferHandle> handle_) :
-			RawBuffer(sizeof(T), std::move(handle_))
+			RawBuffer<D>(sizeof(T), std::move(handle_))
 		{}
 
 	};
@@ -41,12 +41,13 @@ namespace ag
 	struct Buffer<D, T[]> : public RawBuffer<D>
 	{
 		Buffer(std::size_t size_, shared_resource<typename D::BufferHandle> handle_) :
-			RawBuffer(size_*sizeof(T), std::move(handle_))
+			RawBuffer<D>(size_*sizeof(T), std::move(handle_))
 		{}
 
 		std::size_t size() const
 		{
-			return byteSize / sizeof(T);
+			// must use this pointer to make byteSize a dependent name
+			return this->byteSize / sizeof(T);
 		}
 	};
 }
