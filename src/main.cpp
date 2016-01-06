@@ -70,6 +70,7 @@ int main()
 		ag::draw(
 			device,
 			out,
+            pp.pipeline,
 			ag::DrawArrays(ag::PrimitiveType::Triangles, vbo)
 			);
 	});

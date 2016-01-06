@@ -42,6 +42,7 @@ namespace ag
 		TIndexSource index_source;
 	};
 
+    ////////////////////////// Draw command: DrawArrays
 	template <
 		typename D
 	>
@@ -74,9 +75,9 @@ namespace ag
 		typename TextureTy,
 		typename SamplerTy
 	>
-	struct TextureUnit
+    struct TextureUnit_
 	{
-		TextureUnit(unsigned unit_, const TextureTy& tex_, const SamplerTy& sampler_) :
+        TextureUnit_(unsigned unit_, const TextureTy& tex_, const SamplerTy& sampler_) :
 			unit(unit_),
 			tex(tex_),
 			sampler(sampler_)
@@ -86,6 +87,38 @@ namespace ag
 		const TextureTy& tex;
 		const SamplerTy& sampler;
 	};
+
+    template <
+        typename TextureTy,
+        typename SamplerTy
+    >
+    TextureUnit_<TextureTy, SamplerTy> TextureUnit(unsigned unit_, const TextureTy& tex_, const SamplerTy& sampler_)
+    {
+        return TextureUnit_<TextureTy, SamplerTy>(unit_, tex_, sampler_);
+    }
+
+    ////////////////////////// Binder: uniform slot
+    template <
+        typename BufferTy
+    >
+    struct Uniform_
+    {
+        Uniform_(unsigned slot_, const BufferTy& buf_) :
+            slot(slot_),
+            buf(buf_)
+        {}
+
+        unsigned slot;
+        const BufferTy& buf;
+    };
+
+    template <
+        typename BufferTy
+    >
+    Uniform_<BufferTy> Uniform(unsigned slot_, const BufferTy& buf_)
+    {
+        return Uniform_<BufferTy>(slot_, buf_);
+    }
 
 	namespace 
 	{
@@ -122,18 +155,44 @@ namespace ag
 			device.getFrameScope().referenceTexture3D(tex.handle);
 		}
 
+
+        ////////////////////////// Bind<Sampler>
+        template <
+            typename D,
+            typename TPixel
+        >
+        void bindOne(Device<D>& device, BindContext& context, const Sampler<D>& sampler)
+        {
+            device.backend.bindSampler(context.samplerBindingIndex++, sampler.handle.get());
+            device.getFrameScope().referenceSampler(sampler.handle);
+        }
+
 		////////////////////////// Bind<TextureUnit<>>
 		template <
 			typename D,
 			typename TextureTy,
 			typename SamplerTy
 		>
-		void bindOne(Device<D>& device, BindContext& context, const TextureUnit<TextureTy, SamplerTy>& tex_unit)
+        void bindOne(Device<D>& device, BindContext& context, const TextureUnit_<TextureTy, SamplerTy>& tex_unit)
 		{
 			context.textureBindingIndex = tex_unit.unit;
 			context.samplerBindingIndex = tex_unit.unit;
+            bindOne(device, context, tex_unit.sampler);
 			bindOne(device, context, tex_unit.tex);
 		}
+
+        ////////////////////////// Bind<T>
+        template <
+             typename D,
+             typename T
+        >
+        void bindOne(Device<D>& device, BindContext& context, const T& value)
+        {
+            // allocate a temporary uniform buffer
+            auto tmp_buf = device.createBuffer(value);
+            device.backend.bindUniformBuffer(context.uniformBufferBindingIndex++, tmp_buf.handle.get());
+            device.getFrameScope().referenceBuffer(tmp_buf.handle);
+        }
 
 		template <
 			typename D,
@@ -154,6 +213,7 @@ namespace ag
 			bindOne(device, context, std::forward<T>(resource));
 			bindImpl(device, context, std::forward<Rest>(rest)...);
 		}
+
 	}
 	
 	template <
@@ -164,10 +224,12 @@ namespace ag
 	void draw(
 		Device<D>& device,
 		TSurface &&surface,
+        GraphicsPipeline<D>& graphicsPipeline,
 		Drawable &&drawable)
 	{
 		BindContext context;
-		device.backend.bindSurface(surface.handle);
+        device.backend.bindSurface(surface.handle);
+        device.backend.bindGraphicsPipeline(graphicsPipeline.handle.get());
 		drawable.draw(device, context);
 	}
 
@@ -181,12 +243,15 @@ namespace ag
 	void draw(
 		Device<D>& device,
 		TSurface &&surface,
+        GraphicsPipeline<D>& graphicsPipeline,
 		Drawable &&drawable,
 		TShaderResources &&... resources)
 	{
 		BindContext context;
 		bindImpl(device, context, resources...);
-		device.backend.bindSurface(surface.handle);
+        device.backend.bindSurface(surface.handle);
+        device.backend.bindGraphicsPipeline(graphicsPipeline.handle.get());
+        drawable.draw(device, context);
 	}
 	
 }

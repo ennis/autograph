@@ -73,7 +73,7 @@ namespace ag
 	////////////////////////// Texture3D
 	struct Texture3DInfo
 	{
-		glm::uvec2 dimensions;
+        glm::uvec3 dimensions;
 	};
 
 	template <
@@ -82,7 +82,7 @@ namespace ag
 	>
 	struct Texture3D 
 	{
-		glm::uvec3 dimensions;
+        Texture3DInfo info;
 		shared_resource<typename D::Texture3DHandle> handle;
 	};
 }

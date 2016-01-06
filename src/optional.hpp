@@ -18,6 +18,8 @@
 # include <string>
 # include <stdexcept>
 
+#define TR2_OPTIONAL_DISABLE_EMULATION_OF_TYPE_TRAITS
+
 # define TR2_OPTIONAL_REQUIRES(...) typename enable_if<__VA_ARGS__::value, bool>::type = false
 
 # if defined __GNUC__ // NOTE: GNUC is also defined for Clang

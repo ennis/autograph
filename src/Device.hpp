@@ -129,6 +129,15 @@ namespace ag
 			};
 		}
 
+        ///////////////////// createBuffer(T)
+        template <typename T>
+        Buffer<D, T> createBuffer(const T& data)
+        {
+            return Buffer<D, T> (
+                scope.addBufferHandle(backend.createBuffer(sizeof(T), &data))
+            );
+        }
+
 		///////////////////// createBuffer(span)
 		template <typename T>
 		Buffer<D, T[]> createBuffer(gsl::span<T> data)
