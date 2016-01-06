@@ -152,7 +152,6 @@ namespace ag
 		void endFrame()
 		{
 			// sync on frame N-(max-in-flight)
-			// TODO
 
 		}
 

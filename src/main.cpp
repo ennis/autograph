@@ -35,11 +35,23 @@ struct Pipelines
 
 	void reload(ag::Device<GL>& device)
 	{
-		ag::opengl::GraphicsPipelineInfo info;
+        /*  unsigned slot;
+            GLenum type;
+            unsigned size;
+            unsigned stride;
+            bool normalized;
+        */
+        using namespace ag::opengl;
+        ag::opengl::GraphicsPipelineInfo info;
+        VertexAttribute attribs[] = {
+            { 0, gl::FLOAT, 3, 12, false }
+        };
+
 		auto VSSource = loadShaderSource("../examples/shaders/default.vert");
 		auto PSSource = loadShaderSource("../examples/shaders/default.frag");
 		info.VSSource = VSSource.c_str();
 		info.PSSource = PSSource.c_str();
+        info.vertexAttribs = gsl::as_span(attribs);
 		pipeline = device.createGraphicsPipeline(info);
 	}
 

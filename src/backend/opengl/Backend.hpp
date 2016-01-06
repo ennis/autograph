@@ -108,15 +108,6 @@ namespace ag
 			using SurfaceHandle = GLuint;
 			// graphics pipeline
 			using GraphicsPipelineHandle = GraphicsPipeline*;
-			
-			// pipeline state object
-			struct PipelineStateDetail
-			{
-				GLuint program;
-				GLBlendState blendState;
-				GLRasterizerState rasterizerState;
-				GLDepthStencilState depthStencilState;
-			};
 
 			// constructor
 			OpenGLBackend() : last_framebuffer_obj(0)
@@ -139,7 +130,7 @@ namespace ag
 			SurfaceHandle initOutputSurface();
 
 			///////////////////// Resources: Textures
-			template <typename TPixel> Texture1DHandle initTexture1D(const Texture1DInfo& info);	// TODO no templates
+            template <typename TPixel> Texture1DHandle initTexture1D(const Texture1DInfo& info);
 			template <typename TPixel> Texture2DHandle initTexture2D(const Texture2DInfo& info);
 			template <typename TPixel> Texture3DHandle initTexture3D(const Texture3DInfo& info);
 			void destroyTexture1D(Texture1DHandle detail, const Texture1DInfo& info);
@@ -180,7 +171,8 @@ namespace ag
 		private:
 			// TODO pImpl?
 			void bindFramebufferObject(GLuint framebuffer_obj);
-			void bindState();
+            void bindState();
+
 			GLuint createTexture1D(unsigned dimensions, GLenum internalFormat);
 			GLuint createTexture2D(glm::uvec2 dimensions, GLenum internalFormat);
 			GLuint createTexture3D(glm::uvec3 dimensions, GLenum internalFormat);

@@ -392,7 +392,13 @@ namespace ag
 
 		void OpenGLBackend::bindGraphicsPipeline(GraphicsPipelineHandle handle)
 		{
-
+            gl::UseProgram(handle->program);
+            gl::BindVertexArray(handle->vao);
+            // TODO optimize state changes
+            if (handle->depthStencilState.depthTestEnable)
+                gl::Enable(gl::DEPTH_TEST);
+            else
+                gl::Disable(gl::DEPTH_TEST);
 		}
 
 		void OpenGLBackend::clearColor(SurfaceHandle framebuffer_obj, const glm::vec4 & color)
@@ -448,6 +454,10 @@ namespace ag
 				gl::BindImageTextures(0, kMaxImageUnits, bind_state.images);
 				bind_state.imagesUpdated = false;
 			}
+            if (bind_state.uniformBuffersUpdated) {
+                gl::BindBuffersRange(gl::UNIFORM_BUFFER, 0, kMaxUniformBufferSlots, bind_state.uniformBuffers, nullptr, nullptr);
+                bind_state.uniformBuffersUpdated = false;
+            }
 		}
 		
 		GLuint OpenGLBackend::createTexture1D(unsigned dimensions, GLenum internalFormat)

@@ -5,7 +5,7 @@
 // 1: per-material data
 // 2: per-object data 
 
-layout (std140, binding = 0) uniform SceneData {
+/*layout (std140, binding = 0) uniform SceneData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 viewProjMatrix;	// = projMatrix*viewMatrix
@@ -19,7 +19,7 @@ layout (std140, binding = 0) uniform SceneData {
 
 layout (std140, binding = 1) uniform ObjectData {
 	mat4 modelMatrix;
-};
+};*/
 
 // texture bindings:
 // 0-3: pass textures (shadow maps, etc.)
@@ -27,21 +27,21 @@ layout (std140, binding = 1) uniform ObjectData {
 // 8-?: per-object textures
 
 layout(location=0) in vec3 position;
-layout(location=1) in vec3 normal;
-layout(location=2) in vec3 tangent;
-layout(location=3) in vec2 texcoords;
+//layout(location=1) in vec3 normal;
+//layout(location=2) in vec3 tangent;
+//layout(location=3) in vec2 texcoords;
 
-out vec2 tc;
-out vec3 wPos;
-out vec3 wN;
+//out vec2 tc;
+//out vec3 wPos;
+//out vec3 wN;
 
 void main() {
-	vec4 wPos_tmp = modelMatrix * vec4(position, 1.0);
+	//vec4 wPos_tmp = modelMatrix * vec4(position, 1.0);
 	// TODO normal matrix
-	vec4 wN_tmp = modelMatrix * vec4(normal, 0.0);
-	vec4 temp_pos = projMatrix * viewMatrix * wPos_tmp;
-	gl_Position = temp_pos;
-	tc = texcoords;
-	wPos = wPos_tmp.xyz;
-	wN = wN_tmp.xyz;
+	//vec4 wN_tmp = modelMatrix * vec4(normal, 0.0);
+	//vec4 temp_pos = projMatrix * viewMatrix * wPos_tmp;
+	gl_Position = vec4(position, 1.0);
+	//tc = texcoords;
+	//wPos = wPos_tmp.xyz;
+	//wN = wN_tmp.xyz;
 }
