@@ -95,13 +95,7 @@ namespace ag
 			Texture1DInfo info{ width };
 			return Texture1D<TPixel, D>{
 				info,
-<<<<<<< Updated upstream
-				scope.addTexture1DHandle(backend.template initTexture1D<TPixel>(info))
-||||||| merged common ancestors
-				scope.addTexture1DHandle(backend.initTexture1D<TPixel>(info))
-=======
 				scope.addTexture1DHandle(backend.template createTexture1D<TPixel>(info))
->>>>>>> Stashed changes
 			};
 		}
 
@@ -112,13 +106,7 @@ namespace ag
 			Texture2DInfo info{ dimensions };
 			return Texture2D<TPixel, D>{
 				info,
-<<<<<<< Updated upstream
-				scope.addTexture2DHandle(backend.template initTexture2D<TPixel>(info))
-||||||| merged common ancestors
-				scope.addTexture2DHandle(backend.initTexture2D<TPixel>(info))
-=======
 				scope.addTexture2DHandle(backend.template createTexture2D<TPixel>(info))
->>>>>>> Stashed changes
 			};
 		}
 
@@ -129,13 +117,7 @@ namespace ag
 			Texture3DInfo info{ dimensions };
 			return Texture3D<TPixel, D>{
 				info,
-<<<<<<< Updated upstream
-				scope.addTexture3DHandle(backend.template initTexture3D<TPixel>(info))
-||||||| merged common ancestors
-				scope.addTexture3DHandle(backend.initTexture3D<TPixel>(info))
-=======
 				scope.addTexture3DHandle(backend.template createTexture3D<TPixel>(info))
->>>>>>> Stashed changes
 			};
 		}
 
@@ -200,7 +182,7 @@ namespace ag
 		std::vector<Frame<D> > in_flight;
 
 		// the default upload buffer
-		RingBuffer<D> default_upload_buffer;
+		//RingBuffer<D> default_upload_buffer;
 		D& backend;
 	};
 }

@@ -21,7 +21,7 @@ namespace ag
 		}
 
 		D& backend;
-		typename shared_resource<D::FenceHandle> handle;
+		typename shared_resource<typename D::FenceHandle> handle;
 	};
 }
 
