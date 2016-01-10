@@ -2,6 +2,7 @@
 #define OPENGL_BACKEND_HPP
 
 #include <stdexcept>
+#include <deque>
 
 #include <glm/glm.hpp>
 #include <optional.hpp>
@@ -15,6 +16,7 @@
 #include <Texture.hpp>
 #include <Device.hpp>
 #include <Draw.hpp>
+#include <SharedResource.hpp>
 
 #include "OpenGLPixelType.hpp"
 #include "State.hpp"
@@ -78,6 +80,12 @@ namespace ag
 		// Graphics context (OpenGL)
 		struct OpenGLBackend
 		{
+			///////////////////// Timeout values for fence wait operations
+			static constexpr unsigned kFenceWaitTimeout = 2000000000;	// in nanoseconds
+
+			///////////////////// Alignment constraints for buffers
+			static constexpr unsigned kBufferAlignment = 64;
+
 			///////////////////// arbitrary binding limits
 			static constexpr unsigned kMaxTextureUnits = 8;
 			static constexpr unsigned kMaxImageUnits = 8;
@@ -94,6 +102,18 @@ namespace ag
 				GLBlendState blendState;
 			};
 
+			struct GLFence
+			{
+				struct SyncPoint
+				{
+					GLsync sync;
+					uint64_t targetValue;
+				};
+
+				uint64_t currentValue;
+				std::deque<SyncPoint> syncPoints;
+			};
+
 
 			///////////////////// associated types
 			// buffer handles
@@ -108,6 +128,8 @@ namespace ag
 			using SurfaceHandle = GLuint;
 			// graphics pipeline
 			using GraphicsPipelineHandle = GraphicsPipeline*;
+			// fence handle
+			using FenceHandle = GLFence*;
 
 			// constructor
 			OpenGLBackend() : last_framebuffer_obj(0)
@@ -130,25 +152,40 @@ namespace ag
 			SurfaceHandle initOutputSurface();
 
 			///////////////////// Resources: Textures
-            template <typename TPixel> Texture1DHandle initTexture1D(const Texture1DInfo& info);
-			template <typename TPixel> Texture2DHandle initTexture2D(const Texture2DInfo& info);
-			template <typename TPixel> Texture3DHandle initTexture3D(const Texture3DInfo& info);
+			template <typename TPixel> 
+			Texture1DHandle createTexture1D(const Texture1DInfo& info);
+			template <typename TPixel> 
+			Texture2DHandle createTexture2D(const Texture2DInfo& info);
+			template <typename TPixel> 
+			Texture3DHandle createTexture3D(const Texture3DInfo& info);
+
+			// used internally
 			void destroyTexture1D(Texture1DHandle detail, const Texture1DInfo& info);
 			void destroyTexture2D(Texture2DHandle detail, const Texture2DInfo& info);
 			void destroyTexture3D(Texture3DHandle detail, const Texture3DInfo& info);
 
 			///////////////////// Resources: Buffers
 			BufferHandle createBuffer(std::size_t size, const void* data);
+			// used internally
 			void destroyBuffer(BufferHandle handle);
 
 			///////////////////// Resources: Samplers
-			SamplerHandle initSampler(const SamplerInfo& info);
+			SamplerHandle createSampler(const SamplerInfo& info);
+			// used internally
 			void destroySampler(SamplerHandle detail);
 
 			///////////////////// Resources: Pipelines
 			GraphicsPipelineHandle createGraphicsPipeline(const GraphicsPipelineInfo& info);
+			// used internally
 			void destroyGraphicsPipeline(GraphicsPipelineHandle handle);
 
+			///////////////////// Resources: fences
+			FenceHandle createFence(uint64_t initialValue);
+			void signal(FenceHandle fence, uint64_t value);	// insert into GPU command stream
+			void signalCPU(FenceHandle fence, uint64_t value);	// CPU-side signal
+			uint64_t getFenceValue(FenceHandle handle);
+			void destroyFence(FenceHandle handle);
+			void waitForFenceValue(FenceHandle handle, uint64_t value);
 
 			///////////////////// Bind
 			void bindTexture1D(unsigned slot, Texture1DHandle handle);
@@ -203,19 +240,19 @@ namespace ag
 		};
 
 		template<typename TPixel>
-		inline OpenGLBackend::Texture1DHandle OpenGLBackend::initTexture1D(const Texture1DInfo& info)
+		inline OpenGLBackend::Texture1DHandle OpenGLBackend::createTexture1D(const Texture1DInfo& info)
 		{
 			return createTexture1D(info.dimensions, OpenGLPixelTypeTraits<TPixel>::InternalFormat);
 		}
 
 		template<typename TPixel>
-		inline OpenGLBackend::Texture2DHandle OpenGLBackend::initTexture2D(const Texture2DInfo& info)
+		inline OpenGLBackend::Texture2DHandle OpenGLBackend::createTexture2D(const Texture2DInfo& info)
 		{
 			return createTexture2D(info.dimensions, OpenGLPixelTypeTraits<TPixel>::InternalFormat);
 		}
 
 		template<typename TPixel>
-		inline OpenGLBackend::Texture3DHandle OpenGLBackend::initTexture3D(const Texture3DInfo& info)
+		inline OpenGLBackend::Texture3DHandle OpenGLBackend::createTexture3D(const Texture3DInfo& info)
 		{
 			return createTexture3D(info.dimensions, OpenGLPixelTypeTraits<TPixel>::InternalFormat);
 		}

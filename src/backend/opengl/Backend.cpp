@@ -6,6 +6,8 @@
 
 #include <format.h>
 
+#include <Error.hpp>
+
 namespace ag
 {
 	namespace opengl
@@ -223,7 +225,7 @@ namespace ag
 			}
 		}
 
-		OpenGLBackend::SamplerHandle OpenGLBackend::initSampler(const SamplerInfo & info)
+		OpenGLBackend::SamplerHandle OpenGLBackend::createSampler(const SamplerInfo & info)
 		{
 			GLuint sampler_obj;
 			gl::CreateSamplers(1, &sampler_obj);
@@ -294,6 +296,65 @@ namespace ag
 			if (handle->program)
 				gl::DeleteProgram(handle->program);
 			delete handle;
+		}
+
+		OpenGLBackend::FenceHandle OpenGLBackend::createFence(uint64_t initialValue)
+		{
+			auto f = new GLFence;
+			f->currentValue = initialValue;
+			return f;
+		}
+
+		// This should be a command list API
+		void OpenGLBackend::signal(FenceHandle fence, uint64_t value)
+		{
+			auto sync = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
+			fence->syncPoints.push_back(GLFence::SyncPoint{ sync, value });
+		}
+
+		void OpenGLBackend::signalCPU(FenceHandle fence, uint64_t value)
+		{
+			// unimplemented (useful only for multithreaded applications?)
+		}
+
+		GLenum advanceFence(OpenGLBackend::FenceHandle handle, uint64_t timeout)
+		{
+			auto& targetSyncPoint = handle->syncPoints.front();
+			auto waitResult = gl::ClientWaitSync(targetSyncPoint.sync, gl::SYNC_FLUSH_COMMANDS_BIT, timeout);
+			if (waitResult == gl::CONDITION_SATISFIED || waitResult == gl::ALREADY_SIGNALED) {
+				handle->currentValue = targetSyncPoint.targetValue;
+				gl::DeleteSync(targetSyncPoint.sync);
+				handle->syncPoints.pop_front();
+			}
+			else if (waitResult == gl::WAIT_FAILED_)
+				failWith(fmt::format("Wait failed while waiting for fence (target {})", targetSyncPoint.targetValue));
+			return waitResult;
+		}
+
+		uint64_t OpenGLBackend::getFenceValue(FenceHandle handle)
+		{
+			for (;;) {
+				auto waitResult = advanceFence(handle, 0);
+				if (waitResult == gl::TIMEOUT_EXPIRED)
+					break;
+			}
+			return handle->currentValue;
+		}
+
+		void OpenGLBackend::destroyFence(FenceHandle handle)
+		{
+			for (auto s : handle->syncPoints)
+				gl::DeleteSync(s.sync);
+			delete handle;
+		}
+
+		void OpenGLBackend::waitForFenceValue(FenceHandle handle, uint64_t value)
+		{
+			while (getFenceValue(handle) < value) {
+				auto waitResult = advanceFence(handle, kFenceWaitTimeout);
+				if (waitResult == gl::TIMEOUT_EXPIRED) 
+					failWith(fmt::format("Timeout expired while waiting for fence (target {})", handle->syncPoints.front().targetValue));
+			}
 		}
 
 		void OpenGLBackend::destroyTexture(GLuint tex_obj)
