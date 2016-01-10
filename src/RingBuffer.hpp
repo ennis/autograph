@@ -24,15 +24,38 @@ namespace ag
 
 	// A ring buffer, used in the implementation of upload buffers
 	template <typename D>
-	class RingBuffer
+	class UploadBuffer
 	{
 	public:
-		RingBuffer(RawBuffer<D> buffer_) : 
-			buffer(std::move(buffer_)),
+		UploadBuffer(D& backend_, size_t size) :
+			backend(backend_),
+			buffer(backend_.createBuffer(size, nullptr, BufferUsage::Upload)),
+			buf_size(size),
 			write_ptr(0),
 			begin_ptr(0),
 			used(0)
 		{
+			mappedRegion = backend_.mapBuffer(buffer, 0, buf_size);
+		}
+
+		~UploadBuffer()
+		{
+			backend.destroyBuffer(buffer);
+		}
+
+		template <typename T>
+		bool upload(const T& data, size_t alignment, FenceValue expirationDate, RawBufferSlice<D>& slice)
+		{
+			return uploadRaw(&data, sizeof(T), alignment, expirationDate, slice);
+		}
+
+		bool uploadRaw(const void* data, size_t size, size_t alignment, FenceValue expirationDate, RawBufferSlice<D>& slice)
+		{
+			if (!allocateRaw(expirationDate, size, alignment, slice))
+				return false;
+			// copy data
+			memcpy((char*)mappedRegion + slice.offset, data, size);
+			return true;
 		}
 
 		// can block on fences
@@ -54,7 +77,7 @@ namespace ag
 			size_t offset = 0;
 			if (!tryAllocateContiguousFreeSpace(expirationDate, size, align, offset))
 				return false;
-			slice.handle = buffer.handle.get();
+			slice.handle = buffer;
 			slice.offset = offset;
 			slice.byteSize = size;
 			return true;
@@ -76,8 +99,7 @@ namespace ag
 				
 		bool tryAllocateContiguousFreeSpace(FenceValue expirationDate, size_t size, size_t align, size_t& alloc_begin)
 		{
-			size_t buf_size = buffer.byteSize;
-			assert(needed < buf_size);
+			assert(size < buf_size);
 			if ((begin_ptr < write_ptr) || ((begin_ptr == write_ptr) && (used == 0))) {
 				size_t slack_space = buf_size - write_ptr;
 				// try to put the buffer in the slack space at the end
@@ -106,14 +128,13 @@ namespace ag
 
 		void reclaim(FenceValue date)
 		{
-			while (fencedRegions.front().expirationDate < date) {
+			while (fencedRegions.front().expirationDate <= date) {
 				auto& r = fencedRegions.front();
 				begin_ptr = r.end_ptr;	// there may be some alignment space that we would want to reclaim
 				used -= r.end_ptr - r.begin_ptr;
 				fencedRegions.pop();
 			}
 		}
-
 
 	private:
 		struct FencedRegion
@@ -133,7 +154,10 @@ namespace ag
 		// used space
 		size_t used;
 
-		RawBuffer<D> buffer;
+		D& backend;
+		typename D::BufferHandle buffer;
+		size_t buf_size;
+		void* mappedRegion;
 		std::queue<FencedRegion> fencedRegions;
 	};
 }

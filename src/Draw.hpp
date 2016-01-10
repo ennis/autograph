@@ -55,7 +55,7 @@ namespace ag
 
 		void draw(Device<D>& device, BindContext& context)
 		{
-			device.backend.bindVertexBuffer(context.vertexBufferBindingIndex++, vertex_buffer.handle.get(), stride);
+			device.backend.bindVertexBuffer(context.vertexBufferBindingIndex++, vertex_buffer.handle.get(), 0, vertex_buffer.byteSize, stride);
 			device.backend.draw(primitiveType, 0, count);
 		}
 	};
@@ -99,25 +99,25 @@ namespace ag
 
     ////////////////////////// Binder: uniform slot
     template <
-        typename BufferTy
+        typename ResTy	// Buffer, BufferSlice or just a value
     >
     struct Uniform_
     {
-        Uniform_(unsigned slot_, const BufferTy& buf_) :
+        Uniform_(unsigned slot_, const ResTy& buf_) :
             slot(slot_),
             buf(buf_)
         {}
 
         unsigned slot;
-        const BufferTy& buf;
+        const ResTy& buf;
     };
 
     template <
-        typename BufferTy
+        typename ResTy
     >
-    Uniform_<BufferTy> Uniform(unsigned slot_, const BufferTy& buf_)
+    Uniform_<ResTy> Uniform(unsigned slot_, const ResTy& buf_)
     {
-        return Uniform_<BufferTy>(slot_, buf_);
+        return Uniform_<ResTy>(slot_, buf_);
     }
 
 	namespace 
@@ -181,6 +181,15 @@ namespace ag
 			bindOne(device, context, tex_unit.tex);
 		}
 
+		////////////////////////// Bind<RawBufferSlice>
+		template <
+			typename D
+		>
+		void bindOne(Device<D>& device, BindContext& context, const RawBufferSlice<D>& buf_slice)
+		{
+			device.backend.bindUniformBuffer(context.uniformBufferBindingIndex++, buf_slice.handle, buf_slice.offset, buf_slice.byteSize);
+		}
+
         ////////////////////////// Bind<T>
         template <
              typename D,
@@ -188,10 +197,12 @@ namespace ag
         >
         void bindOne(Device<D>& device, BindContext& context, const T& value)
         {
-            // allocate a temporary uniform buffer
-            auto tmp_buf = device.createBuffer(value);
-            device.backend.bindUniformBuffer(context.uniformBufferBindingIndex++, tmp_buf.handle.get());
-            device.getFrameScope().referenceBuffer(tmp_buf.handle);
+            // allocate a temporary uniform buffer from the default upload buffer
+			auto slice = device.pushDataToUploadBuffer(value, D::kUniformBufferOffsetAlignment);
+			bindOne(device, context, slice);
+            //auto tmp_buf = device.createBuffer(value);
+            //device.backend.bindUniformBuffer(context.uniformBufferBindingIndex++, tmp_buf.handle.get(), 0, tmp_buf.byteSize);
+            //device.getFrameScope().referenceBuffer(tmp_buf.handle);
         }
 
 		template <

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <ostream>
 #include <sstream>
+#include <algorithm>
 
 #include <format.h>
 
@@ -20,18 +21,27 @@ namespace ag
 				if (!glfwInit())
 					return nullptr;
 
+				glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+				glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 				glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, gl::TRUE_);
+				glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, gl::TRUE_);
+				glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 				window = glfwCreateWindow(options.framebufferWidth, options.framebufferHeight, "Painter", NULL, NULL);
-				if (!window)
-				{
+				if (!window) {
 					glfwTerminate();
-					return nullptr;
+					failWith("Could not create OpenGL context");
 				}
 
 				glfwMakeContextCurrent(window);
 				if (!gl::sys::LoadFunctions()) {
-					std::cerr << "Failed to load OpenGL functions" << std::endl;
+					glfwTerminate();
+					failWith("Failed to load OpenGL functions");
 				}
+
+				std::clog << "OpenGL context information:\n"
+					<< "\tVersion string: " << gl::GetString(gl::VERSION)
+					<< "\n\tRenderer: " << gl::GetString(gl::RENDERER) << "\n";
 
 				return window;
 			}
@@ -139,6 +149,20 @@ namespace ag
 			}
 		}
 
+
+		// constructor
+
+		OpenGLBackend::OpenGLBackend() : last_framebuffer_obj(0)
+		{
+			bind_state.images.fill(0);
+			bind_state.textures.fill(0);
+			bind_state.shaderStorageBuffers.fill(0);
+			bind_state.uniformBuffers.fill(0);
+			bind_state.uniformBufferSizes.fill(0);
+			bind_state.uniformBufferOffsets.fill(0);
+			// nothing to do, the context is created on window creation
+		}
+
 		// create a swap chain to draw into (color buffer + depth buffer)
 		void OpenGLBackend::createWindow(const DeviceOptions & options)
 		{
@@ -171,18 +195,47 @@ namespace ag
 			destroyTexture(detail);
 		}
 
-		OpenGLBackend::BufferHandle OpenGLBackend::createBuffer(std::size_t size, const void * data)
+		OpenGLBackend::BufferHandle OpenGLBackend::createBuffer(std::size_t size, const void * data, BufferUsage usage)
 		{
-			// XXX is the size is small, alloc in a buffer pool
+			GLbitfield flags = 0;
+			if (usage == BufferUsage::Readback) {
+				flags |= gl::MAP_READ_BIT | gl::MAP_PERSISTENT_BIT | gl::MAP_COHERENT_BIT;
+			}
+			else if (usage == BufferUsage::Upload) {
+				flags |= gl::MAP_WRITE_BIT | gl::MAP_PERSISTENT_BIT | gl::MAP_COHERENT_BIT;
+			}
+			else {
+				// default, no client access, update through copy engines
+				flags = 0;
+			}
+
 			GLuint buf_obj;
 			gl::CreateBuffers(1, &buf_obj);
-			gl::NamedBufferStorage(buf_obj, size, data, 0);
-			return buf_obj;
+			gl::NamedBufferStorage(buf_obj, size, data, flags);
+			return new GLbuffer { buf_obj, usage };
 		}
 
 		void OpenGLBackend::destroyBuffer(BufferHandle handle)
 		{
-			gl::DeleteBuffers(1, &handle);
+			gl::DeleteBuffers(1, &handle->buf_obj);
+			delete handle;
+		}
+
+		void* OpenGLBackend::mapBuffer(BufferHandle handle, size_t offset, size_t size)
+		{
+			// all our operations are unsynchronized
+			GLbitfield flags = gl::MAP_UNSYNCHRONIZED_BIT;
+			if (handle->usage == BufferUsage::Readback) {
+				flags |= gl::MAP_READ_BIT | gl::MAP_PERSISTENT_BIT | gl::MAP_COHERENT_BIT;
+			}
+			else if (handle->usage == BufferUsage::Upload) {
+				flags |= gl::MAP_WRITE_BIT | gl::MAP_PERSISTENT_BIT | gl::MAP_COHERENT_BIT;
+			}
+			else {
+				// cannot map a DEFAULT buffer
+				throw std::logic_error("Trying to map a buffer allocated with BufferUsage::Default");
+			}
+			return gl::MapNamedBufferRange(handle->buf_obj, offset, size, flags);
 		}
 
 		void OpenGLBackend::bindTexture1D(unsigned slot, Texture1DHandle handle)
@@ -333,7 +386,7 @@ namespace ag
 
 		uint64_t OpenGLBackend::getFenceValue(FenceHandle handle)
 		{
-			for (;;) {
+			while (!handle->syncPoints.empty()) {
 				auto waitResult = advanceFence(handle, 0);
 				if (waitResult == gl::TIMEOUT_EXPIRED)
 					break;
@@ -348,7 +401,7 @@ namespace ag
 			delete handle;
 		}
 
-		void OpenGLBackend::waitForFenceValue(FenceHandle handle, uint64_t value)
+		void OpenGLBackend::waitForFence(FenceHandle handle, uint64_t value)
 		{
 			while (getFenceValue(handle) < value) {
 				auto waitResult = advanceFence(handle, kFenceWaitTimeout);
@@ -441,9 +494,17 @@ namespace ag
 
 		///////////////////// Clear command
 
-		void OpenGLBackend::bindVertexBuffer(unsigned slot, BufferHandle handle, unsigned stride)
+		void OpenGLBackend::bindVertexBuffer(unsigned slot, BufferHandle handle, size_t offset, size_t size, unsigned stride)
 		{
-			gl::BindVertexBuffer(slot, handle, 0, stride);
+			gl::BindVertexBuffer(slot, handle->buf_obj, offset, stride);
+		}
+
+		void OpenGLBackend::bindUniformBuffer(unsigned slot, BufferHandle handle, size_t offset, size_t size)
+		{
+			bind_state.uniformBuffers[slot] = handle->buf_obj;
+			bind_state.uniformBufferSizes[slot] = size;
+			bind_state.uniformBufferOffsets[slot] = offset;
+			bind_state.uniformBuffersUpdated = true;
 		}
 
 		void OpenGLBackend::bindSurface(SurfaceHandle handle)
@@ -504,19 +565,29 @@ namespace ag
 		void OpenGLBackend::bindState()
 		{
 			if (bind_state.textureUpdated) {
-				gl::BindTextures(0, kMaxTextureUnits, bind_state.textures);
+				gl::BindTextures(0, kMaxTextureUnits, bind_state.textures.data());
 				bind_state.textureUpdated = false;
 			}
 			if (bind_state.samplersUpdated) {
-				gl::BindSamplers(0, kMaxTextureUnits, bind_state.samplers);
+				gl::BindSamplers(0, kMaxTextureUnits, bind_state.samplers.data());
 				bind_state.samplersUpdated = false;
 			}
 			if (bind_state.imagesUpdated) {
-				gl::BindImageTextures(0, kMaxImageUnits, bind_state.images);
+				gl::BindImageTextures(0, kMaxImageUnits, bind_state.images.data());
 				bind_state.imagesUpdated = false;
 			}
             if (bind_state.uniformBuffersUpdated) {
-                gl::BindBuffersRange(gl::UNIFORM_BUFFER, 0, kMaxUniformBufferSlots, bind_state.uniformBuffers, nullptr, nullptr);
+				for (unsigned i = 0; i < kMaxShaderStorageBufferSlots; ++i)
+				{
+					if (bind_state.uniformBuffers[i])
+						gl::BindBufferRange(
+							gl::UNIFORM_BUFFER, 0, 
+							bind_state.uniformBuffers[i],
+							bind_state.uniformBufferOffsets[i],
+							bind_state.uniformBufferSizes[i]);
+					else
+						gl::BindBufferBase(gl::UNIFORM_BUFFER, i, 0);
+				}
                 bind_state.uniformBuffersUpdated = false;
             }
 		}

@@ -78,7 +78,8 @@ int main()
 			device,
 			out,
             pp.pipeline,
-			ag::DrawArrays(ag::PrimitiveType::Triangles, vbo)
+			ag::DrawArrays(ag::PrimitiveType::Triangles, vbo),
+			glm::mat4(1.0)
 			);
 	});
 

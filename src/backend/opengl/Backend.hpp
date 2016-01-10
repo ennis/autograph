@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <deque>
+#include <array>
 
 #include <glm/glm.hpp>
 #include <optional.hpp>
@@ -85,6 +86,7 @@ namespace ag
 
 			///////////////////// Alignment constraints for buffers
 			static constexpr unsigned kBufferAlignment = 64;
+			static constexpr unsigned kUniformBufferOffsetAlignment = 256;	// TODO do not hardcode this
 
 			///////////////////// arbitrary binding limits
 			static constexpr unsigned kMaxTextureUnits = 8;
@@ -114,10 +116,16 @@ namespace ag
 				std::deque<SyncPoint> syncPoints;
 			};
 
+			struct GLbuffer
+			{
+				GLuint buf_obj;
+				BufferUsage usage;
+			};
+
 
 			///////////////////// associated types
 			// buffer handles
-			using BufferHandle = GLuint;
+			using BufferHandle = GLbuffer*;
 			// texture handles
 			using Texture1DHandle = GLuint;
 			using Texture2DHandle = GLuint;
@@ -132,10 +140,7 @@ namespace ag
 			using FenceHandle = GLFence*;
 
 			// constructor
-			OpenGLBackend() : last_framebuffer_obj(0)
-			{
-				// nothing to do, the context is created on window creation
-			}
+			OpenGLBackend();
 
 			// create a swap chain to draw into (color buffer + depth buffer)
 			void createWindow(const DeviceOptions& options);
@@ -165,9 +170,11 @@ namespace ag
 			void destroyTexture3D(Texture3DHandle detail, const Texture3DInfo& info);
 
 			///////////////////// Resources: Buffers
-			BufferHandle createBuffer(std::size_t size, const void* data);
+			BufferHandle createBuffer(std::size_t size, const void* data, BufferUsage usage);
 			// used internally
 			void destroyBuffer(BufferHandle handle);
+			// Map buffer data into the CPU virtual address space
+			void* mapBuffer(BufferHandle handle, size_t offset, size_t size);
 
 			///////////////////// Resources: Samplers
 			SamplerHandle createSampler(const SamplerInfo& info);
@@ -185,14 +192,15 @@ namespace ag
 			void signalCPU(FenceHandle fence, uint64_t value);	// CPU-side signal
 			uint64_t getFenceValue(FenceHandle handle);
 			void destroyFence(FenceHandle handle);
-			void waitForFenceValue(FenceHandle handle, uint64_t value);
+			void waitForFence(FenceHandle handle, uint64_t value);
 
 			///////////////////// Bind
 			void bindTexture1D(unsigned slot, Texture1DHandle handle);
 			void bindTexture2D(unsigned slot, Texture2DHandle handle);
 			void bindTexture3D(unsigned slot, Texture3DHandle handle);
 			void bindSampler(unsigned slot, SamplerHandle handle);
-			void bindVertexBuffer(unsigned slot, BufferHandle handle, unsigned stride);
+			void bindVertexBuffer(unsigned slot, BufferHandle handle, size_t offset, size_t size, unsigned stride);
+			void bindUniformBuffer(unsigned slot, BufferHandle handle, size_t offset, size_t size);
 			void bindSurface(SurfaceHandle handle);
 			void bindGraphicsPipeline(GraphicsPipelineHandle handle);
 
@@ -220,15 +228,17 @@ namespace ag
 
 			struct BindState
 			{
-				GLuint textures[kMaxTextureUnits];
+				std::array<GLuint, kMaxTextureUnits> textures;
 				bool textureUpdated = false;
-				GLuint samplers[kMaxTextureUnits];
+				std::array<GLuint, kMaxTextureUnits> samplers;
 				bool samplersUpdated = false;
-				GLuint images[kMaxImageUnits];
+				std::array<GLuint, kMaxImageUnits> images;
 				bool imagesUpdated = false;
-				GLuint uniformBuffers[kMaxUniformBufferSlots];
+				std::array<GLuint, kMaxUniformBufferSlots> uniformBuffers;
+				std::array<GLsizeiptr, kMaxUniformBufferSlots> uniformBufferSizes;
+				std::array<GLintptr, kMaxUniformBufferSlots> uniformBufferOffsets;
 				bool uniformBuffersUpdated = false;
-				GLuint shaderStorageBuffers[kMaxShaderStorageBufferSlots];
+				std::array<GLuint, kMaxShaderStorageBufferSlots> shaderStorageBuffers;
 				bool shaderStorageBuffersUpdated = false;
 			};
 

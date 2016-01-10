@@ -2,6 +2,7 @@
 #define DEVICE_HPP
 
 #include <algorithm>
+#include <memory>
 
 #include <gsl.h>
 
@@ -11,6 +12,7 @@
 #include <Buffer.hpp>
 #include <Pipeline.hpp>
 #include <RingBuffer.hpp>
+#include <Error.hpp>
 
 namespace ag
 {
@@ -22,6 +24,12 @@ namespace ag
 		bool fullscreen = false;
 		unsigned maxFramesInFlight = 3;
 	};
+
+	inline FenceValue getFrameExpirationDate(unsigned frame_id)
+	{
+		// Frame N expires when the fence has reached the value N+1
+		return frame_id + 1;
+	}
 
 	template <
 		typename T,
@@ -54,9 +62,11 @@ namespace ag
 	class Device
 	{
 	public:
-		Device(D& backend_, const DeviceOptions& options_) : options(options_), backend(backend_)
+		Device(D& backend_, const DeviceOptions& options_) : options(options_), backend(backend_), frame_id(0)
 		{
 			backend.createWindow(options);
+			frameFence = backend.createFence(0);
+			default_upload_buffer = std::make_unique<UploadBuffer<D> >(backend_, 3*256);
 		}
 
 		Surface<D, float, RGBA8> getOutputSurface()
@@ -75,6 +85,7 @@ namespace ag
 			while (!backend.processWindowEvents())
 			{
 				render_fn();
+				endFrame();
 				backend.swapBuffers();
 			}
 		}
@@ -135,7 +146,7 @@ namespace ag
         Buffer<D, T> createBuffer(const T& data)
         {
             return Buffer<D, T> (
-                scope.addBufferHandle(backend.createBuffer(sizeof(T), &data))
+                scope.addBufferHandle(backend.createBuffer(sizeof(T), &data, BufferUsage::Default))
             );
         }
 
@@ -145,15 +156,33 @@ namespace ag
 		{
 			return Buffer<D, T[]> (
 				data.size(),
-				scope.addBufferHandle(backend.createBuffer(data.size_bytes(), data.data()))
+				scope.addBufferHandle(backend.createBuffer(data.size_bytes(), data.data(), BufferUsage::Default))
 			);
+		}
+
+
+		///////////////////// Upload heap management
+		template <typename T>
+		RawBufferSlice<D> pushDataToUploadBuffer(const T& value, size_t alignment = alignof(T))
+		{
+			RawBufferSlice<D> out_slice;
+			if (!default_upload_buffer->uploadRaw(&value, sizeof(T), alignment, getFrameExpirationDate(frame_id), out_slice)) {
+				// upload failed, meh, I should sync here
+				failWith("Upload buffer is full");
+			}
+			return std::move(out_slice);
 		}
 
 		///////////////////// end-of-frame cleanup
 		void endFrame()
 		{
 			// sync on frame N-(max-in-flight)
-
+			frame_id++;
+			backend.signal(frameFence, frame_id);	// this should be a command queue API
+			if (frame_id >= options.maxFramesInFlight) {
+				backend.waitForFence(frameFence, getFrameExpirationDate(frame_id - options.maxFramesInFlight));
+				default_upload_buffer->reclaim(getFrameExpirationDate(frame_id - options.maxFramesInFlight));
+			}
 		}
 
 		///////////////////// references
@@ -178,12 +207,15 @@ namespace ag
 
 		//private:
 		DeviceOptions options;
+		D& backend;
 		ResourceScope<D> scope;
 		std::vector<Frame<D> > in_flight;
 
+		typename D::FenceHandle frameFence;
+		unsigned frame_id;
+
 		// the default upload buffer
-		//RingBuffer<D> default_upload_buffer;
-		D& backend;
+		std::unique_ptr<UploadBuffer<D> > default_upload_buffer;
 	};
 }
 

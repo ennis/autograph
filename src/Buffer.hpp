@@ -5,6 +5,13 @@
 
 namespace ag
 {
+	enum class BufferUsage
+	{
+		Upload,	    // CPU-visible, write-only
+		Default,    // GPU-visible, cannot be accessed by the CPU
+		Readback    // CPU-visible, read-only
+	};
+
 	template <
 		typename D
 	>
@@ -55,6 +62,12 @@ namespace ag
 	template <typename D>
 	struct RawBufferSlice
 	{
+		RawBufferSlice() :
+			handle(nullptr),
+			offset(0),
+			byteSize(0)
+		{}
+
 		RawBufferSlice(typename D::BufferHandle handle_, size_t offset_, size_t byteSize_) :
 			handle(handle_),
 			offset(offset_),

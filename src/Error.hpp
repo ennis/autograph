@@ -7,10 +7,9 @@
 
 namespace ag
 {
-	void failWith(std::string message) {
-		std::cerr 
-			<< "\n\n===============================================================\n"
-			<< "Error: " << message << "\n";
+	[[noreturn]]
+	inline void failWith(std::string message) {
+		std::cerr << "ABORT: " << message << "\n";
 		throw std::runtime_error(message.c_str());
 	}
 }
