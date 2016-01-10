@@ -11,7 +11,8 @@
 #include <Texture.hpp>
 #include <Buffer.hpp>
 #include <Pipeline.hpp>
-#include <RingBuffer.hpp>
+#include <UploadBuffer.hpp>
+#include <Fence.hpp>
 #include <Error.hpp>
 
 namespace ag
