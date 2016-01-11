@@ -79,7 +79,7 @@ int main()
 			out,
             pp.pipeline,
 			ag::DrawArrays(ag::PrimitiveType::Triangles, vbo),
-			glm::mat4(1.0)
+            glm::mat4(0.5f)
 			);
 	});
 

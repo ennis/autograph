@@ -34,12 +34,11 @@ namespace ag
 			begin_ptr(0),
 			used(0)
 		{
-			mappedRegion = backend_.mapBuffer(buffer, 0, buf_size);
+            mappedRegion = backend_.mapBuffer(buffer.get(), 0, buf_size);
 		}
 
 		~UploadBuffer()
 		{
-			backend.destroyBuffer(buffer);
 		}
 
 		template <typename T>
@@ -76,7 +75,7 @@ namespace ag
 			size_t offset = 0;
 			if (!tryAllocateContiguousFreeSpace(expirationDate, size, align, offset))
 				return false;
-			slice.handle = buffer;
+            slice.handle = buffer.get();
 			slice.offset = offset;
 			slice.byteSize = size;
 			return true;

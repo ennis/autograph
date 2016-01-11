@@ -1,7 +1,6 @@
 #ifndef FENCE_HPP
 #define FENCE_HPP
 
-#include <SharedResource.hpp>
 #include <cstdint>
 
 namespace ag
@@ -21,7 +20,7 @@ namespace ag
 		}
 
 		D& backend;
-		typename shared_resource<typename D::FenceHandle> handle;
+        typename D::FenceHandle handle;
 	};
 }
 

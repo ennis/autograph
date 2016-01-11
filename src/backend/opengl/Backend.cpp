@@ -176,24 +176,9 @@ namespace ag
 		}
 
 		OpenGLBackend::SurfaceHandle OpenGLBackend::initOutputSurface()
-		{
-			return 0;
-		}
-
-		void OpenGLBackend::destroyTexture1D(Texture1DHandle detail, const Texture1DInfo & info)
-		{
-			destroyTexture(detail);
-		}
-
-		void OpenGLBackend::destroyTexture2D(Texture2DHandle detail, const Texture2DInfo & info)
-		{
-			destroyTexture(detail);
-		}
-
-		void OpenGLBackend::destroyTexture3D(Texture3DHandle detail, const Texture3DInfo & info)
-		{
-			destroyTexture(detail);
-		}
+        {
+            return 0;
+        }
 
 		OpenGLBackend::BufferHandle OpenGLBackend::createBuffer(std::size_t size, const void * data, BufferUsage usage)
 		{
@@ -212,16 +197,10 @@ namespace ag
 			GLuint buf_obj;
 			gl::CreateBuffers(1, &buf_obj);
 			gl::NamedBufferStorage(buf_obj, size, data, flags);
-			return new GLbuffer { buf_obj, usage };
+            return BufferHandle(new GLbuffer { buf_obj, usage }, BufferDeleter());
 		}
 
-		void OpenGLBackend::destroyBuffer(BufferHandle handle)
-		{
-			gl::DeleteBuffers(1, &handle->buf_obj);
-			delete handle;
-		}
-
-		void* OpenGLBackend::mapBuffer(BufferHandle handle, size_t offset, size_t size)
+        void* OpenGLBackend::mapBuffer(BufferHandle::pointer handle, size_t offset, size_t size)
 		{
 			// all our operations are unsynchronized
 			GLbitfield flags = gl::MAP_UNSYNCHRONIZED_BIT;
@@ -238,7 +217,7 @@ namespace ag
 			return gl::MapNamedBufferRange(handle->buf_obj, offset, size, flags);
 		}
 
-		void OpenGLBackend::bindTexture1D(unsigned slot, Texture1DHandle handle)
+        void OpenGLBackend::bindTexture1D(unsigned slot, Texture1DHandle::pointer handle)
 		{
 			assert(slot < kMaxTextureUnits);
 			if (bind_state.textures[slot] != handle)
@@ -248,7 +227,7 @@ namespace ag
 			}
 		}
 
-		void OpenGLBackend::bindTexture2D(unsigned slot, Texture2DHandle handle)
+        void OpenGLBackend::bindTexture2D(unsigned slot, Texture2DHandle::pointer handle)
 		{
 			assert(slot < kMaxTextureUnits);
 			if (bind_state.textures[slot] != handle)
@@ -258,7 +237,7 @@ namespace ag
 			}
 		}
 
-		void OpenGLBackend::bindTexture3D(unsigned slot, Texture3DHandle handle)
+        void OpenGLBackend::bindTexture3D(unsigned slot, Texture3DHandle::pointer handle)
 		{
 			assert(slot < kMaxTextureUnits);
 			if (bind_state.textures[slot] != handle)
@@ -268,7 +247,7 @@ namespace ag
 			}
 		}
 
-		void OpenGLBackend::bindSampler(unsigned slot, SamplerHandle handle)
+        void OpenGLBackend::bindSampler(unsigned slot, SamplerHandle::pointer handle)
 		{
 			assert(slot < kMaxTextureUnits);
 			if (bind_state.samplers[slot] != handle)
@@ -287,12 +266,7 @@ namespace ag
 			gl::SamplerParameteri(sampler_obj, gl::TEXTURE_WRAP_R, textureAddressModeToGLenum(info.addrU));
 			gl::SamplerParameteri(sampler_obj, gl::TEXTURE_WRAP_S, textureAddressModeToGLenum(info.addrV));
 			gl::SamplerParameteri(sampler_obj, gl::TEXTURE_WRAP_T, textureAddressModeToGLenum(info.addrW));
-			return sampler_obj;
-		}
-
-		void OpenGLBackend::destroySampler(SamplerHandle handle)
-		{
-			gl::DeleteSamplers(1, &handle);
+            return SamplerHandle { sampler_obj, SamplerDeleter() };
 		}
 
 		const char* getShaderStageName(GLenum stage)
@@ -339,38 +313,29 @@ namespace ag
 			pp->blendState = info.blendState;
 			pp->depthStencilState = info.depthStencilState;
 			pp->rasterizerState = info.rasterizerState;
-			return pp;
-		}
-
-		void OpenGLBackend::destroyGraphicsPipeline(GraphicsPipelineHandle handle)
-		{
-			if (handle->vao)
-				gl::DeleteVertexArrays(1, &handle->vao);
-			if (handle->program)
-				gl::DeleteProgram(handle->program);
-			delete handle;
+            return GraphicsPipelineHandle(pp, GraphicsPipelineDeleter());
 		}
 
 		OpenGLBackend::FenceHandle OpenGLBackend::createFence(uint64_t initialValue)
 		{
 			auto f = new GLFence;
 			f->currentValue = initialValue;
-			return f;
+            return FenceHandle(f, FenceDeleter());
 		}
 
 		// This should be a command list API
-		void OpenGLBackend::signal(FenceHandle fence, uint64_t value)
+        void OpenGLBackend::signal(FenceHandle::pointer fence, uint64_t value)
 		{
 			auto sync = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
 			fence->syncPoints.push_back(GLFence::SyncPoint{ sync, value });
 		}
 
-		void OpenGLBackend::signalCPU(FenceHandle fence, uint64_t value)
+        void OpenGLBackend::signalCPU(FenceHandle::pointer fence, uint64_t value)
 		{
 			// unimplemented (useful only for multithreaded applications?)
 		}
 
-		GLenum advanceFence(OpenGLBackend::FenceHandle handle, uint64_t timeout)
+        GLenum advanceFence(OpenGLBackend::FenceHandle::pointer handle, uint64_t timeout)
 		{
 			auto& targetSyncPoint = handle->syncPoints.front();
 			auto waitResult = gl::ClientWaitSync(targetSyncPoint.sync, gl::SYNC_FLUSH_COMMANDS_BIT, timeout);
@@ -384,7 +349,7 @@ namespace ag
 			return waitResult;
 		}
 
-		uint64_t OpenGLBackend::getFenceValue(FenceHandle handle)
+        uint64_t OpenGLBackend::getFenceValue(FenceHandle::pointer handle)
 		{
 			while (!handle->syncPoints.empty()) {
 				auto waitResult = advanceFence(handle, 0);
@@ -394,14 +359,7 @@ namespace ag
 			return handle->currentValue;
 		}
 
-		void OpenGLBackend::destroyFence(FenceHandle handle)
-		{
-			for (auto s : handle->syncPoints)
-				gl::DeleteSync(s.sync);
-			delete handle;
-		}
-
-		void OpenGLBackend::waitForFence(FenceHandle handle, uint64_t value)
+        void OpenGLBackend::waitForFence(FenceHandle::pointer handle, uint64_t value)
 		{
 			while (getFenceValue(handle) < value) {
 				auto waitResult = advanceFence(handle, kFenceWaitTimeout);
@@ -410,10 +368,6 @@ namespace ag
 			}
 		}
 
-		void OpenGLBackend::destroyTexture(GLuint tex_obj)
-		{
-			gl::DeleteTextures(1, &tex_obj);
-		}
 
 		GLuint OpenGLBackend::createProgramFromShaderPipeline(const GraphicsPipelineInfo & info)
 		{
@@ -494,12 +448,12 @@ namespace ag
 
 		///////////////////// Clear command
 
-		void OpenGLBackend::bindVertexBuffer(unsigned slot, BufferHandle handle, size_t offset, size_t size, unsigned stride)
+        void OpenGLBackend::bindVertexBuffer(unsigned slot, BufferHandle::pointer handle, size_t offset, size_t size, unsigned stride)
 		{
 			gl::BindVertexBuffer(slot, handle->buf_obj, offset, stride);
 		}
 
-		void OpenGLBackend::bindUniformBuffer(unsigned slot, BufferHandle handle, size_t offset, size_t size)
+        void OpenGLBackend::bindUniformBuffer(unsigned slot, BufferHandle::pointer handle, size_t offset, size_t size)
 		{
 			bind_state.uniformBuffers[slot] = handle->buf_obj;
 			bind_state.uniformBufferSizes[slot] = size;
@@ -507,12 +461,12 @@ namespace ag
 			bind_state.uniformBuffersUpdated = true;
 		}
 
-		void OpenGLBackend::bindSurface(SurfaceHandle handle)
+        void OpenGLBackend::bindSurface(SurfaceHandle::pointer handle)
 		{
 			bindFramebufferObject(handle);
 		}
 
-		void OpenGLBackend::bindGraphicsPipeline(GraphicsPipelineHandle handle)
+        void OpenGLBackend::bindGraphicsPipeline(GraphicsPipelineHandle::pointer handle)
 		{
             gl::UseProgram(handle->program);
             gl::BindVertexArray(handle->vao);
@@ -523,7 +477,7 @@ namespace ag
                 gl::Disable(gl::DEPTH_TEST);
 		}
 
-		void OpenGLBackend::clearColor(SurfaceHandle framebuffer_obj, const glm::vec4 & color)
+        void OpenGLBackend::clearColor(SurfaceHandle::pointer framebuffer_obj, const glm::vec4 & color)
 		{
 			// bind the framebuffer
 			bindFramebufferObject(framebuffer_obj);
@@ -533,7 +487,7 @@ namespace ag
 			gl::Clear(gl::COLOR_BUFFER_BIT);
 		}
 
-		void OpenGLBackend::clearDepth(SurfaceHandle framebuffer_obj, float depth)
+        void OpenGLBackend::clearDepth(SurfaceHandle::pointer framebuffer_obj, float depth)
 		{
 			gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer_obj);
 			// set clear color
@@ -592,28 +546,28 @@ namespace ag
             }
 		}
 		
-		GLuint OpenGLBackend::createTexture1D(unsigned dimensions, GLenum internalFormat)
+        OpenGLBackend::Texture1DHandle OpenGLBackend::createTexture1D(unsigned dimensions, GLenum internalFormat)
 		{
 			GLuint tex_obj;
 			gl::CreateTextures(gl::TEXTURE_1D, 1, &tex_obj);
 			gl::TextureStorage1D(tex_obj, 1, internalFormat, dimensions);
-			return tex_obj;
+            return Texture1DHandle(tex_obj, TextureDeleter());
 		}
 
-		GLuint OpenGLBackend::createTexture2D(glm::uvec2 dimensions, GLenum internalFormat)
+        OpenGLBackend::Texture2DHandle OpenGLBackend::createTexture2D(glm::uvec2 dimensions, GLenum internalFormat)
 		{
 			GLuint tex_obj;
 			gl::CreateTextures(gl::TEXTURE_2D, 1, &tex_obj);
-			gl::TextureStorage2D(tex_obj, 1, internalFormat, dimensions.x, dimensions.y);
-			return tex_obj;
+            gl::TextureStorage2D(tex_obj, 1, internalFormat, dimensions.x, dimensions.y);
+            return Texture2DHandle(tex_obj, TextureDeleter());
 		}
 
-		GLuint OpenGLBackend::createTexture3D(glm::uvec3 dimensions, GLenum internalFormat)
+        OpenGLBackend::Texture3DHandle OpenGLBackend::createTexture3D(glm::uvec3 dimensions, GLenum internalFormat)
 		{
 			GLuint tex_obj;
 			gl::CreateTextures(gl::TEXTURE_3D, 1, &tex_obj);
-			gl::TextureStorage3D(tex_obj, 1, internalFormat, dimensions.x, dimensions.y, dimensions.z);
-			return tex_obj;
+            gl::TextureStorage3D(tex_obj, 1, internalFormat, dimensions.x, dimensions.y, dimensions.z);
+            return Texture3DHandle(tex_obj, TextureDeleter());
 		}
 	}
 }

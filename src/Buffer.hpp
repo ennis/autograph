@@ -1,7 +1,7 @@
 #ifndef BUFFER_HPP
 #define BUFFER_HPP
 
-#include <SharedResource.hpp>
+#include <cstdlib>  // size_t
 
 namespace ag
 {
@@ -19,13 +19,13 @@ namespace ag
 	{
 		RawBuffer(
 			std::size_t byteSize_,
-			shared_resource<typename D::BufferHandle> handle_) :
+            typename D::BufferHandle handle_) :
 			byteSize(byteSize_),
 			handle(std::move(handle_))
 		{}
 
 		std::size_t byteSize;
-		shared_resource<typename D::BufferHandle> handle;
+        typename D::BufferHandle handle;
 	};
 
 	template <
@@ -34,7 +34,7 @@ namespace ag
 	>
 	struct Buffer : public RawBuffer<D>
 	{
-		Buffer(shared_resource<typename D::BufferHandle> handle_) :
+        Buffer(typename D::BufferHandle handle_) :
 			RawBuffer<D>(sizeof(T), std::move(handle_))
 		{}
 
@@ -47,7 +47,7 @@ namespace ag
 	>
 	struct Buffer<D, T[]> : public RawBuffer<D>
 	{
-		Buffer(std::size_t size_, shared_resource<typename D::BufferHandle> handle_) :
+        Buffer(std::size_t size_, typename D::BufferHandle handle_) :
 			RawBuffer<D>(size_*sizeof(T), std::move(handle_))
 		{}
 
@@ -68,13 +68,13 @@ namespace ag
 			byteSize(0)
 		{}
 
-		RawBufferSlice(typename D::BufferHandle handle_, size_t offset_, size_t byteSize_) :
+        RawBufferSlice(typename D::BufferHandle::pointer handle_, size_t offset_, size_t byteSize_) :
 			handle(handle_),
 			offset(offset_),
 			byteSize(byteSize_)
 		{}
 
-		typename D::BufferHandle handle;
+        typename D::BufferHandle::pointer handle;
 		size_t offset;
 		size_t byteSize;
 	};
@@ -85,7 +85,7 @@ namespace ag
 	>
 	struct BufferSlice : public RawBufferSlice<D>
 	{
-		BufferSlice(typename D::BufferHandle handle_, size_t offset_) : RawBufferSlice(handle_, offset_, sizeof(T))
+        BufferSlice(typename D::BufferHandle::pointer handle_, size_t offset_) : RawBufferSlice<D>(handle_, offset_, sizeof(T))
 		{}
 	};
 
@@ -96,11 +96,11 @@ namespace ag
 	>
 	struct BufferSlice<D, T[]> : public RawBufferSlice<D>
 	{
-		BufferSlice(typename D::BufferHandle handle_, size_t offset_, size_t size_) : RawBufferSlice(handle_, offset_, size_*sizeof(T))
+        BufferSlice(typename D::BufferHandle handle_, size_t offset_, size_t size_) : RawBufferSlice<D>(handle_, offset_, size_*sizeof(T))
 		{}
 
 		constexpr std::size_t size() const {
-			return byteSize / sizeof(T);
+            return this->byteSize / sizeof(T);
 		}
 	};
 }

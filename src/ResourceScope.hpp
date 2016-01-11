@@ -4,8 +4,6 @@
 #include <vector>
 #include <memory>
 
-#include <SharedResource.hpp>
-
 namespace ag
 {
 	template <
@@ -21,54 +19,35 @@ namespace ag
 		using BufferHandle = typename D::BufferHandle;
 		using GraphicsPipelineHandle = typename D::GraphicsPipelineHandle;
 
-		shared_resource<Texture1DHandle> addTexture1DHandle(Texture1DHandle handle)
+        void addTexture1DHandle(Texture1DHandle handle)
 		{
-			auto r = shared_resource<Texture1DHandle>(handle);
-			textures1D.push_back(r);
-			return std::move(r);
+            textures1D.emplace_back(std::move(handle));
 		}
 		
-		shared_resource<Texture2DHandle> addTexture2DHandle(Texture2DHandle handle)
+        void addTexture2DHandle(Texture2DHandle handle)
 		{
-			auto r = shared_resource<Texture2DHandle>(handle);
-			textures2D.push_back(r);
-			return std::move(r);
+            textures2D.emplace_back(std::move(handle));
 		}
 		
-		shared_resource<Texture3DHandle> addTexture3DHandle(Texture3DHandle handle)
+        void addTexture3DHandle(Texture3DHandle handle)
 		{
-			auto r = shared_resource<Texture3DHandle>(handle);
-			textures3D.push_back(handle);
-			return std::move(r);
+            textures3D.emplace_back(std::move(handle));
 		}
 		
-		shared_resource<SamplerHandle> addSamplerHandle(SamplerHandle handle)
+        void addSamplerHandle(SamplerHandle handle)
 		{
-			auto r = shared_resource<SamplerHandle>(handle);
-			samplers.push_back(handle);
-			return std::move(r);
+            samplers.emplace_back(std::move(handle));
 		}
 
-		shared_resource<BufferHandle> addBufferHandle(BufferHandle handle)
+        void addBufferHandle(BufferHandle handle)
 		{
-			auto r = shared_resource<BufferHandle>(handle);
-			buffers.push_back(handle);
-			return std::move(r);
+            buffers.emplace_back(std::move(handle));
 		}
 
-		shared_resource<GraphicsPipelineHandle> addGraphicsPipelineHandle(GraphicsPipelineHandle handle)
+        void addGraphicsPipelineHandle(GraphicsPipelineHandle handle)
 		{
-			auto r = shared_resource<GraphicsPipelineHandle>(handle);
-			pipelines.push_back(handle);
-			return std::move(r);
+            pipelines.emplace_back(std::move(handle));
 		}
-
-		void referenceTexture1D(shared_resource<Texture1DHandle> handle) { textures1D.emplace_back(std::move(handle)); }
-		void referenceTexture2D(shared_resource<Texture2DHandle> handle) { textures2D.emplace_back(std::move(handle)); }
-		void referenceTexture3D(shared_resource<Texture3DHandle> handle) { textures3D.emplace_back(std::move(handle)); }
-		void referenceSampler(shared_resource<SamplerHandle> handle) { samplers.emplace_back(std::move(handle)); }
-		void referenceBuffer(shared_resource<BufferHandle> handle) { buffers.emplace_back(std::move(handle)); }
-		void referenceGraphicsPipeline(shared_resource<GraphicsPipelineHandle> handle) { pipelines.emplace_back(std::move(handle)); }
 
 		void clear()
 		{
@@ -80,12 +59,12 @@ namespace ag
 			pipelines.clear();
 		}
 
-		std::vector<shared_resource<Texture1DHandle>> textures1D;
-		std::vector<shared_resource<Texture2DHandle>> textures2D;
-		std::vector<shared_resource<Texture3DHandle>> textures3D;
-		std::vector<shared_resource<SamplerHandle>> samplers;
-		std::vector<shared_resource<BufferHandle>> buffers;
-		std::vector<shared_resource<GraphicsPipelineHandle>> pipelines;
+        std::vector<Texture1DHandle> textures1D;
+        std::vector<Texture2DHandle> textures2D;
+        std::vector<Texture3DHandle> textures3D;
+        std::vector<SamplerHandle> samplers;
+        std::vector<BufferHandle> buffers;
+        std::vector<GraphicsPipelineHandle> pipelines;
 	};
 }
 

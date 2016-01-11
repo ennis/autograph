@@ -7,7 +7,6 @@
 #include <gsl.h>
 
 #include <Surface.hpp>
-#include <ResourceScope.hpp>
 #include <Texture.hpp>
 #include <Buffer.hpp>
 #include <Pipeline.hpp>
@@ -32,32 +31,7 @@ namespace ag
 		return frame_id + 1;
 	}
 
-	template <
-		typename T,
-		typename F
-	>
-	void cleanupHandles(std::vector<shared_resource<T> >& resources, F deleter)
-	{
-		auto begin_remove = std::remove_if(resources.begin(), resources.end(), [](const shared_resource<T> r) {
-			return r.is_unique();
-		});
-
-		for (auto it = begin_remove; it != resources.end(); ++it)
-		{
-			deleter(*it);
-		}
-
-		resources.erase(begin_remove, resources.end());
-	}
-
-	template <typename D>
-	struct Frame
-	{
-		//typename D::FenceHandle fence;
-		ResourceScope<D> scope;
-	};
-
-	template <
+    template <
 		typename D
 	>
 	class Device
@@ -97,7 +71,7 @@ namespace ag
 		>
 		void clear(Surface<D, TDepth, TColors...>& surface, const glm::vec4& color)
 		{
-			backend.clearColor(surface.handle, color);
+            backend.clearColor(surface.handle.get(), color);
 		}
 
 		///////////////////// createTexture1D
@@ -107,7 +81,7 @@ namespace ag
 			Texture1DInfo info{ width };
 			return Texture1D<TPixel, D>{
 				info,
-				scope.addTexture1DHandle(backend.template createTexture1D<TPixel>(info))
+                backend.template createTexture1D<TPixel>(info)
 			};
 		}
 
@@ -118,7 +92,7 @@ namespace ag
 			Texture2DInfo info{ dimensions };
 			return Texture2D<TPixel, D>{
 				info,
-				scope.addTexture2DHandle(backend.template createTexture2D<TPixel>(info))
+                backend.template createTexture2D<TPixel>(info)
 			};
 		}
 
@@ -128,8 +102,7 @@ namespace ag
 		{
 			Texture3DInfo info{ dimensions };
 			return Texture3D<TPixel, D>{
-				info,
-				scope.addTexture3DHandle(backend.template createTexture3D<TPixel>(info))
+                backend.template createTexture3D<TPixel>(info)
 			};
 		}
 
@@ -138,7 +111,7 @@ namespace ag
 		{
 			return Sampler<D>{
 				info,
-				scope.addSamplerHandle(backend.createSampler(info))
+                backend.createSampler(info)
 			};
 		}
 
@@ -147,7 +120,7 @@ namespace ag
         Buffer<D, T> createBuffer(const T& data)
         {
             return Buffer<D, T> (
-                scope.addBufferHandle(backend.createBuffer(sizeof(T), &data, BufferUsage::Default))
+                backend.createBuffer(sizeof(T), &data, BufferUsage::Default)
             );
         }
 
@@ -157,7 +130,7 @@ namespace ag
 		{
 			return Buffer<D, T[]> (
 				data.size(),
-				scope.addBufferHandle(backend.createBuffer(data.size_bytes(), data.data(), BufferUsage::Default))
+                backend.createBuffer(data.size_bytes(), data.data(), BufferUsage::Default)
 			);
 		}
 
@@ -179,20 +152,12 @@ namespace ag
 		{
 			// sync on frame N-(max-in-flight)
 			frame_id++;
-			backend.signal(frameFence, frame_id);	// this should be a command queue API
+            backend.signal(frameFence.get(), frame_id);	// this should be a command queue API
 			if (frame_id >= options.maxFramesInFlight) {
-				backend.waitForFence(frameFence, getFrameExpirationDate(frame_id - options.maxFramesInFlight));
+                backend.waitForFence(frameFence.get(), getFrameExpirationDate(frame_id - options.maxFramesInFlight));
 				default_upload_buffer->reclaim(getFrameExpirationDate(frame_id - options.maxFramesInFlight));
 			}
 		}
-
-		///////////////////// references
-		ResourceScope<D>& getFrameScope()
-		{
-			return in_flight.back().scope;
-		}
-
-		//RingBuffer<D>& getUploadBuffer()
 
 		///////////////////// pipeline 
 		template <
@@ -200,17 +165,13 @@ namespace ag
 		>
 		GraphicsPipeline<D> createGraphicsPipeline(Arg&& arg)
 		{
-			return GraphicsPipeline<D> {
-				scope.addGraphicsPipelineHandle(backend.createGraphicsPipeline(std::forward<Arg>(arg)))
-			};
+            return GraphicsPipeline<D> { backend.createGraphicsPipeline(std::forward<Arg>(arg)) };
 		}
 
 
 		//private:
 		DeviceOptions options;
 		D& backend;
-		ResourceScope<D> scope;
-		std::vector<Frame<D> > in_flight;
 
 		typename D::FenceHandle frameFence;
 		unsigned frame_id;

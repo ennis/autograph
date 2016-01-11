@@ -2,7 +2,6 @@
 #define TEXTURE_HPP
 
 #include <glm/glm.hpp>
-#include <SharedResource.hpp>
 
 namespace ag
 {
@@ -34,8 +33,8 @@ namespace ag
 	>
 	struct Sampler
 	{
-		SamplerInfo info;
-		shared_resource<typename D::SamplerHandle> handle;
+        SamplerInfo info;
+        typename D::SamplerHandle handle;
 	};
 
 	////////////////////////// Texture1D
@@ -51,7 +50,7 @@ namespace ag
 	struct Texture1D 
 	{
 		Texture1DInfo info;
-		shared_resource<typename D::Texture1DHandle> handle;
+        typename D::Texture1DHandle handle;
 	};
 
 	////////////////////////// Texture2D
@@ -67,7 +66,7 @@ namespace ag
 	struct Texture2D
 	{
 		Texture2DInfo info;
-		shared_resource<typename D::Texture2DHandle> handle;
+        typename D::Texture2DHandle handle;
 	};
 
 	////////////////////////// Texture3D
@@ -83,7 +82,7 @@ namespace ag
 	struct Texture3D 
 	{
         Texture3DInfo info;
-		shared_resource<typename D::Texture3DHandle> handle;
+        typename D::Texture3DHandle handle;
 	};
 }
 

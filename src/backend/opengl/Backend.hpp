@@ -17,7 +17,6 @@
 #include <Texture.hpp>
 #include <Device.hpp>
 #include <Draw.hpp>
-#include <SharedResource.hpp>
 
 #include "OpenGLPixelType.hpp"
 #include "State.hpp"
@@ -122,22 +121,72 @@ namespace ag
 				BufferUsage usage;
 			};
 
+            ///////////////////// Deleters
+            struct SamplerDeleter
+            {
+                using pointer = GLuint;
+                void operator()(pointer sampler_obj) {
+                    gl::DeleteSamplers(1, &sampler_obj);
+                }
+            };
+
+            struct TextureDeleter
+            {
+                using pointer = GLuint;
+                void operator()(pointer tex_obj) {
+                    gl::DeleteTextures(1, &tex_obj);
+                }
+            };
+
+            struct BufferDeleter
+            {
+                using pointer = GLbuffer*;
+                void operator()(pointer buffer) {
+                    gl::DeleteBuffers(1, &buffer->buf_obj);
+                    delete buffer;
+                }
+            };
+
+            struct GraphicsPipelineDeleter
+            {
+                using pointer = GraphicsPipeline*;
+                void operator()(pointer pp) {
+                    if (pp->vao)
+                        gl::DeleteVertexArrays(1, &pp->vao);
+                    if (pp->program)
+                        gl::DeleteProgram(pp->program);
+                    delete pp;
+
+                }
+            };
+
+            struct FenceDeleter
+            {
+                using pointer = GLFence*;
+                void operator()(pointer fence)
+                {
+                    for (auto s : fence->syncPoints)
+                        gl::DeleteSync(s.sync);
+                    delete fence;
+                }
+            };
+
 
 			///////////////////// associated types
 			// buffer handles
-			using BufferHandle = GLbuffer*;
+            using BufferHandle = std::unique_ptr<void,BufferDeleter>;
 			// texture handles
-			using Texture1DHandle = GLuint;
-			using Texture2DHandle = GLuint;
-			using Texture3DHandle = GLuint;
+            using Texture1DHandle = std::unique_ptr<void,TextureDeleter>;
+            using Texture2DHandle = std::unique_ptr<void,TextureDeleter>;
+            using Texture3DHandle = std::unique_ptr<void,TextureDeleter>;
 			// sampler handles
-			using SamplerHandle = GLuint;
+            using SamplerHandle = std::unique_ptr<void,SamplerDeleter>;
 			// surface handles
-			using SurfaceHandle = GLuint;
+            using SurfaceHandle = std::unique_ptr<void,TextureDeleter>;
 			// graphics pipeline
-			using GraphicsPipelineHandle = GraphicsPipeline*;
+            using GraphicsPipelineHandle = std::unique_ptr<void,GraphicsPipelineDeleter>;
 			// fence handle
-			using FenceHandle = GLFence*;
+            using FenceHandle = std::unique_ptr<void,FenceDeleter>;
 
 			// constructor
 			OpenGLBackend();
@@ -165,48 +214,48 @@ namespace ag
 			Texture3DHandle createTexture3D(const Texture3DInfo& info);
 
 			// used internally
-			void destroyTexture1D(Texture1DHandle detail, const Texture1DInfo& info);
+            /*void destroyTexture1D(Texture1DHandle detail, const Texture1DInfo& info);
 			void destroyTexture2D(Texture2DHandle detail, const Texture2DInfo& info);
-			void destroyTexture3D(Texture3DHandle detail, const Texture3DInfo& info);
+            void destroyTexture3D(Texture3DHandle detail, const Texture3DInfo& info);*/
 
 			///////////////////// Resources: Buffers
 			BufferHandle createBuffer(std::size_t size, const void* data, BufferUsage usage);
 			// used internally
-			void destroyBuffer(BufferHandle handle);
+            //void destroyBuffer(BufferHandle handle);
 			// Map buffer data into the CPU virtual address space
-			void* mapBuffer(BufferHandle handle, size_t offset, size_t size);
+            void* mapBuffer(BufferHandle::pointer handle, size_t offset, size_t size);
 
 			///////////////////// Resources: Samplers
 			SamplerHandle createSampler(const SamplerInfo& info);
 			// used internally
-			void destroySampler(SamplerHandle detail);
+            //void destroySampler(SamplerHandle::pointer detail);
 
 			///////////////////// Resources: Pipelines
 			GraphicsPipelineHandle createGraphicsPipeline(const GraphicsPipelineInfo& info);
 			// used internally
-			void destroyGraphicsPipeline(GraphicsPipelineHandle handle);
+            //void destroyGraphicsPipeline(GraphicsPipelineHandle handle);
 
 			///////////////////// Resources: fences
 			FenceHandle createFence(uint64_t initialValue);
-			void signal(FenceHandle fence, uint64_t value);	// insert into GPU command stream
-			void signalCPU(FenceHandle fence, uint64_t value);	// CPU-side signal
-			uint64_t getFenceValue(FenceHandle handle);
-			void destroyFence(FenceHandle handle);
-			void waitForFence(FenceHandle handle, uint64_t value);
+            void signal(FenceHandle::pointer fence, uint64_t value);	// insert into GPU command stream
+            void signalCPU(FenceHandle::pointer fence, uint64_t value);	// CPU-side signal
+            uint64_t getFenceValue(FenceHandle::pointer handle);
+            //void destroyFence(FenceHandle handle);
+            void waitForFence(FenceHandle::pointer handle, uint64_t value);
 
 			///////////////////// Bind
-			void bindTexture1D(unsigned slot, Texture1DHandle handle);
-			void bindTexture2D(unsigned slot, Texture2DHandle handle);
-			void bindTexture3D(unsigned slot, Texture3DHandle handle);
-			void bindSampler(unsigned slot, SamplerHandle handle);
-			void bindVertexBuffer(unsigned slot, BufferHandle handle, size_t offset, size_t size, unsigned stride);
-			void bindUniformBuffer(unsigned slot, BufferHandle handle, size_t offset, size_t size);
-			void bindSurface(SurfaceHandle handle);
-			void bindGraphicsPipeline(GraphicsPipelineHandle handle);
+            void bindTexture1D(unsigned slot, Texture1DHandle::pointer handle);
+            void bindTexture2D(unsigned slot, Texture2DHandle::pointer handle);
+            void bindTexture3D(unsigned slot, Texture3DHandle::pointer handle);
+            void bindSampler(unsigned slot, SamplerHandle::pointer handle);
+            void bindVertexBuffer(unsigned slot, BufferHandle::pointer handle, size_t offset, size_t size, unsigned stride);
+            void bindUniformBuffer(unsigned slot, BufferHandle::pointer handle, size_t offset, size_t size);
+            void bindSurface(SurfaceHandle::pointer handle);
+            void bindGraphicsPipeline(GraphicsPipelineHandle::pointer handle);
 
 			///////////////////// Clear command
-			void clearColor(SurfaceHandle framebuffer_obj, const glm::vec4& color);
-			void clearDepth(SurfaceHandle framebuffer_obj, float depth);
+            void clearColor(SurfaceHandle::pointer framebuffer_obj, const glm::vec4& color);
+            void clearDepth(SurfaceHandle::pointer framebuffer_obj, float depth);
 
 			///////////////////// Draw calls
 			void draw(PrimitiveType primitiveType, unsigned first, unsigned count);
@@ -218,9 +267,9 @@ namespace ag
 			void bindFramebufferObject(GLuint framebuffer_obj);
             void bindState();
 
-			GLuint createTexture1D(unsigned dimensions, GLenum internalFormat);
-			GLuint createTexture2D(glm::uvec2 dimensions, GLenum internalFormat);
-			GLuint createTexture3D(glm::uvec3 dimensions, GLenum internalFormat);
+            Texture1DHandle createTexture1D(unsigned dimensions, GLenum internalFormat);
+            Texture2DHandle createTexture2D(glm::uvec2 dimensions, GLenum internalFormat);
+            Texture3DHandle createTexture3D(glm::uvec3 dimensions, GLenum internalFormat);
 			void destroyTexture(GLuint tex_obj);
 
 			GLuint createProgramFromShaderPipeline(const GraphicsPipelineInfo& info);

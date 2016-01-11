@@ -200,9 +200,6 @@ namespace ag
             // allocate a temporary uniform buffer from the default upload buffer
 			auto slice = device.pushDataToUploadBuffer(value, D::kUniformBufferOffsetAlignment);
 			bindOne(device, context, slice);
-            //auto tmp_buf = device.createBuffer(value);
-            //device.backend.bindUniformBuffer(context.uniformBufferBindingIndex++, tmp_buf.handle.get(), 0, tmp_buf.byteSize);
-            //device.getFrameScope().referenceBuffer(tmp_buf.handle);
         }
 
 		template <
@@ -260,7 +257,7 @@ namespace ag
 	{
 		BindContext context;
 		bindImpl(device, context, resources...);
-        device.backend.bindSurface(surface.handle);
+        device.backend.bindSurface(surface.handle.get());
         device.backend.bindGraphicsPipeline(graphicsPipeline.handle.get());
         drawable.draw(device, context);
 	}

@@ -1,8 +1,6 @@
 #ifndef PIPELINE_HPP
 #define PIPELINE_HPP
 
-#include <SharedResource.hpp>
-
 namespace ag
 {
 	template <
@@ -15,7 +13,7 @@ namespace ag
 			backend.bindGraphicsPipeline(handle.get());
 		}
 
-		shared_resource<typename D::GraphicsPipelineHandle> handle;
+        typename D::GraphicsPipelineHandle handle;
 	};
 
 	template <
@@ -28,7 +26,7 @@ namespace ag
 			backend.bindComputePipeline(handle.get());
 		}
 
-		shared_resource<typename D::ComputePipelineHandle> handle;
+        typename D::ComputePipelineHandle handle;
 	};
 }
 
