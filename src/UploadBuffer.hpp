@@ -126,7 +126,7 @@ namespace ag
 
 		void reclaim(FenceValue date)
 		{
-			while (fencedRegions.front().expirationDate <= date) {
+            while (!fencedRegions.empty() && fencedRegions.front().expirationDate <= date) {
 				auto& r = fencedRegions.front();
 				begin_ptr = r.end_ptr;	// there may be some alignment space that we would want to reclaim
 				used -= r.end_ptr - r.begin_ptr;

@@ -34,7 +34,9 @@ namespace ag
 				}
 
 				glfwMakeContextCurrent(window);
-				if (!gl::sys::LoadFunctions()) {
+                glfwSwapInterval(1);
+
+                if (!gl::sys::LoadFunctions()) {
 					glfwTerminate();
 					failWith("Failed to load OpenGL functions");
 				}

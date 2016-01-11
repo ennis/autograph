@@ -72,15 +72,14 @@ int main()
 	device.run([&]() {
 		auto out = device.getOutputSurface();
 		device.clear(out, vec4(1.0, 0.0, 1.0, 1.0));
-		device.clear(out, vec4(0.0, 1.0, 1.0, 1.0));
 		
-		ag::draw(
+        ag::draw(
 			device,
 			out,
             pp.pipeline,
 			ag::DrawArrays(ag::PrimitiveType::Triangles, vbo),
             glm::mat4(0.5f)
-			);
+            );
 	});
 
 	return 0;
