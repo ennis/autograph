@@ -147,6 +147,17 @@ namespace ag
 			return std::move(out_slice);
 		}
 
+		template <typename T>
+		RawBufferSlice<D> pushDataToUploadBuffer(gsl::span<T> span, size_t alignment = alignof(T))
+		{
+			RawBufferSlice<D> out_slice;
+			if (!default_upload_buffer->uploadRaw(span.data(), span.size_bytes(), alignment, getFrameExpirationDate(frame_id), out_slice)) {
+				// upload failed, meh, I should sync here
+				failWith("Upload buffer is full");
+			}
+			return std::move(out_slice);
+		}
+
 		///////////////////// end-of-frame cleanup
 		void endFrame()
 		{

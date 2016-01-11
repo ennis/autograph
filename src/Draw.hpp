@@ -49,14 +49,35 @@ namespace ag
 	struct DrawArrays_
 	{
 		PrimitiveType primitiveType;
-		const RawBuffer<D>& vertex_buffer;
+		typename D::BufferHandle::pointer buffer;
+		size_t offset;
+		size_t size;
+		size_t stride;
 		size_t count;
-		unsigned stride;
 
 		void draw(Device<D>& device, BindContext& context)
 		{
-			device.backend.bindVertexBuffer(context.vertexBufferBindingIndex++, vertex_buffer.handle.get(), 0, vertex_buffer.byteSize, stride);
+			device.backend.bindVertexBuffer(context.vertexBufferBindingIndex++, buffer, offset, size, stride);
 			device.backend.draw(primitiveType, 0, count);
+		}
+	};
+
+	// Immediate version (put vertex data in the default upload buffer)
+	template <
+		typename TVertex
+	>
+	struct DrawArraysImmediate_
+	{
+		PrimitiveType primitiveType;
+		gsl::span<TVertex> vertices;
+
+		template <typename D>
+		void draw(Device<D>& device, BindContext& context)
+		{
+			// upload to default upload buffer
+			auto slice = device.pushDataToUploadBuffer(vertices);
+			device.backend.bindVertexBuffer(context.vertexBufferBindingIndex++, slice.handle, slice.offset, slice.byteSize, sizeof(TVertex));
+			device.backend.draw(primitiveType, 0, vertices.size());
 		}
 	};
 
@@ -66,7 +87,15 @@ namespace ag
 	>
 	DrawArrays_<D> DrawArrays(PrimitiveType primitiveType, const Buffer<D, TVertex[]>& vertex_buffer)
 	{
-		return DrawArrays_<D>{primitiveType, vertex_buffer, vertex_buffer.size(), sizeof(TVertex)};
+		return DrawArrays_<D>{primitiveType, vertex_buffer.handle.get(), 0, vertex_buffer.byteSize(), sizeof(TVertex), vertex_buffer.size()};
+	}
+	
+	template <
+		typename TVertex
+	>
+	DrawArraysImmediate_<TVertex> DrawArrays(PrimitiveType primitiveType, gsl::span<TVertex> vertices)
+	{
+		return DrawArraysImmediate_<TVertex>{primitiveType, vertices};
 	}
 
 
