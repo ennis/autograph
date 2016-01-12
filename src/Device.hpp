@@ -177,7 +177,15 @@ namespace ag
 		GraphicsPipeline<D> createGraphicsPipeline(Arg&& arg)
 		{
             return GraphicsPipeline<D> { backend.createGraphicsPipeline(std::forward<Arg>(arg)) };
-		}
+        }
+
+        template <
+            typename Arg
+        >
+        ComputePipeline<D> createComputePipeline(Arg&& arg)
+        {
+            return ComputePipeline<D> { backend.createComputePipeline(std::forward<Arg>(arg)) };
+        }
 
 
 		//private:

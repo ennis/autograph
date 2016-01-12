@@ -103,6 +103,11 @@ namespace ag
 				GLBlendState blendState;
 			};
 
+            struct ComputePipeline
+            {
+                GLuint program = 0;
+            };
+
 			struct GLFence
 			{
 				struct SyncPoint
@@ -160,6 +165,16 @@ namespace ag
                 }
             };
 
+            struct ComputePipelineDeleter
+            {
+                using pointer = ComputePipeline*;
+                void operator()(pointer pp) {
+                    if (pp->program)
+                        gl::DeleteProgram(pp->program);
+                    delete pp;
+                }
+            };
+
             struct FenceDeleter
             {
                 using pointer = GLFence*;
@@ -185,6 +200,7 @@ namespace ag
             using SurfaceHandle = std::unique_ptr<void,TextureDeleter>;
 			// graphics pipeline
             using GraphicsPipelineHandle = std::unique_ptr<void,GraphicsPipelineDeleter>;
+            using ComputePipelineHandle = std::unique_ptr<void,ComputePipelineDeleter>;
 			// fence handle
             using FenceHandle = std::unique_ptr<void,FenceDeleter>;
 
@@ -232,6 +248,7 @@ namespace ag
 
 			///////////////////// Resources: Pipelines
 			GraphicsPipelineHandle createGraphicsPipeline(const GraphicsPipelineInfo& info);
+            ComputePipelineHandle createComputePipeline(const ComputePipelineInfo& info);
 			// used internally
             //void destroyGraphicsPipeline(GraphicsPipelineHandle handle);
 
@@ -273,6 +290,7 @@ namespace ag
 			void destroyTexture(GLuint tex_obj);
 
 			GLuint createProgramFromShaderPipeline(const GraphicsPipelineInfo& info);
+            GLuint createComputeProgram(const ComputePipelineInfo& info);
 			GLuint createVertexArrayObject(gsl::span<VertexAttribute> attribs);
 
 			struct BindState

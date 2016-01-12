@@ -158,6 +158,7 @@ namespace ag
 		{
 			bind_state.images.fill(0);
 			bind_state.textures.fill(0);
+            bind_state.samplers.fill(0);
 			bind_state.shaderStorageBuffers.fill(0);
 			bind_state.uniformBuffers.fill(0);
 			bind_state.uniformBufferSizes.fill(0);
@@ -307,7 +308,7 @@ namespace ag
 			return shader_obj;
 		}
 
-		OpenGLBackend::GraphicsPipelineHandle OpenGLBackend::createGraphicsPipeline(const GraphicsPipelineInfo & info)
+        OpenGLBackend::GraphicsPipelineHandle OpenGLBackend::createGraphicsPipeline(const GraphicsPipelineInfo& info)
 		{
 			auto pp = new GraphicsPipeline;
 			pp->program = createProgramFromShaderPipeline(info);
@@ -317,6 +318,13 @@ namespace ag
 			pp->rasterizerState = info.rasterizerState;
             return GraphicsPipelineHandle(pp, GraphicsPipelineDeleter());
 		}
+
+        OpenGLBackend::ComputePipelineHandle OpenGLBackend::createComputePipeline(const ComputePipelineInfo& info)
+        {
+            auto pp = new ComputePipeline;
+            pp->program = createComputeProgram(info);
+            return ComputePipelineHandle(pp, ComputePipelineDeleter());
+        }
 
 		OpenGLBackend::FenceHandle OpenGLBackend::createFence(uint64_t initialValue)
 		{
@@ -370,8 +378,30 @@ namespace ag
 			}
 		}
 
+        GLuint OpenGLBackend::createComputeProgram(const ComputePipelineInfo& info)
+        {
+            GLuint cs_obj = 0;
+            GLuint program_obj = gl::CreateProgram();
+            cs_obj = compileAndAttachShader(program_obj, gl::COMPUTE_SHADER, info.CSSource);
+            if (!cs_obj) {
+                gl::DeleteProgram(program_obj);
+                return 0;
+            }
+            std::ostringstream linkInfoLog;
+            bool link_error = linkProgram(program_obj, linkInfoLog);
+            gl::DetachShader(program_obj, cs_obj);
+            gl::DeleteShader(cs_obj);
+            if (link_error) {
+                fmt::print("===============================================================\n");
+                fmt::print("Shader link error\n");
+                fmt::print("Compilation log follows:\n\n{}\n\n", linkInfoLog.str());
+                gl::DeleteProgram(program_obj);
+                program_obj = 0;
+            }
+            return program_obj;
+        }
 
-		GLuint OpenGLBackend::createProgramFromShaderPipeline(const GraphicsPipelineInfo & info)
+        GLuint OpenGLBackend::createProgramFromShaderPipeline(const GraphicsPipelineInfo& info)
 		{
 			// compile programs
 			GLuint vs_obj = 0;

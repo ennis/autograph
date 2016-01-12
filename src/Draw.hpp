@@ -286,10 +286,10 @@ namespace ag
 	>
 	void draw(
 		Device<D>& device,
-		TSurface &&surface,
+        TSurface&& surface,
         GraphicsPipeline<D>& graphicsPipeline,
-		Drawable &&drawable,
-		TShaderResources &&... resources)
+        Drawable&& drawable,
+        TShaderResources&&... resources)
 	{
 		BindContext context;
 		bindImpl(device, context, resources...);
@@ -297,6 +297,18 @@ namespace ag
         device.backend.bindGraphicsPipeline(graphicsPipeline.handle.get());
         drawable.draw(device, context);
 	}
+
+    template <
+        typename D,
+        typename... TShaderResources
+    >
+    void compute(
+        Device<D>& device,
+        ComputePipeline<D>& computePipeline,
+        TShaderResources&&... resources)
+    {
+
+    }
 	
 }
 

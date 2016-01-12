@@ -83,11 +83,16 @@ int main()
 		device.clear(out, vec4(1.0, 0.0, 1.0, 1.0));
 
         ag::draw(
+            // device
 			device,
+            // render target
 			out,
+            // pipeline
             pp.pipeline,
+            // drawable
 			ag::DrawArrays(ag::PrimitiveType::Triangles, gsl::span<glm::vec3>(vbo_data)),
-            glm::mat4(0.5f),
+            // resources
+            glm::mat4(2.0f),
             ag::TextureUnit(0, tex, sampler)
             );
 	});
