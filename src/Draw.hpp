@@ -307,7 +307,9 @@ namespace ag
         ComputePipeline<D>& computePipeline,
         TShaderResources&&... resources)
     {
-
+        BindContext context;
+        bindImpl(device, context, resources...);
+        device.backend.bindComputePipeline(computePipeline.handle.get());
     }
 	
 }

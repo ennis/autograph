@@ -10,21 +10,9 @@
 #include <Draw.hpp>
 #include <Pipeline.hpp>
 
-using GL = ag::opengl::OpenGLBackend;
+#include <shaderpp/shaderpp.hpp>
 
-std::string loadShaderSource(const char* path)
-{
-	std::ifstream fileIn(path, std::ios::in);
-	if (!fileIn.is_open()) {
-		fmt::print("Could not open shader file {}", path);
-		throw std::runtime_error("Could not open shader file");
-	}
-	std::string str;
-	str.assign(
-		(std::istreambuf_iterator<char>(fileIn)),
-		std::istreambuf_iterator<char>());
-    return std::move(str);
-}
+using GL = ag::opengl::OpenGLBackend;
 
 struct Pipelines
 {
@@ -36,21 +24,37 @@ struct Pipelines
 	void reload(ag::Device<GL>& device)
 	{
 		using namespace ag::opengl;
+		using namespace shaderpp;
 
 		VertexAttribute vertexAttribs[] = {
 			VertexAttribute { 0, gl::FLOAT, 3, 3 * sizeof(float), false }
 		};
 
-		ag::opengl::GraphicsPipelineInfo info;
-		auto VSSource = loadShaderSource("../examples/shaders/default.vert");
-		auto PSSource = loadShaderSource("../examples/shaders/default.frag");
-		info.VSSource = VSSource.c_str();
-		info.PSSource = PSSource.c_str();
-        info.vertexAttribs = gsl::as_span(vertexAttribs);
-		pipeline = device.createGraphicsPipeline(info);
+        const char* defines[1] = {""};
+        const char* includePaths[1] = {""};
+
+		{
+			ShaderSource src_default("../examples/shaders/default.glsl");
+			ag::opengl::GraphicsPipelineInfo info;
+			auto VSSource = src_default.preprocess(PipelineStage::Vertex, defines, includePaths);
+			auto PSSource = src_default.preprocess(PipelineStage::Pixel, defines, includePaths);
+			info.VSSource = VSSource.c_str();
+			info.PSSource = PSSource.c_str();
+	        info.vertexAttribs = gsl::as_span(vertexAttribs);
+			pp_default = device.createGraphicsPipeline(info);
+		}
+
+		{
+			ShaderSource src_compute("../examples/shaders/compute.glsl");
+			ag::opengl::ComputePipelineInfo info;
+			auto CSSource = src_compute.preprocess(PipelineStage::Compute, defines, includePaths);
+			info.CSSource = CSSource.c_str();
+			pp_compute = device.createComputePipeline(info);
+		}
 	}
 
-	ag::GraphicsPipeline<GL> pipeline;
+	ag::GraphicsPipeline<GL> pp_default;
+	ag::ComputePipeline<GL> pp_compute;
 };
 
 int main()
@@ -88,7 +92,7 @@ int main()
             // render target
 			out,
             // pipeline
-            pp.pipeline,
+            pp.pp_default,
             // drawable
 			ag::DrawArrays(ag::PrimitiveType::Triangles, gsl::span<glm::vec3>(vbo_data)),
             // resources
