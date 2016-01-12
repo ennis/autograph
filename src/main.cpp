@@ -23,7 +23,7 @@ std::string loadShaderSource(const char* path)
 	str.assign(
 		(std::istreambuf_iterator<char>(fileIn)),
 		std::istreambuf_iterator<char>());
-	return str;
+    return std::move(str);
 }
 
 struct Pipelines
@@ -62,12 +62,21 @@ int main()
 
 	Pipelines pp(device);
 
-	auto tex = device.createTexture2D<ag::RGBA8>({ 1280, 1024 });
+    auto tex = device.createTexture2D<ag::RGBA8>({ 512, 512 });
 	glm::vec3 vbo_data[] = {
 		{0.0f, 0.0f, 0.0f},
 		{0.0f, 1.0f, 0.0f},
 		{1.0f, 0.0f, 0.0f} };
 	auto vbo = device.createBuffer(gsl::span<glm::vec3>(vbo_data));
+
+    ag::SamplerInfo linearSamplerInfo;
+    linearSamplerInfo.addrU = ag::TextureAddressMode::Repeat;
+    linearSamplerInfo.addrV = ag::TextureAddressMode::Repeat;
+    linearSamplerInfo.addrW = ag::TextureAddressMode::Repeat;
+    linearSamplerInfo.minFilter = ag::TextureFilter::Nearest;
+    linearSamplerInfo.magFilter = ag::TextureFilter::Nearest;
+    auto sampler = device.createSampler(linearSamplerInfo);
+
 
 	device.run([&]() {
 		auto out = device.getOutputSurface();
@@ -78,7 +87,8 @@ int main()
 			out,
             pp.pipeline,
 			ag::DrawArrays(ag::PrimitiveType::Triangles, gsl::span<glm::vec3>(vbo_data)),
-            glm::mat4(0.5f)
+            glm::mat4(0.5f),
+            ag::TextureUnit(0, tex, sampler)
             );
 	});
 

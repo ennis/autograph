@@ -11,6 +11,9 @@ layout (std140, binding=0) uniform ObjectData {
 
 layout(location=0) in vec3 position;
 
+out vec2 texcoords;
+
 void main() {
 	gl_Position = vec4((modelMatrix*vec4(position, 1.0f)).xyz, 1.0f);
+        texcoords = position.xy;
 }

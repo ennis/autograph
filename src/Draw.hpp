@@ -101,12 +101,12 @@ namespace ag
 
 	////////////////////////// Binder: texture unit
 	template <
-		typename TextureTy,
-		typename SamplerTy
+        typename TextureTy,
+        typename D
 	>
     struct TextureUnit_
 	{
-        TextureUnit_(unsigned unit_, const TextureTy& tex_, const SamplerTy& sampler_) :
+        TextureUnit_(unsigned unit_, const TextureTy& tex_, const Sampler<D>& sampler_) :
 			unit(unit_),
 			tex(tex_),
 			sampler(sampler_)
@@ -114,16 +114,25 @@ namespace ag
 
 		unsigned unit;
 		const TextureTy& tex;
-		const SamplerTy& sampler;
+        const Sampler<D>& sampler;
 	};
 
-    template <
-        typename TextureTy,
-        typename SamplerTy
-    >
-    TextureUnit_<TextureTy, SamplerTy> TextureUnit(unsigned unit_, const TextureTy& tex_, const SamplerTy& sampler_)
+    template <typename T, typename D>
+    TextureUnit_<Texture1D<T,D>, D> TextureUnit(unsigned unit_, const Texture1D<T,D>& tex_, const Sampler<D>& sampler_)
     {
-        return TextureUnit_<TextureTy, SamplerTy>(unit_, tex_, sampler_);
+        return TextureUnit_<Texture1D<T,D>, D>(unit_, tex_, sampler_);
+    }
+
+    template <typename T, typename D>
+    TextureUnit_<Texture2D<T,D>, D> TextureUnit(unsigned unit_, const Texture2D<T,D>& tex_, const Sampler<D>& sampler_)
+    {
+        return TextureUnit_<Texture2D<T,D>, D>(unit_, tex_, sampler_);
+    }
+
+    template <typename T, typename D>
+    TextureUnit_<Texture3D<T,D>, D> TextureUnit(unsigned unit_, const Texture3D<T,D>& tex_, const Sampler<D>& sampler_)
+    {
+        return TextureUnit_<Texture3D<T,D>, D>(unit_, tex_, sampler_);
     }
 
     ////////////////////////// Binder: uniform slot
@@ -149,109 +158,107 @@ namespace ag
         return Uniform_<ResTy>(slot_, buf_);
     }
 
-	namespace 
-	{
-		////////////////////////// Bind<Texture1D>
-		template <
-			typename D,
-			typename TPixel
-		>
-		void bindOne(Device<D>& device, BindContext& context, const Texture1D<TPixel, D>& tex)
-		{
-			device.backend.bindTexture1D(context.textureBindingIndex++, tex.handle.get());
-			device.getFrameScope().referenceTexture1D(tex.handle);
-		}
+    ////////////////////////// bindOne<T> template declaration
+    template <
+         typename D,
+         typename T
+    >
+    void bindOne(Device<D>& device, BindContext& context, const T& value);
 
-		////////////////////////// Bind<Texture2D>
-		template <
-			typename D,
-			typename TPixel
-		>
-		void bindOne(Device<D>& device, BindContext& context, const Texture2D<TPixel, D>& tex)
-		{
-			device.backend.bindTexture2D(context.textureBindingIndex++, tex.handle.get());
-			device.getFrameScope().referenceTexture2D(tex.handle);
-		}
+    ////////////////////////// Bind<Texture1D>
+    template <
+        typename D,
+        typename TPixel
+    >
+    void bindOne(Device<D>& device, BindContext& context, const Texture1D<TPixel, D>& tex)
+    {
+        device.backend.bindTexture1D(context.textureBindingIndex++, tex.handle.get());
+    }
 
-		////////////////////////// Bind<Texture3D>
-		template <
-			typename D,
-			typename TPixel
-		>
-		void bindOne(Device<D>& device, BindContext& context, const Texture3D<TPixel, D>& tex)
-		{
-			device.backend.bindTexture3D(context.textureBindingIndex++, tex.handle.get());
-			device.getFrameScope().referenceTexture3D(tex.handle);
-		}
+    ////////////////////////// Bind<Texture2D>
+    template <
+        typename D,
+        typename TPixel
+    >
+    void bindOne(Device<D>& device, BindContext& context, const Texture2D<TPixel, D>& tex)
+    {
+        device.backend.bindTexture2D(context.textureBindingIndex++, tex.handle.get());
+    }
+
+    ////////////////////////// Bind<Texture3D>
+    template <
+        typename D,
+        typename TPixel
+    >
+    void bindOne(Device<D>& device, BindContext& context, const Texture3D<TPixel, D>& tex)
+    {
+        device.backend.bindTexture3D(context.textureBindingIndex++, tex.handle.get());
+    }
 
 
-        ////////////////////////// Bind<Sampler>
-        template <
-            typename D,
-            typename TPixel
-        >
-        void bindOne(Device<D>& device, BindContext& context, const Sampler<D>& sampler)
-        {
-            device.backend.bindSampler(context.samplerBindingIndex++, sampler.handle.get());
-            device.getFrameScope().referenceSampler(sampler.handle);
-        }
+    ////////////////////////// Bind<Sampler>
+    template <
+        typename D
+    >
+    void bindOne(Device<D>& device, BindContext& context, const Sampler<D>& sampler)
+    {
+        device.backend.bindSampler(context.samplerBindingIndex++, sampler.handle.get());
+    }
 
-		////////////////////////// Bind<TextureUnit<>>
-		template <
-			typename D,
-			typename TextureTy,
-			typename SamplerTy
-		>
-        void bindOne(Device<D>& device, BindContext& context, const TextureUnit_<TextureTy, SamplerTy>& tex_unit)
-		{
-			context.textureBindingIndex = tex_unit.unit;
-			context.samplerBindingIndex = tex_unit.unit;
-            bindOne(device, context, tex_unit.sampler);
-			bindOne(device, context, tex_unit.tex);
-		}
+    ////////////////////////// Bind<TextureUnit<>>
+    template <
+        typename D,
+        typename TextureTy
+    >
+    void bindOne(Device<D>& device, BindContext& context, const TextureUnit_<TextureTy, D>& tex_unit)
+    {
+        context.textureBindingIndex = tex_unit.unit;
+        context.samplerBindingIndex = tex_unit.unit;
+        bindOne(device, context, tex_unit.sampler);
+        bindOne(device, context, tex_unit.tex);
+    }
 
-		////////////////////////// Bind<RawBufferSlice>
-		template <
-			typename D
-		>
-		void bindOne(Device<D>& device, BindContext& context, const RawBufferSlice<D>& buf_slice)
-		{
-			device.backend.bindUniformBuffer(context.uniformBufferBindingIndex++, buf_slice.handle, buf_slice.offset, buf_slice.byteSize);
-		}
+    ////////////////////////// Bind<RawBufferSlice>
+    template <
+        typename D
+    >
+    void bindOne(Device<D>& device, BindContext& context, const RawBufferSlice<D>& buf_slice)
+    {
+        device.backend.bindUniformBuffer(context.uniformBufferBindingIndex++, buf_slice.handle, buf_slice.offset, buf_slice.byteSize);
+    }
 
-        ////////////////////////// Bind<T>
-        template <
-             typename D,
-             typename T
-        >
-        void bindOne(Device<D>& device, BindContext& context, const T& value)
-        {
-            // allocate a temporary uniform buffer from the default upload buffer
-			auto slice = device.pushDataToUploadBuffer(value, D::kUniformBufferOffsetAlignment);
-			bindOne(device, context, slice);
-        }
+    ////////////////////////// Bind<T>
+    template <
+         typename D,
+         typename T
+    >
+    void bindOne(Device<D>& device, BindContext& context, const T& value)
+    {
+        // allocate a temporary uniform buffer from the default upload buffer
+        auto slice = device.pushDataToUploadBuffer(value, D::kUniformBufferOffsetAlignment);
+        bindOne(device, context, slice);
+    }
 
-		template <
-			typename D,
-			typename T
-		>
-		void bindImpl(Device<D>& device, BindContext& context, T&& resource)
-		{
-			bindOne(device, context, std::forward<T>(resource));
-		}
+    ////////////////////////// bindImpl<T>: recursive binding of draw resources
+    template <
+        typename D,
+        typename T
+    >
+    void bindImpl(Device<D>& device, BindContext& context, T&& resource)
+    {
+        bindOne(device, context, std::forward<T>(resource));
+    }
 
-		template <
-			typename D,
-			typename T,
-			typename ... Rest
-		> 
-		void bindImpl(Device<D>& device, BindContext& context, T&& resource, Rest&&... rest)
-		{
-			bindOne(device, context, std::forward<T>(resource));
-			bindImpl(device, context, std::forward<Rest>(rest)...);
-		}
-
-	}
+    template <
+        typename D,
+        typename T,
+        typename ... Rest
+    >
+    void bindImpl(Device<D>& device, BindContext& context, T&& resource, Rest&&... rest)
+    {
+        bindOne(device, context, std::forward<T>(resource));
+        bindImpl(device, context, std::forward<Rest>(rest)...);
+    }
 	
 	template <
 		typename D,
