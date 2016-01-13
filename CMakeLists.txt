@@ -26,33 +26,24 @@ source_group("Header files\\shaderpp" FILES ${SHADERPP_HEADERS})
 
 file(GLOB AG_SOURCES_CORE src/*.cpp)
 file(GLOB AG_SOURCES_OPENGL src/backend/opengl/*.cpp)
-file(GLOB AG_SOURCES_OPENGL_FX src/backend/opengl/fx/*.cpp)
 source_group("Source files\\Core" FILES ${AG_SOURCES_CORE})
 source_group("Source files\\OpenGL" FILES  ${AG_SOURCES_OPENGL})
-source_group("Source files\\OpenGL\\FX" FILES ${AG_SOURCES_OPENGL_FX})
 
 file(GLOB AG_HEADERS_CORE src/*.hpp)
 file(GLOB AG_HEADERS_OPENGL src/backend/opengl/*.hpp)
-file(GLOB AG_HEADERS_OPENGL_FX src/backend/opengl/fx/*.hpp)
 source_group("Header files\\Core" FILES ${AG_HEADERS_CORE})
 source_group("Header files\\OpenGL" FILES ${AG_HEADERS_OPENGL})
-source_group("Header files\\OpenGL\\FX" FILES ${AG_HEADERS_OPENGL_FX})
+
+add_library(autograph STATIC ${AG_SOURCES_CORE} ${AG_SOURCES_OPENGL})
 
 include_directories(src/)
-
-add_executable(
-	autograph
-	${AG_SOURCES_CORE}
-	${AG_SOURCES_OPENGL}
-	${AG_SOURCES_OPENGL_FX}
-	${AG_HEADERS_CORE}
-	${AG_HEADERS_OPENGL}
-	${AG_HEADERS_OPENGL_FX}
-	)
+set(AG_INCLUDE_DIR src/)
 
 add_library(shaderpp STATIC ${SHADERPP_SOURCES})
 target_link_libraries(shaderpp ${Boost_LIBRARIES})
-target_include_directories(shaderpp PRIVATE ext/GSL/include ${Boost_INCLUDE_DIR})
+target_include_directories(shaderpp PUBLIC ext/GSL/include ${Boost_INCLUDE_DIR})
 
 target_link_libraries(autograph shaderpp cppformat glloadgen glfw ${Boost_LIBRARIES} ${GLFW_LIBRARIES})
-target_include_directories(autograph PRIVATE ext/glm ext/GSL/include)
+target_include_directories(autograph PUBLIC ext/glm ext/GSL/include)
+
+add_subdirectory(examples/simple)

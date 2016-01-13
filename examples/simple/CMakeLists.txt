@@ -1,0 +1,5 @@
+file(GLOB AG_EXAMPLE_SIMPLE_SOURCES *.cpp)
+file(GLOB AG_EXAMPLE_SIMPLE_HEADERS *.hpp)
+add_executable(simple ${AG_EXAMPLE_SIMPLE_SOURCES})
+target_include_directories(simple PRIVATE ${AG_INCLUDE_DIR})
+target_link_libraries(simple autograph)

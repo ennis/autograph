@@ -30,27 +30,24 @@ struct Pipelines
 			VertexAttribute { 0, gl::FLOAT, 3, 3 * sizeof(float), false }
 		};
 
-        const char* defines[1] = {""};
-        const char* includePaths[1] = {""};
-
 		{
-			ShaderSource src_default("../examples/shaders/default.glsl");
+			ShaderSource src_default("../../../examples/shaders/default.glsl");
 			ag::opengl::GraphicsPipelineInfo info;
-			auto VSSource = src_default.preprocess(PipelineStage::Vertex, defines, includePaths);
-			auto PSSource = src_default.preprocess(PipelineStage::Pixel, defines, includePaths);
+			auto VSSource = src_default.preprocess(PipelineStage::Vertex, nullptr, nullptr);
+			auto PSSource = src_default.preprocess(PipelineStage::Pixel, nullptr, nullptr);
 			info.VSSource = VSSource.c_str();
 			info.PSSource = PSSource.c_str();
 	        info.vertexAttribs = gsl::as_span(vertexAttribs);
 			pp_default = device.createGraphicsPipeline(info);
 		}
 
-		{
-			ShaderSource src_compute("../examples/shaders/compute.glsl");
+		/*{
+			ShaderSource src_compute("../../../examples/shaders/compute.glsl");
 			ag::opengl::ComputePipelineInfo info;
-			auto CSSource = src_compute.preprocess(PipelineStage::Compute, defines, includePaths);
+			auto CSSource = src_compute.preprocess(PipelineStage::Compute, nullptr, nullptr);
 			info.CSSource = CSSource.c_str();
 			pp_compute = device.createComputePipeline(info);
-		}
+		}*/
 	}
 
 	ag::GraphicsPipeline<GL> pp_default;

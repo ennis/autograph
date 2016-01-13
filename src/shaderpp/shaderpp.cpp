@@ -5,6 +5,7 @@
 
 #include <boost/wave.hpp>
 #include <boost/wave/cpplexer/cpp_lex_iterator.hpp>
+#include <boost/wave/preprocessing_hooks.hpp>
 
 namespace shaderpp
 {
@@ -22,6 +23,22 @@ namespace shaderpp
 				std::istreambuf_iterator<char>());
 			return str;
 		}
+
+		// thanks!
+		// http://boost.2283326.n4.nabble.com/wave-limited-extensibility-td2655231.html
+		struct glsl_directives_hooks
+			: public boost::wave::context_policies::default_preprocessing_hooks
+		{
+			// undocumented!
+			template <typename ContextT, typename ContainerT>
+			bool found_unknown_directive(ContextT const& ctx, ContainerT const& line,
+					ContainerT& pending)
+			{
+				std::copy(line.begin(), line.end(), std::back_inserter(pending));
+				return true;
+			}
+		};
+
 	}
 
     ShaderSource::ShaderSource(const char* path_) : source(loadSource(path_)), path(std::string(path_))
@@ -37,7 +54,10 @@ namespace shaderpp
             boost::wave::cpplexer::lex_iterator<
                 boost::wave::cpplexer::lex_token<> >;
         using context_type = boost::wave::context<
-                std::string::iterator, lex_iterator_type>;
+                std::string::iterator, 
+				lex_iterator_type,
+				boost::wave::iteration_context_policies::load_file_to_string,
+				glsl_directives_hooks>;
 
         context_type ctx(source.begin(), source.end(), path.c_str());
 
