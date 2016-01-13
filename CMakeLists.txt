@@ -14,7 +14,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # TODO if boost is not found, download it and compile it as an external project
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost COMPONENTS wave thread filesystem system REQUIRED)
+find_package(Boost COMPONENTS date_time chrono wave thread filesystem system REQUIRED)
+link_directories(${Boost_LIBRARY_DIR})
 
 add_subdirectory(ext/)
 
@@ -49,9 +50,9 @@ add_executable(
 	${AG_HEADERS_OPENGL_FX}
 	)
 
-add_library(shaderpp ${SHADERPP_SOURCES})
+add_library(shaderpp STATIC ${SHADERPP_SOURCES})
 target_link_libraries(shaderpp ${Boost_LIBRARIES})
-target_include_directories(shaderpp PRIVATE ext/GSL/include)
+target_include_directories(shaderpp PRIVATE ext/GSL/include ${Boost_INCLUDE_DIR})
 
 target_link_libraries(autograph shaderpp cppformat glloadgen glfw ${Boost_LIBRARIES} ${GLFW_LIBRARIES})
 target_include_directories(autograph PRIVATE ext/glm ext/GSL/include)
