@@ -13,6 +13,7 @@ endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # TODO if boost is not found, download it and compile it as an external project
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS wave thread filesystem system REQUIRED)
 
 add_subdirectory(ext/)
