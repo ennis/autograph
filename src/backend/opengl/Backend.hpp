@@ -50,6 +50,24 @@ namespace ag
 {
 	namespace opengl
 	{
+        // Wrapper to use GLuint as a unique_ptr handle type
+        // http://stackoverflow.com/questions/6265288/unique-ptr-custom-storage-type-example/6272139#6272139
+        // TODO move this in a shared header
+        struct GLuintHandle {
+            GLuint id;
+
+            GLuintHandle(GLuint obj_id) : id(obj_id) { }
+            // default and nullptr constructors folded together
+            GLuintHandle(std::nullptr_t = nullptr) : id(0) { }
+            explicit operator bool() { return id != 0; }
+            friend bool operator ==(GLuintHandle l, GLuintHandle r) { return l.id == r.id; }
+            friend bool operator !=(GLuintHandle l, GLuintHandle r) { return !(l == r); }
+            // default copy ctor and operator= are fine
+            // explicit nullptr assignment and comparison unneeded
+            // because of implicit nullptr constructor
+            // swappable requirement fulfilled by std::swap
+        };
+
 		struct VertexAttribute
 		{
 			unsigned slot;
@@ -129,17 +147,17 @@ namespace ag
             ///////////////////// Deleters
             struct SamplerDeleter
             {
-                using pointer = GLuint;
+                using pointer = GLuintHandle;
                 void operator()(pointer sampler_obj) {
-                    gl::DeleteSamplers(1, &sampler_obj);
+                    gl::DeleteSamplers(1, &sampler_obj.id);
                 }
             };
 
             struct TextureDeleter
             {
-                using pointer = GLuint;
+                using pointer = GLuintHandle;
                 void operator()(pointer tex_obj) {
-                    gl::DeleteTextures(1, &tex_obj);
+                    gl::DeleteTextures(1, &tex_obj.id);
                 }
             };
 

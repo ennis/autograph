@@ -223,9 +223,9 @@ namespace ag
         void OpenGLBackend::bindTexture1D(unsigned slot, Texture1DHandle::pointer handle)
 		{
 			assert(slot < kMaxTextureUnits);
-			if (bind_state.textures[slot] != handle)
+            if (bind_state.textures[slot] != handle.id)
 			{
-				bind_state.textures[slot] = handle;
+                bind_state.textures[slot] = handle.id;
 				bind_state.textureUpdated = true;
 			}
 		}
@@ -233,9 +233,9 @@ namespace ag
         void OpenGLBackend::bindTexture2D(unsigned slot, Texture2DHandle::pointer handle)
 		{
 			assert(slot < kMaxTextureUnits);
-			if (bind_state.textures[slot] != handle)
+            if (bind_state.textures[slot] != handle.id)
 			{
-				bind_state.textures[slot] = handle;
+                bind_state.textures[slot] = handle.id;
 				bind_state.textureUpdated = true;
 			}
 		}
@@ -243,9 +243,9 @@ namespace ag
         void OpenGLBackend::bindTexture3D(unsigned slot, Texture3DHandle::pointer handle)
 		{
 			assert(slot < kMaxTextureUnits);
-			if (bind_state.textures[slot] != handle)
+            if (bind_state.textures[slot] != handle.id)
 			{
-				bind_state.textures[slot] = handle;
+                bind_state.textures[slot] = handle.id;
 				bind_state.textureUpdated = true;
 			}
 		}
@@ -253,9 +253,9 @@ namespace ag
         void OpenGLBackend::bindSampler(unsigned slot, SamplerHandle::pointer handle)
 		{
 			assert(slot < kMaxTextureUnits);
-			if (bind_state.samplers[slot] != handle)
+            if (bind_state.samplers[slot] != handle.id)
 			{
-				bind_state.samplers[slot] = handle;
+                bind_state.samplers[slot] = handle.id;
 				bind_state.samplersUpdated = true;
 			}
 		}
@@ -269,7 +269,7 @@ namespace ag
 			gl::SamplerParameteri(sampler_obj, gl::TEXTURE_WRAP_R, textureAddressModeToGLenum(info.addrU));
 			gl::SamplerParameteri(sampler_obj, gl::TEXTURE_WRAP_S, textureAddressModeToGLenum(info.addrV));
 			gl::SamplerParameteri(sampler_obj, gl::TEXTURE_WRAP_T, textureAddressModeToGLenum(info.addrW));
-            return SamplerHandle { sampler_obj, SamplerDeleter() };
+            return SamplerHandle { GLuintHandle(sampler_obj), SamplerDeleter() };
 		}
 
 		const char* getShaderStageName(GLenum stage)
@@ -495,7 +495,7 @@ namespace ag
 
         void OpenGLBackend::bindSurface(SurfaceHandle::pointer handle)
 		{
-			bindFramebufferObject(handle);
+            bindFramebufferObject(handle.id);
 		}
 
         void OpenGLBackend::bindGraphicsPipeline(GraphicsPipelineHandle::pointer handle)
@@ -512,7 +512,7 @@ namespace ag
         void OpenGLBackend::clearColor(SurfaceHandle::pointer framebuffer_obj, const glm::vec4 & color)
 		{
 			// bind the framebuffer
-			bindFramebufferObject(framebuffer_obj);
+            bindFramebufferObject(framebuffer_obj.id);
 			// set clear color
 			gl::ClearColor(color.r, color.g, color.b, color.a);
 			// clear
@@ -521,7 +521,7 @@ namespace ag
 
         void OpenGLBackend::clearDepth(SurfaceHandle::pointer framebuffer_obj, float depth)
 		{
-			gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer_obj);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer_obj.id);
 			// set clear color
 			gl::ClearDepth(depth);
 			// clear
@@ -583,7 +583,7 @@ namespace ag
 			GLuint tex_obj;
 			gl::CreateTextures(gl::TEXTURE_1D, 1, &tex_obj);
 			gl::TextureStorage1D(tex_obj, 1, internalFormat, dimensions);
-            return Texture1DHandle(tex_obj, TextureDeleter());
+            return Texture1DHandle(GLuintHandle(tex_obj), TextureDeleter());
 		}
 
         OpenGLBackend::Texture2DHandle OpenGLBackend::createTexture2D(glm::uvec2 dimensions, GLenum internalFormat)
@@ -591,7 +591,7 @@ namespace ag
 			GLuint tex_obj;
 			gl::CreateTextures(gl::TEXTURE_2D, 1, &tex_obj);
             gl::TextureStorage2D(tex_obj, 1, internalFormat, dimensions.x, dimensions.y);
-            return Texture2DHandle(tex_obj, TextureDeleter());
+            return Texture2DHandle(GLuintHandle(tex_obj), TextureDeleter());
 		}
 
         OpenGLBackend::Texture3DHandle OpenGLBackend::createTexture3D(glm::uvec3 dimensions, GLenum internalFormat)
@@ -599,7 +599,7 @@ namespace ag
 			GLuint tex_obj;
 			gl::CreateTextures(gl::TEXTURE_3D, 1, &tex_obj);
             gl::TextureStorage3D(tex_obj, 1, internalFormat, dimensions.x, dimensions.y, dimensions.z);
-            return Texture3DHandle(tex_obj, TextureDeleter());
+            return Texture3DHandle(GLuintHandle(tex_obj), TextureDeleter());
 		}
 	}
 }
