@@ -19,6 +19,21 @@ add_subdirectory(glfw)
 set_property(TARGET glfw PROPERTY FOLDER "External")
 target_include_directories(glfw INTERFACE glfw/include)
 
+# assimp
+option(BUILD_SHARED_LIBS "..." OFF)
+option(ASSIMP_BUILD_ASSIMP_TOOLS "..." OFF)
+option(ASSIMP_BUILD_SAMPLES "..." OFF)
+option(ASSIMP_BUILD_TESTS "..." OFF)
+add_subdirectory(assimp)
+
+# docopt
+option(WITH_TESTS           "Build tests."       OFF)
+option(WITH_EXAMPLE         "Build example."     OFF)
+option(WITH_STATIC          "Build static libs." ON)
+add_subdirectory(docopt.cpp)
+target_include_directories(docopt INTERFACE docopt.cpp)
+
+
 # glslang
 
 #add_subdirectory(glslang)
