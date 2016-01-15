@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cstdint>
 
 #include <glm/glm.hpp>
 
@@ -22,6 +23,12 @@ struct Vertex
 {
 	glm::vec3 position;
 	glm::vec3 normal;
+};
+
+struct Mesh
+{
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
 };
 
 ag::GraphicsPipeline<GL> loadPipeline(ag::Device<GL>& device)
@@ -49,15 +56,36 @@ std::vector<Vertex> loadModel(const char* path)
     Assimp::Importer importer;
 
     const aiScene* scene = importer.ReadFile(path, 
+            aiProcess_OptimizeMeshes |
+            aiProcess_OptimizeGraph |
         	aiProcess_Triangulate |
         	aiProcess_JoinIdenticalVertices |
         	aiProcess_SortByPType);
 
     if (!scene) 
     	ag::failWith("Could not load scene");
-    
-    //std::vector<Vertex> vertices;
-    //vertices.reserve();
+
+    // load the first mesh
+    std::vector<Vertex> vertices;
+    if (scene->mNumMeshes > 0) {
+        auto mesh = scene->mMeshes[0];
+        vertices.resize(mesh->mNumVertices);
+        for (int i = 0; i < mesh->mNumVertices; ++i)
+            vertices[i].position = glm::vec3(
+                        mesh->mVertices[i].x,
+                        mesh->mVertices[i].y,
+                        mesh->mVertices[i].z);
+        if (mesh->mNormals)
+            for (int i = 0; i < mesh->mNumVertices; ++i)
+                vertices[i].normal = glm::vec3(
+                            mesh->mNormals[i].x,
+                            mesh->mNormals[i].y,
+                            mesh->mNormals[i].z);
+    }
+
+    return Mesh {
+        std::move(vertices);
+    };
 }
 
 static const char kUsage[] = R"(Model viewer
@@ -79,10 +107,16 @@ int main(int argc, const char** argv)
 	ag::DeviceOptions opts;
 	ag::Device<GL> device(gl, opts);
 	auto pipeline = loadPipeline(device);
+    auto vbo = device.createBuffer(gsl::as_span(model));
 
 	device.run([&]() {
 		auto out = device.getOutputSurface();
 		device.clear(out, vec4(1.0, 0.0, 1.0, 1.0));
+        ag::draw(
+            device,
+            out,
+            pipeline,
+            DrawArrays(ag::PrimitiveType::Triangle, 0))
 	});
 
 	return 0;
