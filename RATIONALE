@@ -1,0 +1,380 @@
+Autograph pipelines / flow graphs:
+___________________________________________
+
+Related work: CnC-CUDA, Intel TBB
+
+++ Resource allocation is managed automatically 
+	The only reasonable choice to use the full capabilities of the underlying API
+	No need to reason about temporary resources
+
+-- Same as above
+	The user may want to control precisely the resources/reuse them
+
+++ Good optimization opportunities for temporally coherent pipelines 
+	(when we do more or less the same thing on each frame)
+	This is good for games, not so much for editors? maybe? 
+
+++ can automatically extract parallelism
+
+++ Synchronization/fencing is automatic and can be optimized
+
+-- Becomes complex with pipelines depending on conditions
+	Need higher-order nodes
+-- No fine-grained user control over the scheduling of the operations
+	i.e. cannot cull a branch of the flow graph manually 
+-- Disruptive: forces FRP throughout the program
+
+-- Difficult to model dependencies between successive draw operations 
+	(especially when there is more than one operation)
+
+++ Integrates well with GUI and interactive applications in general
+
+Examples of optimizations:
++ Allocate precisely the correct number of render targets/textures (automatic ping-pong FBOs)
++ run two compute operations in parallel automatically (if there is more than one GPU/thread)
++ Automatic selection of storage memory based on the flow graph
++ Descriptor set optimization??
+
+Proposition: a simpler set of primitives, implemented on top of autograph backends
+=> no higher-order nodes (no conditionals)
+=> individual pipelines, can temporarily deallocate their resources
+=> more like a memory management technique
+
+
+GLSL header gen
+___________________________________________
+
+Parse GLSL, generate C++ header file with type-safe bindings
+One entry for each shader defined in the FX file
+
+FX file: should it contain Blend/Depth/Rasterizer states?
+VS #include ?
+
+
+GPU promises and futures
+___________________________________________
+
+The rendering pipeline is dynamic. The individual rendering tasks are 
+re-created on each frame.
+
+-+ Resources must be managed manually
+	Most notably: the residency of memory resources
+
+-- Synchronization must be managed manually
+	Although this is less painful with asynchronous primitives (promises and futures)
+
+-- Hard to optimize for the backend API
+	The backend does not have global knowledge of the rendering pipeline: 
+	it cannot take advantage of the fact that the sequence of operations do not change
+	between frames.
+	As a result, must resort to caching and heuristics.
+	=> how to take advantage of bindless/descriptor sets?
+
+++ Integrates well with existing libraries
+	No need for a complex machinery
+
+-? Harder to make changes to an existing pipeline
+	Not sure about this one: the only thing harder is that the user has to allocate 
+	the new resources
+
+++ parallel execution is explicitly controlled by the user
+
++? Barring complex pipeline optimizations that could not be done manually, probably more efficient as a whole
+
+Ideas:
+
+* Model GPU operations using asynchronous primitives (GPU-futures)
+	
+	// add command to command list for target
+	draw(GPUAsync<Target>, state, bindings) -> GPUAsync<Target>
+
+	GPUAsync A;
+	GPUAsync B;
+
+	// The order of these two operations is undefined!
+	// They can even be done in parallel
+	B = draw(A, something);
+	draw(A, something else);
+
+	// the correct way is:
+	B = draw(A, something)
+	C = draw(B, something)
+	// which is rather verbose
+
+	// but then you should be able to do things like:
+	B = draw(A, something)
+	C = draw(B, something)
+	D = draw(C, B, ...)
+	// and the system will automatically allocate a temporary render target
+	// and synchronize on B
+	// OR:
+	// draw(X, ...) consumes its argument (takes a rvalue reference)
+	// thus, the temporary copy is explicit
+	// (this would work very well with Rust...)
+	
+	// extract the value of a GPU async with:
+	GPUAsync<T> A;
+	A.sync() -> T // forces CPU/GPU sync 
+	// or you could chain a CPU asynchonous operation
+
+	// IMO, this is more readable than the flow-graph approach
+	// Especially concerning draw calls 
+	// (need the concept of 'draw lists' with the flow-graph, to model 
+	//  dependencies between a varying number of successive draw calls)
+	// The resources can be GPUAsyncs too! (results of GPU operations)
+
+* Multiple render targets?
+	GPUAsync<Frame> has special members that can extract 
+	a GPUAsync<Texture> from a render target
+
+* Type-safe resource binding with variadic templates
+
+* Type-safe shaders
+
+
+Texture2D
+Texture3D
+
+Texture2DView<T, D> -> bindable as image or render target, but not as a texture
+Texture2DView<const T, D> -> bindable as texture only
+
+GPUAsync<Texture2D>().view() -> GPUAsync<Texture2DView>
+
+Sampler -> ...
+
+
+
+GPUAsync<T,D> 		: generic buffer of type T, living between the GPU and the CPU
+//GPUAsync<TexturenD<T,D>,D> : specialization for texture types
+GPUAsync<TexturenDView<T,D>,D> : specialization for texture view types
+GPUAsync<Surface<D, T...>> : specialization for surfaces
+
+
+GPUAsync<T&> or GPUAsync<array_ref<T>>
+
+Problem with GPUAsync<array_ref<T>> : what if the size of the array is only known once the async operation is complete?
+
+GPUAsync<array_ref<T>> specialization
+- underlying buffer
+- offset
+- size in Ts
+
+
+// should be:
+
+GPUAsync<Surface<...>> v1 = context.getScreen();
+
+v1 = draw(move(v1), ...)
+
+	* move(v1)
+	* draw(v1&&)
+		* for each parameter
+			* backend.bind(v1.detail, GPUAsync)
+				* if the async object has an outstanding write command list, flush it
+				* if the async object has pending read commands (is referenced by a command list somewhere)
+				  and if we are writing to this object
+				  	* fence on completion of read commands
+				* add bind commands to detail.commandList (optimize redundancies)
+		* add draw command to detail.commandList
+		* copy v1 to result
+		* return result 
+
+Note: two GPUAsyncs can share the same command list
+e.g. a texture_nd_view and a surface
+
+-> question: when to drop the command list?
+and when to allocate it?
+
+v1 = draw(move(v1), ...)
+...
+v1 = draw(move(v1), ...)	// update v1
+
+
+ShaderResource<T>	-> binds as an uniform buffer
+ShaderResource<TexturenD<T>> -> gets a constant texture view, bind as texture with default linear sampler
+ShaderResource<TextureUnit<TexturenD> > -> bind as texture unit + sampler pair
+ShaderResource<TexturenDView > -> bind as image unit
+ShaderResource<....> -> ....
+ShaderResource<SSBO<...>> -> bind as SSBO (openGL specific)
+
+
+XXX create multiple command lists in parallel?
+
+
+
+// Drawables:
+DrawIndexedMesh(Buffer<T>, Buffer<Index>)
+DrawIndexedMesh(...)
+
+Mesh(primitive type, buffers...)
+IndexedMesh(primitive type, index buffer, buffers...)
+InstancedMesh(primitive type, num instances, first instance, buffers...)
+InstancedIndexedMesh(primitive type, num instances, first instance, index buffer, buffers...)
+
+Buffer can be a buffer object or a view (GPUAsync<array_ref<T>>)
+
+When to flush the command buffer?
+when an async<surface> or async<texture> is joined?
+Or immediately?
+
+RAII and destructors:
+- Destructor of the generic object is called
+	backend.destroyXXX(object) is called
+	detail objects are default-constructible and must not have a custom destructor?
+	=> must be POD types
+
+textures, surfaces, etc. are move-only types
+surfaces do not own textures
+but for convenience, there should be a way to create a surface without
+first creating the underlying textures.
+=> Use a ResourceScope as the owner of the data
+	created object is bound to the scope
+
+backend.createResourceScope(...)
+backend.createFencedResourceScope(...)
+
+
+Parallel operations:
+
+1. v1 = compute(...)
+2. v2 = compute(v1)
+3. v3 = compute(v1)
+
+
+2. v1 last written by CQ#1, no pending reads -> schedule on CQ#1
+3. v1 last written by CQ#1, one pending read on CQ#1 -> schedule on CQ#2
+
+
+
+
+
+About destructors and resource lifetimes
+_____________________________
+
+A common mistake:
+
+	void thing(Device& d) 
+	{
+		auto param = Uniform(d, ...)
+		draw(..., param, ...)
+		// param drops here, but the draw operation may not have finished!
+		// must extend the lifetime of param -> shared_ptr's ?
+		// OR (gfx-rs): garbage-collect unused resources at end of frame (still using shared-ptrs)
+		// OR: require the user to explicitly specify the lifetime of the source (using device.frame_scope.create<Uniform>())
+	}
+
+The lifetime of GPU resources are almost never tied to a function scope.
+They live at least as long as the draw call, and maybe more if a reference to them is kept 
+between frames.
+
+Examples of scopes: 
+	- lexical scope lifetime (almost never used)
+	- object lifetime
+	- frame lifetime
+	- lifetime until fence
+	- static lifetime
+
+Once the scope object is destroyed, all objects bound to the scope become invalid
+(but can still be destroyed)
+
+
+
+About shaders
+_____________________________
+
+Nomenclature:
+	Vertex shader (VS)
+	Geometry shader (GS)
+	Pixel shader (PS) -> Fragment shader
+	Hull Shader (HS) -> Tess control
+	Domain Shader (DS) -> Tess eval
+	Compute Shader (CS)
+
+do not expose individual objects
+
+
+
+
+About bindings
+_____________________________
+
+Divided in 3 parts:
+
+	- Pipeline state object -> either PipelineState or ???
+	- resources (textures, buffers, vertex buffers)
+	- draw call parameters
+
+
+Pipeline state:
+	-> just pass a pipeline state object
+
+Draw call:
+	- MeshPart
+	- DrawArrays
+	- DrawIndexed
+	- DrawIndexedInstanced
+	- DrawIndirect
+
+	TextureUnit(0, TextureType)
+	BufferSlot(...)
+
+
+First simplification pass
+_____________________________
+
+* Remove templated methods in backend (createTexturenD<TPixel>)
+* Blocking version of UploadBuffer::upload 
+* kUniformBufferOffsetAlignment should be dynamically queried
+* Normalize the order of template parameters (D, T...)
+* Rename source files in backend, remove OpenGLPixelType.hpp
+
+DONE Do we really need refcounted resources?
+
+
+Feature: Command lists
+_____________________________
+
+* For multithreaded command submission
+
+
+Feature: Upload buffers
+_____________________________
+
+Currently hidden
+* Expose upload buffers to the user?
+
+
+Binders
+_____________________________
+
+
+// Shortcut draw binders (bind vertex buffers and emit the drawcall)
+DrawArrays(PrimitiveType, vertex_source)
+DrawIndexed(PrimitiveType, vertex_source, index_source)
+
+// Base draw binders
+DrawArrays(PrimitiveType, first, count)
+DrawIndexed(PrimitiveType, first, count, base_vertex)
+
+// Vertex buffers
+VertexBuffer(vertex_buffer)
+VertexBuffer(untyped_buffer, offset, stride)
+IndexBuffer(buffer)
+IndexBuffer(untyped_buffer, offset, type)
+
+
+Feature: Render targets
+_____________________________
+
+Like binders, except for render targets:
+Surface(tex0, tex1, ..., depth tex, stencil tex / depth-stencil tex)
+Surface(TextureLayer(xxxx))
+SurfaceCube(...)
+TextureRT()
+TextureLayerRT()
+TextureCubeFaceRT()
+
+
+
+Feature: D3D12 backend
+_____________________________

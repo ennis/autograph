@@ -17,6 +17,13 @@ namespace ag
 		Triangles
 	};
 
+	////////////////////////// IndexType
+	enum class IndexType
+	{
+		UShort,
+		UInt
+	};
+
 
 	////////////////////////// BindContext
 	struct BindContext
@@ -62,6 +69,46 @@ namespace ag
 		}
 	};
 
+	////////////////////////// Draw command: DrawArrays (reduced form)
+	struct DrawArrays0_
+	{
+		PrimitiveType primitiveType;
+		size_t first;
+		size_t count;
+
+		template <typename D>
+		void draw(Device<D>& device, BindContext& context)
+		{
+			device.backend.draw(primitiveType, 0, count);
+		}
+	};
+	
+	inline DrawArrays0_ DrawArrays(PrimitiveType primitiveType, size_t first, size_t count)
+	{
+		return DrawArrays0_{ primitiveType, first, count };
+	}
+
+	////////////////////////// Draw command: DrawIndexed (reduced form)
+	struct DrawIndexed0_
+	{
+		PrimitiveType primitiveType;
+		size_t first;
+		size_t count;
+		size_t baseVertex;
+		
+		template <typename D>
+		void draw(Device<D>& device, BindContext& context)
+		{
+			device.backend.drawIndexed(primitiveType, 0, count, baseVertex);
+		}
+	};
+
+	inline DrawIndexed0_ DrawIndexed(PrimitiveType primitiveType, size_t first, size_t count, size_t baseVertex)
+	{
+		return DrawIndexed0_{ primitiveType, first, count, baseVertex };
+	}
+
+
 	// Immediate version (put vertex data in the default upload buffer)
 	template <
 		typename TVertex
@@ -98,6 +145,53 @@ namespace ag
 		return DrawArraysImmediate_<TVertex>{primitiveType, vertices};
 	}
 
+	////////////////////////// Binder: vertex buffer
+	template <
+		typename VertexTy,
+		typename D
+	>
+	struct VertexBuffer_ 
+	{
+		const Buffer<D, VertexTy[]>& buf;
+	};
+
+	template <typename VertexTy, typename D>
+	VertexBuffer_<VertexTy, D> VertexBuffer(const Buffer<D, VertexTy[]>& buf)
+	{
+		return VertexBuffer_<VertexTy, D> {buf};
+	}
+
+	////////////////////////// Binder: index buffer
+	template <
+		typename T,
+		typename D
+	>
+	struct IndexBuffer_
+	{
+		const Buffer<D, T[]>& buf;
+	};
+
+	template <typename T, typename D>
+	IndexBuffer_<T, D> IndexBuffer(const Buffer<D, T[]>& buf)
+	{
+		static_assert(std::is_same<T, unsigned short>::value || std::is_same<T, unsigned int>::value, "Unsupported index type");
+		return IndexBuffer_<T, D> {buf};
+	}
+	
+	////////////////////////// Binder: vertex array (vertices on the CPU)
+	template <
+		typename VertexTy
+	>
+	struct VertexArray_
+	{
+		gsl::span<const VertexTy> data;
+	};
+
+	template <typename VertexTy, typename D>
+	VertexArray_<VertexTy> VertexArray(gsl::span<const VertexTy> data)
+	{
+		return VertexArray_<VertexTy> {data};
+	}
 
 	////////////////////////// Binder: texture unit
 	template <
@@ -164,6 +258,31 @@ namespace ag
          typename T
     >
     void bindOne(Device<D>& device, BindContext& context, const T& value);
+
+	////////////////////////// Bind<VertexBuffer_>
+	template <typename D, typename T>
+	void bindOne(Device<D>& device, BindContext& context, const VertexBuffer_<T, D>& vbuf)
+	{
+		device.backend.bindVertexBuffer(context.vertexBufferBindingIndex++, vbuf.buf.handle.get(), 0, vbuf.buf.byteSize, sizeof(T));
+	}
+
+	////////////////////////// Bind<VertexArray_>
+	template <typename D, typename TVertex>
+	void bindOne(Device<D>& device, BindContext& context, const VertexArray_<TVertex>& vbuf)
+	{
+		auto slice = device.pushDataToUploadBuffer(vbuf.data);
+		device.backend.bindVertexBuffer(context.vertexBufferBindingIndex++, slice.handle, slice.offset, slice.byteSize, sizeof(TVertex));
+	}
+
+	////////////////////////// Bind<IndexBuffer_<T> >
+	template <typename D, typename T>
+	void bindOne(Device<D>& device, BindContext& context, const IndexBuffer_<T, D>& ibuf)
+	{
+		IndexType indexType;
+		if (std::is_same<T, unsigned short>::value) indexType = IndexType::UShort;
+		if (std::is_same<T, unsigned int>::value) indexType = IndexType::UInt;
+		device.backend.bindIndexBuffer(ibuf.buf.handle.get(), 0, ibuf.buf.byteSize, indexType);
+	}
 
     ////////////////////////// Bind<Texture1D>
     template <

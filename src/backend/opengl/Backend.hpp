@@ -284,6 +284,7 @@ namespace ag
             void bindTexture3D(unsigned slot, Texture3DHandle::pointer handle);
             void bindSampler(unsigned slot, SamplerHandle::pointer handle);
             void bindVertexBuffer(unsigned slot, BufferHandle::pointer handle, size_t offset, size_t size, unsigned stride);
+			void bindIndexBuffer(BufferHandle::pointer handle, size_t offset, size_t size, IndexType type);
             void bindUniformBuffer(unsigned slot, BufferHandle::pointer handle, size_t offset, size_t size);
             void bindSurface(SurfaceHandle::pointer handle);
             void bindGraphicsPipeline(GraphicsPipelineHandle::pointer handle);
@@ -294,6 +295,7 @@ namespace ag
 
 			///////////////////// Draw calls
 			void draw(PrimitiveType primitiveType, unsigned first, unsigned count);
+			void drawIndexed(PrimitiveType primitiveType, unsigned first, unsigned count, unsigned baseVertex);
 
 			void swapBuffers();
 
@@ -305,7 +307,7 @@ namespace ag
             Texture1DHandle createTexture1D(unsigned dimensions, GLenum internalFormat);
             Texture2DHandle createTexture2D(glm::uvec2 dimensions, GLenum internalFormat);
             Texture3DHandle createTexture3D(glm::uvec3 dimensions, GLenum internalFormat);
-			void destroyTexture(GLuint tex_obj);
+			//void destroyTexture(GLuint tex_obj);
 
 			GLuint createProgramFromShaderPipeline(const GraphicsPipelineInfo& info);
             GLuint createComputeProgram(const ComputePipelineInfo& info);
@@ -313,6 +315,10 @@ namespace ag
 
 			struct BindState
 			{
+				std::array<GLuint, kMaxVertexBufferSlots> vertexBuffers;
+				std::array<GLintptr, kMaxVertexBufferSlots> vertexBufferOffsets;
+				std::array<GLsizei, kMaxVertexBufferSlots> vertexBufferStrides;
+				bool vertexBuffersUpdated = false;
 				std::array<GLuint, kMaxTextureUnits> textures;
 				bool textureUpdated = false;
 				std::array<GLuint, kMaxTextureUnits> samplers;
@@ -325,6 +331,8 @@ namespace ag
 				bool uniformBuffersUpdated = false;
 				std::array<GLuint, kMaxShaderStorageBufferSlots> shaderStorageBuffers;
 				bool shaderStorageBuffersUpdated = false;
+				GLuint indexBuffer;
+				GLenum indexBufferType;
 			};
 
 			// last bound FBO

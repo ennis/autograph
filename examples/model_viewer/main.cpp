@@ -10,6 +10,7 @@
 #include <assimp/scene.h>
 
 #include <docopt.h>
+#include <optional.hpp>
 
 #include <shaderpp/shaderpp.hpp>
 #include <backend/opengl/Backend.hpp>
@@ -17,7 +18,10 @@
 #include <Draw.hpp>
 #include <Error.hpp>
 
+#include "../common/uniforms.hpp"
+
 using GL = ag::opengl::OpenGLBackend;
+namespace xp = std::experimental;
 
 struct Vertex 
 {
@@ -41,7 +45,7 @@ ag::GraphicsPipeline<GL> loadPipeline(ag::Device<GL>& device)
         VertexAttribute { 0, gl::FLOAT, 3, 3 * sizeof(float), false }    // normals
     };
 
-    ShaderSource src("../../../examples/shaders/default.glsl");
+    ShaderSource src("../examples/common/glsl/model_viewer.glsl");
     ag::opengl::GraphicsPipelineInfo info;
     auto VSSource = src.preprocess(PipelineStage::Vertex, nullptr, nullptr);
     auto PSSource = src.preprocess(PipelineStage::Pixel, nullptr, nullptr);
@@ -51,7 +55,7 @@ ag::GraphicsPipeline<GL> loadPipeline(ag::Device<GL>& device)
     return device.createGraphicsPipeline(info);
 }
 
-std::vector<Vertex> loadModel(const char* path)
+Mesh loadModel(const char* path)
 {
     Assimp::Importer importer;
 
@@ -67,10 +71,12 @@ std::vector<Vertex> loadModel(const char* path)
 
     // load the first mesh
     std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
     if (scene->mNumMeshes > 0) {
         auto mesh = scene->mMeshes[0];
         vertices.resize(mesh->mNumVertices);
-        for (int i = 0; i < mesh->mNumVertices; ++i)
+		indices.resize(mesh->mNumFaces*3);
+        for (unsigned i = 0; i < mesh->mNumVertices; ++i)
             vertices[i].position = glm::vec3(
                         mesh->mVertices[i].x,
                         mesh->mVertices[i].y,
@@ -81,10 +87,18 @@ std::vector<Vertex> loadModel(const char* path)
                             mesh->mNormals[i].x,
                             mesh->mNormals[i].y,
                             mesh->mNormals[i].z);
+		for (unsigned i = 0; i < mesh->mNumFaces; ++i)
+		{
+			indices[i*3+0] = mesh->mFaces[i].mIndices[0];
+			indices[i*3+1] = mesh->mFaces[i].mIndices[1];
+			indices[i*3+2] = mesh->mFaces[i].mIndices[2];
+		}
     }
 
+
     return Mesh {
-        std::move(vertices);
+        std::move(vertices),
+		std::move(indices)
     };
 }
 
@@ -107,16 +121,25 @@ int main(int argc, const char** argv)
 	ag::DeviceOptions opts;
 	ag::Device<GL> device(gl, opts);
 	auto pipeline = loadPipeline(device);
-    auto vbo = device.createBuffer(gsl::as_span(model));
+
+    auto vbo = device.createBuffer(gsl::as_span(model.vertices));
+	xp::optional<ag::Buffer<GL, unsigned[]> > ibo;
+	if (!model.indices.empty())
+		ibo.emplace(device.createBuffer(gsl::as_span(model.indices)));
 
 	device.run([&]() {
 		auto out = device.getOutputSurface();
 		device.clear(out, vec4(1.0, 0.0, 1.0, 1.0));
-        ag::draw(
-            device,
-            out,
-            pipeline,
-            DrawArrays(ag::PrimitiveType::Triangle, 0))
+
+		if (ibo)
+			ag::draw(device, out, pipeline,
+				ag::DrawIndexed(ag::PrimitiveType::Triangles, 0, ibo->size(), 0),
+				ag::VertexBuffer(vbo),
+				ag::IndexBuffer(ibo.value()));
+		else
+			ag::draw(device, out, pipeline,
+				ag::DrawArrays(ag::PrimitiveType::Triangles, 0, vbo.size()),
+				ag::VertexBuffer(vbo));
 	});
 
 	return 0;

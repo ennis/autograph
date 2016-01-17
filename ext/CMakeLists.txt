@@ -25,6 +25,11 @@ option(ASSIMP_BUILD_ASSIMP_TOOLS "..." OFF)
 option(ASSIMP_BUILD_SAMPLES "..." OFF)
 option(ASSIMP_BUILD_TESTS "..." OFF)
 add_subdirectory(assimp)
+set_property(TARGET assimp PROPERTY FOLDER "External")
+set_property(TARGET zlibstatic PROPERTY FOLDER "External")
+set_property(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTY FOLDER "External")
+set_property(TARGET uninstall PROPERTY FOLDER "External")
+target_include_directories(assimp INTERFACE assimp/include)
 
 # docopt
 option(WITH_TESTS           "Build tests."       OFF)
@@ -32,6 +37,9 @@ option(WITH_EXAMPLE         "Build example."     OFF)
 option(WITH_STATIC          "Build static libs." ON)
 add_subdirectory(docopt.cpp)
 target_include_directories(docopt INTERFACE docopt.cpp)
+target_include_directories(docopt_s INTERFACE docopt.cpp)
+set_property(TARGET docopt PROPERTY FOLDER "External")
+set_property(TARGET docopt_s PROPERTY FOLDER "External")
 
 
 # glslang

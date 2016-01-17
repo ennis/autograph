@@ -156,6 +156,8 @@ namespace ag
 
 		OpenGLBackend::OpenGLBackend() : last_framebuffer_obj(0)
 		{
+			bind_state.indexBuffer = 0;
+			bind_state.vertexBuffers.fill(0);
 			bind_state.images.fill(0);
 			bind_state.textures.fill(0);
             bind_state.samplers.fill(0);
@@ -482,7 +484,19 @@ namespace ag
 
         void OpenGLBackend::bindVertexBuffer(unsigned slot, BufferHandle::pointer handle, size_t offset, size_t size, unsigned stride)
 		{
-			gl::BindVertexBuffer(slot, handle->buf_obj, offset, stride);
+			bind_state.vertexBuffers[slot] = handle->buf_obj;
+			bind_state.vertexBufferOffsets[slot] = offset;
+			bind_state.vertexBufferStrides[slot] = stride;
+			bind_state.vertexBuffersUpdated = true;
+		}
+
+		void OpenGLBackend::bindIndexBuffer(BufferHandle::pointer handle, size_t offset, size_t size, IndexType type)
+		{
+			if (type == IndexType::UShort)
+				bind_state.indexBufferType = gl::UNSIGNED_SHORT;
+			else
+				bind_state.indexBufferType = gl::UNSIGNED_INT;
+			bind_state.indexBuffer = handle->buf_obj;
 		}
 
         void OpenGLBackend::bindUniformBuffer(unsigned slot, BufferHandle::pointer handle, size_t offset, size_t size)
@@ -534,6 +548,13 @@ namespace ag
 			gl::DrawArrays(primitiveTypeToGLenum(primitiveType), first, count);
 		}
 
+		void OpenGLBackend::drawIndexed(PrimitiveType primitiveType, unsigned first, unsigned count, unsigned baseVertex)
+		{
+			bindState();
+			auto indexStride = bind_state.indexBufferType == gl::UNSIGNED_INT ? 4 : 2;
+			gl::DrawElementsBaseVertex(primitiveTypeToGLenum(primitiveType), count, bind_state.indexBufferType, ((const char*)((uintptr_t)first*indexStride)), baseVertex);
+		}
+
 		void OpenGLBackend::swapBuffers()
 		{
 			glfwSwapBuffers(window);
@@ -550,6 +571,14 @@ namespace ag
 
 		void OpenGLBackend::bindState()
 		{
+			if (bind_state.vertexBuffersUpdated) {
+				for (unsigned i = 0; i < kMaxVertexBufferSlots; ++i)
+					if (bind_state.vertexBuffers[i])
+						gl::BindVertexBuffer(i, bind_state.vertexBuffers[i], bind_state.vertexBufferOffsets[i], bind_state.vertexBufferStrides[i]);
+					else
+						gl::BindVertexBuffer(i, 0, 0, 0);
+				bind_state.vertexBuffersUpdated = false;
+			}
 			if (bind_state.textureUpdated) {
 				gl::BindTextures(0, kMaxTextureUnits, bind_state.textures.data());
 				bind_state.textureUpdated = false;
@@ -576,6 +605,8 @@ namespace ag
 				}
                 bind_state.uniformBuffersUpdated = false;
             }
+			if (bind_state.indexBuffer)
+				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, bind_state.indexBuffer);
 		}
 		
         OpenGLBackend::Texture1DHandle OpenGLBackend::createTexture1D(unsigned dimensions, GLenum internalFormat)
