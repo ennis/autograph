@@ -327,6 +327,7 @@ _____________________________
 * kUniformBufferOffsetAlignment should be dynamically queried
 * Normalize the order of template parameters (D, T...)
 * Rename source files in backend, remove OpenGLPixelType.hpp
+* Clean indentation (4 spaces)
 
 DONE Do we really need refcounted resources?
 
@@ -377,4 +378,11 @@ TextureCubeFaceRT()
 
 
 Feature: D3D12 backend
+_____________________________
+
+
+
+
+
+Feature: Partially resident textures
 _____________________________

@@ -41,7 +41,7 @@ namespace ag
 		{
 			backend.createWindow(options);
 			frameFence = backend.createFence(0);
-			default_upload_buffer = std::make_unique<UploadBuffer<D> >(backend_, 3*256);
+			default_upload_buffer = std::make_unique<UploadBuffer<D> >(backend_, 3*1024*1024);
 		}
 
 		Surface<D, float, RGBA8> getOutputSurface()

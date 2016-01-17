@@ -592,11 +592,11 @@ namespace ag
 				bind_state.imagesUpdated = false;
 			}
             if (bind_state.uniformBuffersUpdated) {
-				for (unsigned i = 0; i < kMaxShaderStorageBufferSlots; ++i)
+				for (unsigned i = 0; i < kMaxUniformBufferSlots; ++i)
 				{
 					if (bind_state.uniformBuffers[i])
 						gl::BindBufferRange(
-							gl::UNIFORM_BUFFER, 0, 
+							gl::UNIFORM_BUFFER, i, 
 							bind_state.uniformBuffers[i],
 							bind_state.uniformBufferOffsets[i],
 							bind_state.uniformBufferSizes[i]);
