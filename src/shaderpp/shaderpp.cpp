@@ -7,100 +7,87 @@
 #include <boost/wave/cpplexer/cpp_lex_iterator.hpp>
 #include <boost/wave/preprocessing_hooks.hpp>
 
-namespace shaderpp
-{
-	namespace {
-		std::string loadSource(const char* path)
-		{
-			std::ifstream fileIn(path, std::ios::in);
-			if (!fileIn.is_open()) {
-                std::cerr << "Could not open file " << path << std::endl;
-				throw std::runtime_error("Could not open file");
-			}
-			std::string str;
-			str.assign(
-				(std::istreambuf_iterator<char>(fileIn)),
-				std::istreambuf_iterator<char>());
-			return str;
-		}
+namespace shaderpp {
+namespace {
+std::string loadSource(const char* path) {
+  std::ifstream fileIn(path, std::ios::in);
+  if (!fileIn.is_open()) {
+    std::cerr << "Could not open file " << path << std::endl;
+    throw std::runtime_error("Could not open file");
+  }
+  std::string str;
+  str.assign((std::istreambuf_iterator<char>(fileIn)),
+             std::istreambuf_iterator<char>());
+  return str;
+}
 
-		// thanks!
-		// http://boost.2283326.n4.nabble.com/wave-limited-extensibility-td2655231.html
-		struct glsl_directives_hooks
-			: public boost::wave::context_policies::default_preprocessing_hooks
-		{
-			// undocumented!
-			template <typename ContextT, typename ContainerT>
-			bool found_unknown_directive(ContextT const& ctx, ContainerT const& line,
-					ContainerT& pending)
-			{
-				std::copy(line.begin(), line.end(), std::back_inserter(pending));
-				return true;
-			}
-		};
+// thanks!
+// http://boost.2283326.n4.nabble.com/wave-limited-extensibility-td2655231.html
+struct glsl_directives_hooks
+    : public boost::wave::context_policies::default_preprocessing_hooks {
+  // undocumented!
+  template <typename ContextT, typename ContainerT>
+  bool found_unknown_directive(ContextT const& ctx, ContainerT const& line,
+                               ContainerT& pending) {
+    std::copy(line.begin(), line.end(), std::back_inserter(pending));
+    return true;
+  }
+};
+}
 
-	}
+ShaderSource::ShaderSource(const char* path_)
+    : source(loadSource(path_)), path(std::string(path_)) {}
 
-    ShaderSource::ShaderSource(const char* path_) : source(loadSource(path_)), path(std::string(path_))
-    {
-    }
+std::string ShaderSource::preprocess(PipelineStage stage,
+                                     gsl::span<const char*> defines,
+                                     gsl::span<const char*> includePaths) {
+  using lex_iterator_type =
+      boost::wave::cpplexer::lex_iterator<boost::wave::cpplexer::lex_token<>>;
+  using context_type = boost::wave::context<
+      std::string::iterator, lex_iterator_type,
+      boost::wave::iteration_context_policies::load_file_to_string,
+      glsl_directives_hooks>;
 
-    std::string ShaderSource::preprocess(
-    	PipelineStage stage, 
-    	gsl::span<const char*> defines,
-    	gsl::span<const char*> includePaths)
-    {
-        using lex_iterator_type =
-            boost::wave::cpplexer::lex_iterator<
-                boost::wave::cpplexer::lex_token<> >;
-        using context_type = boost::wave::context<
-                std::string::iterator, 
-				lex_iterator_type,
-				boost::wave::iteration_context_policies::load_file_to_string,
-				glsl_directives_hooks>;
+  context_type ctx(source.begin(), source.end(), path.c_str());
 
-        context_type ctx(source.begin(), source.end(), path.c_str());
+  ctx.add_include_path(".");
 
-        ctx.add_include_path(".");
+  for (auto p : includePaths)
+    ctx.add_include_path(p);
+  for (auto d : defines)
+    ctx.add_macro_definition(d);
 
-        for (auto p : includePaths)
-        	ctx.add_include_path(p);
-        for (auto d : defines)
-            ctx.add_macro_definition(d);
+  switch (stage) {
+  case PipelineStage::Vertex:
+    ctx.add_macro_definition("_VERTEX_");
+    break;
+  case PipelineStage::Geometry:
+    ctx.add_macro_definition("_GEOMETRY_");
+    break;
+  case PipelineStage::Pixel:
+    ctx.add_macro_definition("_PIXEL_");
+    break;
+  case PipelineStage::Hull:
+    ctx.add_macro_definition("_HULL_");
+    break;
+  case PipelineStage::Domain:
+    ctx.add_macro_definition("_DOMAIN_");
+    break;
+  case PipelineStage::Compute:
+    ctx.add_macro_definition("_COMPUTE_");
+    break;
+  }
 
-        switch (stage)
-        {
-        case PipelineStage::Vertex:
-        	ctx.add_macro_definition("_VERTEX_");
-        	break;
-        case PipelineStage::Geometry:
-        	ctx.add_macro_definition("_GEOMETRY_");
-        	break;
-        case PipelineStage::Pixel:
-        	ctx.add_macro_definition("_PIXEL_");
-        	break;
-        case PipelineStage::Hull:
-            ctx.add_macro_definition("_HULL_");
-        	break;
-        case PipelineStage::Domain:
-            ctx.add_macro_definition("_DOMAIN_");
-        	break;
-        case PipelineStage::Compute:
-        	ctx.add_macro_definition("_COMPUTE_");
-        	break;
-        }
+  context_type::iterator_type first = ctx.begin();
+  context_type::iterator_type last = ctx.end();
 
-        context_type::iterator_type first = ctx.begin();
-        context_type::iterator_type last = ctx.end();
+  std::ostringstream os;
 
-        std::ostringstream os;
+  while (first != last) {
+    os << (*first).get_value();
+    ++first;
+  }
 
-        while (first != last) {
-            os << (*first).get_value();
-            ++first;
-        }
-
-        return std::move(os.str());
-    }
-
+  return std::move(os.str());
+}
 }

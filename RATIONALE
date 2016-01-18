@@ -327,9 +327,10 @@ _____________________________
 * kUniformBufferOffsetAlignment should be dynamically queried
 * Normalize the order of template parameters (D, T...)
 * Rename source files in backend, remove OpenGLPixelType.hpp
-* Clean indentation (4 spaces)
+* Use ExternalProject_Add instead of git submodules
 
-DONE Do we really need refcounted resources?
+DONE Clean indentation (LLVM-style, 2 spaces)
+DONE Remove refcounted resources
 
 
 Feature: Command lists
@@ -382,7 +383,9 @@ _____________________________
 
 
 
-
-
 Feature: Partially resident textures
 _____________________________
+
+
+
+

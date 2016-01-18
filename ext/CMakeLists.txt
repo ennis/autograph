@@ -26,9 +26,9 @@ option(ASSIMP_BUILD_SAMPLES "..." OFF)
 option(ASSIMP_BUILD_TESTS "..." OFF)
 add_subdirectory(assimp)
 set_property(TARGET assimp PROPERTY FOLDER "External")
-set_property(TARGET zlibstatic PROPERTY FOLDER "External")
-set_property(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTY FOLDER "External")
-set_property(TARGET uninstall PROPERTY FOLDER "External")
+#set_property(TARGET zlibstatic PROPERTY FOLDER "External")
+#set_property(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTY FOLDER "External")
+#set_property(TARGET uninstall PROPERTY FOLDER "External")
 target_include_directories(assimp INTERFACE assimp/include)
 
 # docopt

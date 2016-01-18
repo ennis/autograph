@@ -3,25 +3,18 @@
 
 #include <cstdint>
 
-namespace ag
-{
-	using FenceValue = uint64_t;
+namespace ag {
+using FenceValue = uint64_t;
 
-	// Linked to a thread
-	template <typename D>
-	struct Fence
-	{
-		FenceValue getValue() {
-			backend.getFenceValue(handle);
-		}
+// Linked to a thread
+template <typename D> struct Fence {
+  FenceValue getValue() { backend.getFenceValue(handle); }
 
-		void signal(FenceValue newValue) {
-			backend.signal(handle, newValue);
-		}
+  void signal(FenceValue newValue) { backend.signal(handle, newValue); }
 
-		D& backend;
-        typename D::FenceHandle handle;
-	};
+  D& backend;
+  typename D::FenceHandle handle;
+};
 }
 
 #endif // !FENCE_HPP
