@@ -1,7 +1,7 @@
 #ifndef STATE_HPP
 #define STATE_HPP
 
-#include "OpenGL.hpp"
+#include "gl_core_4_5.hpp"
 
 namespace ag {
 namespace opengl {
