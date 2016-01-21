@@ -1,0 +1,5 @@
+file(GLOB AG_EXAMPLE_COMPUTE_SOURCES *.cpp)
+file(GLOB AG_EXAMPLE_COMPUTE_HEADERS *.hpp)
+add_executable(compute ${AG_EXAMPLE_COMPUTE_SOURCES})
+target_include_directories(compute PRIVATE ${AG_INCLUDE_DIR})
+target_link_libraries(compute autograph)

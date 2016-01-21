@@ -271,8 +271,12 @@ struct OpenGLBackend {
                        IndexType type);
   void bindUniformBuffer(unsigned slot, BufferHandle::pointer handle,
                          size_t offset, size_t size);
-  void bindSurface(SurfaceHandle::pointer handle);
   void bindGraphicsPipeline(GraphicsPipelineHandle::pointer handle);
+
+  ///////////////////// Render targets
+  void bindSurface(SurfaceHandle::pointer handle);
+  void bindRenderTexture(unsigned slot, Texture2DHandle::pointer handle);
+  void bindDepthRenderTexture(Texture2DHandle::pointer handle);
 
   ///////////////////// Clear command
   void clearColor(SurfaceHandle::pointer framebuffer_obj,
@@ -283,6 +287,10 @@ struct OpenGLBackend {
   void draw(PrimitiveType primitiveType, unsigned first, unsigned count);
   void drawIndexed(PrimitiveType primitiveType, unsigned first, unsigned count,
                    unsigned baseVertex);
+
+  ///////////////////// Compute
+  void dispatchCompute(unsigned threadGroupCountX, unsigned threadGroupCountY,
+                       unsigned threadGroupCountZ);
 
   void swapBuffers();
 
@@ -323,6 +331,7 @@ private:
 
   // last bound FBO
   GLuint last_framebuffer_obj;
+  GLuint render_to_texture_fbo;
   GLFWwindow* window;
   // bind state
   BindState bind_state;

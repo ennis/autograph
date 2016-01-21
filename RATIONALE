@@ -292,6 +292,12 @@ Nomenclature:
 
 do not expose individual objects
 
+Shader resource types:
+
+Textures (GL/D3D11)
+Constant buffers (GL:uniforms/D3D11:cbuffers)
+Read/write buffers (GL:SSBO/D3D11:RWBuffers)
+Read/write textures (GL:imagenD/D3D11:RWTexturenD)
 
 
 
@@ -328,6 +334,8 @@ _____________________________
 * Normalize the order of template parameters (D, T...)
 * Rename source files in backend, remove OpenGLPixelType.hpp
 * Use ExternalProject_Add instead of git submodules
+* Const-correctness in buffer and buffer slice types
+	(buffer<const T> is immutable, buffer<T> is mutable and binds as a RWBuffer)
 
 DONE Clean indentation (LLVM-style, 2 spaces)
 DONE Remove refcounted resources
@@ -365,6 +373,12 @@ IndexBuffer(buffer)
 IndexBuffer(untyped_buffer, offset, type)
 
 
+Feature: Compute pipelines and compute API
+_____________________________
+
+ag::compute(device, pipeline, <work group config>)
+
+
 Feature: Render targets
 _____________________________
 
@@ -376,6 +390,11 @@ TextureRT()
 TextureLayerRT()
 TextureCubeFaceRT()
 
+draw(tex0, ...)
+draw(Surface(tex_color, tex_depth), ...)
+draw(screen, ...)
+draw(tex_cube, ...)
+draw(Surface(tex_color, tex_depth, tex_stencil))
 
 
 Feature: D3D12 backend
@@ -385,6 +404,13 @@ _____________________________
 
 Feature: Partially resident textures
 _____________________________
+
+
+Feature: Texture blit operations
+_____________________________
+
+ag::copy(buffer_src, buffer_dst)
+ag::copy(texture_view_src, texture_view_dst)
 
 
 

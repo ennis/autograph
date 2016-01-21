@@ -48,3 +48,4 @@ target_include_directories(autograph PUBLIC ext/glm ext/GSL/include)
 
 add_subdirectory(examples/simple)
 add_subdirectory(examples/model_viewer)
+add_subdirectory(examples/compute)

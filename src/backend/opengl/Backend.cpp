@@ -161,6 +161,7 @@ OpenGLBackend::OpenGLBackend() : last_framebuffer_obj(0) {
 void OpenGLBackend::createWindow(const DeviceOptions& options) {
   window = createGlfwWindow(options);
   setDebugCallback();
+  gl::CreateFramebuffers(1, &render_to_texture_fbo);
 }
 
 bool OpenGLBackend::processWindowEvents() {
@@ -503,6 +504,17 @@ void OpenGLBackend::bindSurface(SurfaceHandle::pointer handle) {
   bindFramebufferObject(handle.id);
 }
 
+void OpenGLBackend::bindRenderTexture(unsigned slot, Texture2DHandle::pointer handle) {
+  bindFramebufferObject(render_to_texture_fbo);
+  gl::NamedFramebufferTexture(render_to_texture_fbo, gl::COLOR_ATTACHMENT0+slot, handle.id, 0);
+}
+
+void OpenGLBackend::bindDepthRenderTexture(Texture2DHandle::pointer handle)
+{
+    bindFramebufferObject(render_to_texture_fbo);
+    gl::NamedFramebufferTexture(render_to_texture_fbo, gl::DEPTH_ATTACHMENT, handle.id, 0);
+}
+
 void OpenGLBackend::bindGraphicsPipeline(
     GraphicsPipelineHandle::pointer handle) {
   gl::UseProgram(handle->program);
@@ -546,6 +558,13 @@ void OpenGLBackend::drawIndexed(PrimitiveType primitiveType, unsigned first,
   gl::DrawElementsBaseVertex(
       primitiveTypeToGLenum(primitiveType), count, bind_state.indexBufferType,
       ((const char*)((uintptr_t)first * indexStride)), baseVertex);
+}
+
+void OpenGLBackend::dispatchCompute(unsigned threadGroupCountX,
+                                    unsigned threadGroupCountY,
+                                    unsigned threadGroupCountZ) {
+  bindState();
+  gl::DispatchCompute(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
 }
 
 void OpenGLBackend::swapBuffers() {
