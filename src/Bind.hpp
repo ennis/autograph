@@ -134,8 +134,8 @@ struct SurfaceRT_
 };
 
 // specialization for depth-less rendering
-template <typename D, void, typename... TPixels>
-struct SurfaceRT_
+template <typename D, typename... TPixels>
+struct SurfaceRT_<D, void, TPixels...>
 {
     std::tuple<Texture2D<TPixels, D>&...> color_targets;
 
@@ -146,13 +146,13 @@ struct SurfaceRT_
 };
 
 template <typename D, typename TDepth, typename... TPixels>
-SurfaceRT_<D,TDepth,TPixels...> SurfaceRT(Texture2D<TDepth,D>& tex_depth, Texture2D<TPixels,D>& tex_color...)
+SurfaceRT_<D,TDepth,TPixels...> SurfaceRT(Texture2D<TDepth,D>& tex_depth, Texture2D<TPixels,D>&... tex_color)
 {
     return SurfaceRT_<D,TDepth,TPixels...> { tex_depth, std::make_tuple(tex_color...); }
 }
 
 template <typename D, typename... TPixels>
-SurfaceRT_<D,void,TPixels...> SurfaceRTNoDepth(Texture2D<TPixels,D>& tex_color...)
+SurfaceRT_<D,void,TPixels...> SurfaceRTNoDepth(Texture2D<TPixels,D>&... tex_color)
 {
     return SurfaceRT_<D,void,TPixels...> { std::make_tuple(tex_color...); }
 }
@@ -271,11 +271,6 @@ void bindRT(Device<D>& device, BindContext& context, Texture2D<T,D>& tex)
     device.backend.bindRenderTarget(context.renderTargetBindingIndex++, tex.handle.get());
 }
 
-template <typename D, typename T>
-void bindRT(Device<D>& device, BindContext& context, Texture2D<T,D>& tex)
-{
-    device.backend.bindRenderTarget(context.renderTargetBindingIndex++, tex.handle.get());
-}
 
 }
 

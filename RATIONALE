@@ -336,6 +336,8 @@ _____________________________
 * Use ExternalProject_Add instead of git submodules
 * Const-correctness in buffer and buffer slice types
 	(buffer<const T> is immutable, buffer<T> is mutable and binds as a RWBuffer)
+* Samples: automatically find the root asset folder
+* Extract boilerplate for samples (pipeline creation, etc.)
 
 DONE Clean indentation (LLVM-style, 2 spaces)
 DONE Remove refcounted resources
