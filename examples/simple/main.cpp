@@ -28,6 +28,7 @@ int main() {
   auto vbo = device.createBuffer(gsl::span<glm::vec3>(vbo_data));
 
   auto mesh = framework.loadMesh("meshes/stanford_bunny.obj");
+  auto tex = device.createTexture2D<ag::RGBA8>({512, 512});
 
   device.run([&]() {
     samples::uniforms::Scene sceneData;
@@ -37,7 +38,7 @@ int main() {
     device.clear(out, vec4(1.0, 0.0, 1.0, 1.0));
 
     // render to texture
-    ag::draw(device, tex, ppDefault,
+    ag::draw(device, tex, framework.ppDefault,
              ag::DrawArrays(ag::PrimitiveType::Triangles,
                             gsl::span<glm::vec3>(vbo_data)),
              glm::mat4(1.0f));

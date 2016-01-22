@@ -84,7 +84,7 @@ void Boilerplate::loadPipelines(ag::Device<GL>& device) {
 
 void Boilerplate::loadMeshShader(ag::Device<GL>& device, const char* mesh)
 {
-  
+
 }
 
 void Boilerplate::loadSamplers(ag::Device<GL>& device) {
@@ -145,5 +145,11 @@ Mesh Boilerplate::loadMesh(const char* asset_path) {
 
   return Mesh{std::move(vertices), std::move(indices)};
 }
+
+Mesh Boilerplate::loadMeshPipeline(const char* asset_path)
+{
+  
+}
+
 }
 }

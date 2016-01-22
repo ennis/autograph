@@ -8,8 +8,6 @@
 #include <Pipeline.hpp>
 #include <backend/opengl/Backend.hpp>
 
-#include "mesh.hpp"
-
 namespace samples {
 
 struct Vertex2D {
