@@ -36,8 +36,15 @@ source_group("Header files\\OpenGL" FILES ${AG_HEADERS_OPENGL})
 
 add_library(autograph STATIC ${AG_SOURCES_CORE} ${AG_SOURCES_OPENGL})
 
-include_directories(src/)
-set(AG_INCLUDE_DIR src/)
+include_directories(src)
+include_directories(ext/filesystem)
+include_directories(ext/glm)
+include_directories(ext/GSL/include)
+
+#set(AG_INCLUDE_DIR src/)
+#set(FILESYSTEM_INCLUDE_DIR ext/filesystem)
+#set(GLM_INCLUDE_DIR ext/glm)
+#set(GSL_INCLUDE_DIR ext/GSL/include)
 
 add_library(shaderpp STATIC ${SHADERPP_SOURCES})
 target_link_libraries(shaderpp ${Boost_LIBRARIES})

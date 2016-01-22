@@ -25,3 +25,6 @@
 [submodule "ext/docopt.cpp"]
 	path = ext/docopt.cpp
 	url = https://github.com/docopt/docopt.cpp.git
+[submodule "ext/filesystem"]
+	path = ext/filesystem
+	url = https://github.com/wjakob/filesystem.git

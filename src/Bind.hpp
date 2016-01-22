@@ -108,7 +108,7 @@ Uniform_<ResTy> Uniform(unsigned slot_, const ResTy& buf_) {
 ////////////////////////// Binder: SurfaceRT
 template <typename D, typename T>
 void bindRTImpl(Device<D>& device, BindContext& context, Texture2D<T,D>& resource) {
-    device.backend.
+    //device.backend.
 }
 
 template <typename D, typename T, typename... Rest>
@@ -148,13 +148,13 @@ struct SurfaceRT_<D, void, TPixels...>
 template <typename D, typename TDepth, typename... TPixels>
 SurfaceRT_<D,TDepth,TPixels...> SurfaceRT(Texture2D<TDepth,D>& tex_depth, Texture2D<TPixels,D>&... tex_color)
 {
-    return SurfaceRT_<D,TDepth,TPixels...> { tex_depth, std::make_tuple(tex_color...); }
+    return SurfaceRT_<D,TDepth,TPixels...> { tex_depth, std::make_tuple(tex_color...) };
 }
 
 template <typename D, typename... TPixels>
 SurfaceRT_<D,void,TPixels...> SurfaceRTNoDepth(Texture2D<TPixels,D>&... tex_color)
 {
-    return SurfaceRT_<D,void,TPixels...> { std::make_tuple(tex_color...); }
+    return SurfaceRT_<D,void,TPixels...> { std::make_tuple(tex_color...) };
 }
 
 ////////////////////////// bindOne<T> template declaration

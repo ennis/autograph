@@ -1,5 +1,9 @@
+#ifndef UNIFORMS_HPP
+#define UNIFORMS_HPP
+
 #include <glm/glm.hpp>
 
+namespace samples {
 namespace uniforms {
 struct Scene {
   glm::mat4 viewMatrix;
@@ -12,3 +16,6 @@ struct Object {
   glm::mat4 modelMatrix;
 };
 }
+}
+
+#endif
