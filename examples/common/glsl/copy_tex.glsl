@@ -1,3 +1,4 @@
+#version 440
 #include "scene.glsl"
 
 layout(binding=0) uniform sampler2D tex;

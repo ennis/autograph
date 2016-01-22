@@ -347,6 +347,8 @@ _____________________________
 	concept ShaderResource
 	concept RenderTarget
 	concept Drawable
+* Force debug breakpoint
+* Break on shader compilation error
 
 DONE Clean indentation (LLVM-style, 2 spaces)
 DONE Remove refcounted resources

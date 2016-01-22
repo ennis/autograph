@@ -3,12 +3,14 @@
 
 #include <filesystem/path.h>
 
-#include <Draw.hpp>
 #include <Device.hpp>
+#include <Draw.hpp>
 #include <Pipeline.hpp>
 #include <backend/opengl/Backend.hpp>
 
 namespace samples {
+
+using GL = ag::opengl::OpenGLBackend;
 
 struct Vertex2D {
   float x;
@@ -37,8 +39,8 @@ void drawMesh(Mesh<D>& mesh, ag::Device<D>& device, RenderTarget&& rt,
               ag::GraphicsPipeline<D>& pipeline,
               ShaderResources&&... resources) {
   if (mesh.ibo)
-    ag::draw(device, rt, pipeline,
-             ag::DrawIndexed(ag::PrimitiveType::Triangles, 0, mesh.ibo->size(), 0),
+    ag::draw(device, rt, pipeline, ag::DrawIndexed(ag::PrimitiveType::Triangles,
+                                                   0, mesh.ibo->size(), 0),
              ag::VertexBuffer(mesh.vbo), ag::IndexBuffer(mesh.ibo.value()),
              std::forward<ShaderResources>(resources)...);
   else
@@ -48,13 +50,10 @@ void drawMesh(Mesh<D>& mesh, ag::Device<D>& device, RenderTarget&& rt,
              std::forward<ShaderResources>(resources)...);
 }
 
+// utility methods and shared resources for the samples
 struct Framework {
-  using GL = ag::opengl::OpenGLBackend;
-  
-  Framework(ag::Device<GL>& device_) : device(device_)
-  {
-    initialize(); 
-  }
+
+  Framework(ag::Device<GL>& device_) : device(device_) { initialize(); }
 
   void initialize();
 
@@ -75,28 +74,28 @@ struct Framework {
   }
 
   template <typename SurfaceTy, typename T>
-  void copyTex(ag::Texture2D<T, GL>& tex,
-               SurfaceTy&& out_surface, unsigned target_width,
-               unsigned target_height, glm::vec2 pos, float scale) {
+  void copyTex(ag::Texture2D<T, GL>& tex, SurfaceTy&& out_surface,
+               unsigned target_width, unsigned target_height, glm::vec2 pos,
+               float scale) {
     Vertex2D target_rect[6];
     makeCopyRect(tex.info.dimensions.width, tex.info.dimensions.height,
                  target_width, target_height, pos, scale, target_rect);
-    ag::draw(
-        device, out_surface, ppCopyTex,
-        ag::DrawArrays(ag::PrimitiveType::Triangles, gsl::span<Vertex2D>(target_rect)),
-        glm::vec2(target_width, target_height), tex);
+    ag::draw(device, out_surface, ppCopyTex,
+             ag::DrawArrays(ag::PrimitiveType::Triangles,
+                            gsl::span<Vertex2D>(target_rect)),
+             glm::vec2(target_width, target_height), tex);
   }
 
   Mesh<GL> loadMesh(const char* asset_path);
-  ag::GraphicsPipeline<GL> loadMeshPipeline(const char* asset_path);
-
-
+  ag::GraphicsPipeline<GL>
+  loadMeshShaderPipeline(ag::opengl::GraphicsPipelineInfo& baseInfo,
+                         const char* mesh, gsl::span<const char*> defines);
 
   ag::Device<GL>& device;
   // autograph source tree root (contains src,ext,examples)
   filesystem::path projectRoot;
-  // samples assets root
-  filesystem::path assetsRoot;
+  // samples root
+  filesystem::path samplesRoot;
 
   ag::GraphicsPipeline<GL> ppDefault;
   ag::GraphicsPipeline<GL> ppCopyTex;
@@ -111,6 +110,7 @@ private:
   void loadPipelines();
   void loadSamplers();
 };
+
 }
 
 #endif

@@ -2,16 +2,16 @@
 
 #include <vector>
 
-#include <glm/glm.hpp>
-#include <optional.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <glm/glm.hpp>
+#include <optional.hpp>
 
-#include <shaderpp/shaderpp.hpp>
-#include <Error.hpp>
 #include <Device.hpp>
 #include <Draw.hpp>
+#include <Error.hpp>
+#include <shaderpp/shaderpp.hpp>
 
 namespace samples {
 void Framework::initialize() {
@@ -19,18 +19,18 @@ void Framework::initialize() {
 
   auto path = fs::path::getcwd();
   // try several parent paths until we get the right one
-  if (!(path / "examples/assets").is_directory()) {
+  if (!(path / "examples/examples.txt").is_file()) {
     path = path.parent_path();
-    if (!(path / "examples/assets").is_directory()) {
+    if (!(path / "examples/examples.txt").is_file()) {
       path = path.parent_path();
-      if (!(path / "examples/assets").is_directory()) {
+      if (!(path / "examples/examples.txt").is_file()) {
         path = path.parent_path();
-        if (!(path / "examples/assets").is_directory()) {
+        if (!(path / "examples/examples.txt").is_file()) {
           path = path.parent_path();
-          if (!(path / "examples/assets").is_directory()) {
+          if (!(path / "examples/examples.txt").is_file()) {
             path = path.parent_path();
-            if (!(path / "examples/assets").is_directory()) {
-              ag::failWith("Samples asset directory not found");
+            if (!(path / "examples/examples.txt").is_file()) {
+              ag::failWith("Samples root directory not found");
             }
           }
         }
@@ -39,7 +39,7 @@ void Framework::initialize() {
   }
 
   projectRoot = path;
-  assetsRoot = path / "examples/assets";
+  samplesRoot = path / "examples";
   loadPipelines();
   loadSamplers();
 }
@@ -53,20 +53,8 @@ void Framework::loadPipelines() {
       VertexAttribute{0, gl::FLOAT, 2, 2 * sizeof(float), false}};
 
   {
-    ShaderSource src_default("../../../examples/common/glsl/default.glsl");
-    ag::opengl::GraphicsPipelineInfo info;
-    auto VSSource =
-        src_default.preprocess(PipelineStage::Vertex, nullptr, nullptr);
-    auto PSSource =
-        src_default.preprocess(PipelineStage::Pixel, nullptr, nullptr);
-    info.VSSource = VSSource.c_str();
-    info.PSSource = PSSource.c_str();
-    info.vertexAttribs = gsl::as_span(vertexAttribs_2D);
-    ppDefault = device.createGraphicsPipeline(info);
-  }
-
-  {
-    ShaderSource src_copy("../../../examples/common/glsl/copy_tex.glsl");
+    ShaderSource src_copy(
+        (samplesRoot / "common/glsl/copy_tex.glsl").str().c_str());
     ag::opengl::GraphicsPipelineInfo info;
     auto VSSource =
         src_copy.preprocess(PipelineStage::Vertex, nullptr, nullptr);
@@ -78,13 +66,30 @@ void Framework::loadPipelines() {
     const char* defines[] = {"USE_MASK"};
     VSSource = src_copy.preprocess(PipelineStage::Vertex, defines, nullptr);
     PSSource = src_copy.preprocess(PipelineStage::Pixel, defines, nullptr);
+	info.VSSource = VSSource.c_str();
+	info.PSSource = PSSource.c_str();
     ppCopyTexWithMask = device.createGraphicsPipeline(info);
   }
 }
 
-void Framework::loadMeshShader(const char* mesh)
-{
+ag::GraphicsPipeline<GL>
+Framework::loadMeshShaderPipeline(ag::opengl::GraphicsPipelineInfo& baseInfo,
+                                  const char* mesh,
+                                  gsl::span<const char*> defines) {
+  using namespace shaderpp;
+  ag::opengl::VertexAttribute vertexAttribs[] = {
+      ag::opengl::VertexAttribute{0, gl::FLOAT, 3, 3 * sizeof(float), false},
+      ag::opengl::VertexAttribute{0, gl::FLOAT, 3, 3 * sizeof(float), false},
+      ag::opengl::VertexAttribute{0, gl::FLOAT, 3, 3 * sizeof(float), false},
+      ag::opengl::VertexAttribute{0, gl::FLOAT, 2, 2 * sizeof(float), false}};
 
+  ShaderSource src((samplesRoot / mesh).str().c_str());
+  auto VSSource = src.preprocess(PipelineStage::Vertex, defines, nullptr);
+  auto PSSource = src.preprocess(PipelineStage::Pixel, defines, nullptr);
+  baseInfo.VSSource = VSSource.c_str();
+  baseInfo.PSSource = PSSource.c_str();
+  baseInfo.vertexAttribs = gsl::as_span(vertexAttribs);
+  return device.createGraphicsPipeline(baseInfo);
 }
 
 void Framework::loadSamplers() {
@@ -109,21 +114,21 @@ void Framework::loadSamplers() {
   samLinearClamp = device.createSampler(info);
 }
 
-Mesh Framework::loadMesh(const char* asset_path) {
-  auto full_path = assetsRoot / asset_path;
+Mesh<GL> Framework::loadMesh(const char* asset_path) {
+  auto full_path = samplesRoot / asset_path;
   Assimp::Importer importer;
 
   const aiScene* scene = importer.ReadFile(
-      full_path.c_str(), aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph |
-                             aiProcess_Triangulate |
-                             aiProcess_JoinIdenticalVertices |
-                             aiProcess_SortByPType);
+      full_path.str().c_str(),
+      aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph |
+          aiProcess_Triangulate | aiProcess_JoinIdenticalVertices |
+          aiProcess_SortByPType);
 
   if (!scene)
     ag::failWith("Could not load scene");
 
   // load the first mesh
-  std::vector<Vertex> vertices;
+  std::vector<Vertex3D> vertices;
   std::vector<unsigned int> indices;
   if (scene->mNumMeshes > 0) {
     auto mesh = scene->mMeshes[0];
@@ -143,13 +148,10 @@ Mesh Framework::loadMesh(const char* asset_path) {
     }
   }
 
-  return Mesh{std::move(vertices), std::move(indices)};
-}
+  auto vbo = device.createBuffer(gsl::as_span(vertices));
+  auto ibo = device.createBuffer(gsl::as_span(indices));
 
-Mesh<GL> Framework::loadMeshPipeline(const char* asset_path)
-{
-
-}
-
+  return Mesh<GL>{std::move(vertices), std::move(indices), std::move(vbo),
+                  std::move(ibo)};
 }
 }
