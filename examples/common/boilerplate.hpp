@@ -52,7 +52,11 @@ struct Framework {
   using GL = ag::opengl::OpenGLBackend;
   
   Framework(ag::Device<GL>& device_) : device(device_)
-  {}
+  {
+    initialize(); 
+  }
+
+  void initialize();
 
   void makeCopyRect(unsigned tex_width, unsigned tex_height,
                     unsigned target_width, unsigned target_height,
@@ -89,7 +93,6 @@ struct Framework {
 
 
   ag::Device<GL>& device;
-
   // autograph source tree root (contains src,ext,examples)
   filesystem::path projectRoot;
   // samples assets root
@@ -105,8 +108,8 @@ struct Framework {
   ag::Sampler<GL> samNearestRepeat;
 
 private:
-  void loadPipelines(ag::Device<GL>& device);
-  void loadSamplers(ag::Device<GL>& device);
+  void loadPipelines();
+  void loadSamplers();
 };
 }
 

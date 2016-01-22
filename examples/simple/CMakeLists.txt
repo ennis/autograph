@@ -1,4 +1,4 @@
-file(GLOB AG_EXAMPLE_SIMPLE_SOURCES *.cpp ../common/*.cpp)
+file(GLOB AG_EXAMPLE_SIMPLE_SOURCES *.cpp ../common/boilerplate.cpp)
 file(GLOB AG_EXAMPLE_SIMPLE_HEADERS *.hpp)
 add_executable(simple ${AG_EXAMPLE_SIMPLE_SOURCES})
 target_include_directories(simple PRIVATE ${FILESYSTEM_INCLUDE_DIR} ${AG_INCLUDE_DIR})

@@ -14,7 +14,7 @@
 #include <Draw.hpp>
 
 namespace samples {
-void Boilerplate::initialize(ag::Device<GL>& device) {
+void Framework::initialize() {
   namespace fs = filesystem;
 
   auto path = fs::path::getcwd();
@@ -40,11 +40,11 @@ void Boilerplate::initialize(ag::Device<GL>& device) {
 
   projectRoot = path;
   assetsRoot = path / "examples/assets";
-  loadPipelines(device);
-  loadSamplers(device);
+  loadPipelines();
+  loadSamplers();
 }
 
-void Boilerplate::loadPipelines(ag::Device<GL>& device) {
+void Framework::loadPipelines() {
   using namespace ag::opengl;
   using namespace shaderpp;
 
@@ -82,12 +82,12 @@ void Boilerplate::loadPipelines(ag::Device<GL>& device) {
   }
 }
 
-void Boilerplate::loadMeshShader(ag::Device<GL>& device, const char* mesh)
+void Framework::loadMeshShader(const char* mesh)
 {
 
 }
 
-void Boilerplate::loadSamplers(ag::Device<GL>& device) {
+void Framework::loadSamplers() {
   ag::SamplerInfo info;
   info.addrU = ag::TextureAddressMode::Repeat;
   info.addrV = ag::TextureAddressMode::Repeat;
@@ -109,7 +109,7 @@ void Boilerplate::loadSamplers(ag::Device<GL>& device) {
   samLinearClamp = device.createSampler(info);
 }
 
-Mesh Boilerplate::loadMesh(const char* asset_path) {
+Mesh Framework::loadMesh(const char* asset_path) {
   auto full_path = assetsRoot / asset_path;
   Assimp::Importer importer;
 
@@ -146,9 +146,9 @@ Mesh Boilerplate::loadMesh(const char* asset_path) {
   return Mesh{std::move(vertices), std::move(indices)};
 }
 
-Mesh Boilerplate::loadMeshPipeline(const char* asset_path)
+Mesh<GL> Framework::loadMeshPipeline(const char* asset_path)
 {
-  
+
 }
 
 }
