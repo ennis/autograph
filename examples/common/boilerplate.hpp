@@ -33,8 +33,7 @@ template <typename D> struct Mesh {
   std::experimental::optional<ag::Buffer<D, unsigned int[]>> ibo;
 };
 
-template <typename D, typename RenderTarget, typename Drawable,
-          typename... ShaderResources>
+template <typename D, typename RenderTarget, typename... ShaderResources>
 void drawMesh(Mesh<D>& mesh, ag::Device<D>& device, RenderTarget&& rt,
               ag::GraphicsPipeline<D>& pipeline,
               ShaderResources&&... resources) {
@@ -62,8 +61,8 @@ struct Framework {
                     glm::vec2 pos, float scale, gsl::span<Vertex2D, 6> out) {
     float xleft = (pos.x / target_width) * 2.0f - 1.0f;
     float ytop = (1.0f - pos.y / target_height) * 2.0f - 1.0f;
-    float xright = xleft + (tex_width / target_width * scale) * 2.0f;
-    float ybottom = ytop - (tex_height / target_height * scale) * 2.0f;
+    float xright = xleft + ((float)tex_width / target_width * scale) * 2.0f;
+    float ybottom = ytop - ((float)tex_height / target_height * scale) * 2.0f;
 
     out[0] = Vertex2D{xleft, ytop, 0.0, 1.0};
     out[1] = Vertex2D{xright, ytop, 1.0, 1.0};
@@ -78,8 +77,8 @@ struct Framework {
                unsigned target_width, unsigned target_height, glm::vec2 pos,
                float scale) {
     Vertex2D target_rect[6];
-    makeCopyRect(tex.info.dimensions.width, tex.info.dimensions.height,
-                 target_width, target_height, pos, scale, target_rect);
+    makeCopyRect(tex.info.dimensions.x, tex.info.dimensions.y, target_width,
+                 target_height, pos, scale, target_rect);
     ag::draw(device, out_surface, ppCopyTex,
              ag::DrawArrays(ag::PrimitiveType::Triangles,
                             gsl::span<Vertex2D>(target_rect)),
@@ -110,7 +109,6 @@ private:
   void loadPipelines();
   void loadSamplers();
 };
-
 }
 
 #endif

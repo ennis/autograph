@@ -266,11 +266,17 @@ void bindImpl(Device<D>& device, BindContext& context, T&& resource,
 ////////////////////////// Bind render targets
 ////////////////////////// BindRT<Texture2D>
 template <typename D, typename T>
-void bindRT(Device<D>& device, BindContext& context, Texture2D<T,D>& tex)
+void bindRenderTarget(Device<D>& device, BindContext& context, Texture2D<T,D>& tex)
 {
-    device.backend.bindRenderTarget(context.renderTargetBindingIndex++, tex.handle.get());
+    device.backend.bindRenderTexture(context.renderTargetBindingIndex++, tex.handle.get());
 }
 
+////////////////////////// BindRT<Surface>
+template <typename D, typename Depth, typename... Colors>
+void bindRenderTarget(Device<D>& device, BindContext& context, Surface<D, Depth, Colors...>& surface)
+{
+	device.backend.bindSurface(surface.handle.get());
+}
 
 }
 

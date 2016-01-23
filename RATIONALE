@@ -349,6 +349,9 @@ _____________________________
 	concept Drawable
 * Force debug breakpoint
 * Break on shader compilation error
+* Formalize the use of glm vector types in the API
+	=> minimum dependencies are always good. Consider removing glm from the requirements?
+	(so that people can use eigen instead)
 
 DONE Clean indentation (LLVM-style, 2 spaces)
 DONE Remove refcounted resources

@@ -100,7 +100,7 @@ template <typename D, typename TSurface, typename Drawable>
 void draw(Device<D>& device, TSurface&& surface,
           GraphicsPipeline<D>& graphicsPipeline, Drawable&& drawable) {
   BindContext context;
-  device.backend.bindSurface(surface.handle);
+  bindRenderTarget(device, context, surface);
   device.backend.bindGraphicsPipeline(graphicsPipeline.handle.get());
   drawable.draw(device, context);
 }
@@ -112,7 +112,7 @@ void draw(Device<D>& device, TSurface&& surface,
           TShaderResources&&... resources) {
   BindContext context;
   bindImpl(device, context, resources...);
-  device.backend.bindSurface(surface.handle.get());
+  bindRenderTarget(device, context, surface);
   device.backend.bindGraphicsPipeline(graphicsPipeline.handle.get());
   drawable.draw(device, context);
 }
