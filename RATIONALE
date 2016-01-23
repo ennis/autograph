@@ -332,15 +332,12 @@ Draw call:
 First simplification pass
 _____________________________
 
-* Remove templated methods in backend (createTexturenD<TPixel>)
 * Blocking version of UploadBuffer::upload 
 * kUniformBufferOffsetAlignment should be dynamically queried
 * Normalize the order of template parameters (D, T...)
-* Rename source files in backend, remove OpenGLPixelType.hpp
-* Use ExternalProject_Add instead of git submodules
+* Rename source files in backend
 * Const-correctness in buffer and buffer slice types
 	(buffer<const T> is immutable, buffer<T> is mutable and binds as a RWBuffer)
-* Samples: automatically find the root asset folder
 * Extract boilerplate for samples (pipeline creation, etc.)
 	- common shaders
 	- resource loading (meshes, textures)
@@ -354,6 +351,9 @@ _____________________________
 * CRTP for the backend
 * Bikeshedding: lowercase file names
 
+DONE Samples: automatically find the root asset folder
+DONE Remove OpenGLPixelType.hpp
+DONE Remove templated methods in backend (createTexturenD<TPixel>)
 DONE Clean indentation (LLVM-style, 2 spaces)
 DONE Remove refcounted resources
 
@@ -377,6 +377,13 @@ Requirements in terms of concepts
 	concept RenderTarget
 	concept Drawable
 
+
+
+Feature: type-erased texture types
+_____________________________
+
+Specialization of texturenD types
+To be used when the pixel type is not known at compile time
 
 
 Feature: Command lists
@@ -409,6 +416,8 @@ VertexBuffer(vertex_buffer)
 VertexBuffer(untyped_buffer, offset, stride)
 IndexBuffer(buffer)
 IndexBuffer(untyped_buffer, offset, type)
+
+
 
 
 Feature: Compute pipelines and compute API
@@ -467,5 +476,30 @@ or, for consistency, a free function:
 
 
 
+Feature: Separate window creation from backend
+_____________________________
+
+Move these in separate libraries
+
+
+
+Feature: extras
+_____________________________
+
+in namespace ag::extras, separate library
+
+
+image: image loader, designed to be used easily with ag::Texturexx types
+	depends on: stb_image? gli?
+text: draw text on a render target
+	depends on freetype?
+sdftext: signed distance field font rendering
+	dependencies?
+sprite: texture/sprite blitting operations
+	no dependencies
+postfx: post-process effects
+	no dependencies
+vector: vector drawing library
+	nvg?
 
 
