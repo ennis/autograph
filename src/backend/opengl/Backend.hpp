@@ -87,7 +87,7 @@ struct GraphicsPipelineInfo {
   const char* PSSource = nullptr;
   const char* DSSource = nullptr;
   const char* HSSource = nullptr;
-  gsl::span<VertexAttribute> vertexAttribs;
+  gsl::span<const VertexAttribute> vertexAttribs;
   GLRasterizerState rasterizerState;
   GLDepthStencilState depthStencilState;
   GLBlendState blendState;
@@ -303,14 +303,9 @@ private:
   void bindFramebufferObject(GLuint framebuffer_obj);
   void bindState();
 
-  Texture1DHandle createTexture1D(unsigned dimensions, GLenum internalFormat);
-  Texture2DHandle createTexture2D(glm::uvec2 dimensions, GLenum internalFormat);
-  Texture3DHandle createTexture3D(glm::uvec3 dimensions, GLenum internalFormat);
-  // void destroyTexture(GLuint tex_obj);
-
   GLuint createProgramFromShaderPipeline(const GraphicsPipelineInfo& info);
   GLuint createComputeProgram(const ComputePipelineInfo& info);
-  GLuint createVertexArrayObject(gsl::span<VertexAttribute> attribs);
+  GLuint createVertexArrayObject(gsl::span<const VertexAttribute> attribs);
 
   struct BindState {
     std::array<GLuint, kMaxVertexBufferSlots> vertexBuffers;

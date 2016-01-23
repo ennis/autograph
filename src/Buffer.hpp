@@ -11,6 +11,7 @@ enum class BufferUsage {
 };
 
 template <typename D> struct RawBuffer {
+  RawBuffer() = default;
   RawBuffer(std::size_t byteSize_, typename D::BufferHandle handle_)
       : byteSize(byteSize_), handle(std::move(handle_)) {}
 
@@ -19,12 +20,14 @@ template <typename D> struct RawBuffer {
 };
 
 template <typename D, typename T> struct Buffer : public RawBuffer<D> {
+  Buffer() = default;
   Buffer(typename D::BufferHandle handle_)
       : RawBuffer<D>(sizeof(T), std::move(handle_)) {}
 };
 
 // specialization for array types
 template <typename D, typename T> struct Buffer<D, T[]> : public RawBuffer<D> {
+  Buffer() = default;
   Buffer(std::size_t size_, typename D::BufferHandle handle_)
       : RawBuffer<D>(size_ * sizeof(T), std::move(handle_)) {}
 

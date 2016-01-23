@@ -478,7 +478,7 @@ GLuint OpenGLBackend::createProgramFromShaderPipeline(
 }
 
 GLuint
-OpenGLBackend::createVertexArrayObject(gsl::span<VertexAttribute> attribs) {
+OpenGLBackend::createVertexArrayObject(gsl::span<const VertexAttribute> attribs) {
   GLuint strides[OpenGLBackend::kMaxVertexBufferSlots] = {0};
   GLuint vertex_array_obj;
   gl::CreateVertexArrays(1, &vertex_array_obj);

@@ -1,5 +1,0 @@
-file(GLOB AG_EXAMPLE_MODEL_VIEWER_SOURCES *.cpp)
-file(GLOB AG_EXAMPLE_MODEL_VIEWER_HEADERS *.hpp)
-add_executable(model_viewer ${AG_EXAMPLE_MODEL_VIEWER_SOURCES})
-target_include_directories(model_viewer PRIVATE ${AG_INCLUDE_DIR})
-target_link_libraries(model_viewer autograph assimp docopt_s)

@@ -53,6 +53,5 @@ target_include_directories(shaderpp PUBLIC ext/GSL/include ${Boost_INCLUDE_DIR})
 target_link_libraries(autograph shaderpp cppformat glloadgen glfw ${Boost_LIBRARIES} ${GLFW_LIBRARIES})
 target_include_directories(autograph PUBLIC ext/glm ext/GSL/include)
 
-add_subdirectory(examples/simple)
-add_subdirectory(examples/model_viewer)
-add_subdirectory(examples/compute)
+add_subdirectory(examples)
+
