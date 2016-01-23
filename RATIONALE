@@ -296,8 +296,11 @@ Shader resource types:
 
 Textures (GL/D3D11)
 Constant buffers (GL:uniforms/D3D11:cbuffers)
+	UniformXXX binders
 Read/write buffers (GL:SSBO/D3D11:RWBuffers)
+	RWBuffer<T>, RWBufferSlot<T>, 
 Read/write textures (GL:imagenD/D3D11:RWTexturenD)
+	RWTexturenD<T>, RWTexturenDSlot<T>
 
 
 
@@ -324,6 +327,7 @@ Draw call:
 	TextureUnit(0, TextureType)
 	BufferSlot(...)
 
+* Upload texture data!
 
 First simplification pass
 _____________________________
@@ -343,18 +347,36 @@ _____________________________
 	- common samplers
 	- vertex types
 	- rendering of meshes
-* Formalize requirements of binders
-	concept ShaderResource
-	concept RenderTarget
-	concept Drawable
 * Force debug breakpoint
 * Break on shader compilation error
-* Formalize the use of glm vector types in the API
-	=> minimum dependencies are always good. Consider removing glm from the requirements?
-	(so that people can use eigen instead)
+* Clean the samples boilerplate
+* Use an unique cmake file for the samples
+* CRTP for the backend
+* Bikeshedding: lowercase file names
 
 DONE Clean indentation (LLVM-style, 2 spaces)
 DONE Remove refcounted resources
+
+
+
+Formalization: usage of glm vector types
+_____________________________
+
+Minimum dependencies are always good. Consider removing glm from the requirements?
+(so that people can use eigen instead)
+Issue: cannot include predefined pixel types in the library. (except array types)
+	=> that's good
+
+
+
+Formalization: binders
+_____________________________
+
+Requirements in terms of concepts
+	concept ShaderResource
+	concept RenderTarget
+	concept Drawable
+
 
 
 Feature: Command lists
@@ -425,8 +447,24 @@ _____________________________
 Feature: Texture blit operations
 _____________________________
 
-ag::copy(buffer_src, buffer_dst)
-ag::copy(texture_view_src, texture_view_dst)
+Copy buffer data (with the same underlying type)
+Copy texture data to another (with the same pixel type)
+Copy texture data to RenderTarget? No: this is a rendering operation
+
+ag::copy(commandlist, buffer_src, buffer_dst)
+ag::copy(commandlist, texture_view_src, texture_view_dst)
+
+
+Feature: Data readback
+_____________________________
+
+Needed!
+Asynchronous VS synchronous
+something like 
+	texture.readBack([](auto view) {...})	// executed when the data is available. no syncing
+or, for consistency, a free function:
+	ag::readBack(commandlist, texture, [](auto view) {...})
+
 
 
 

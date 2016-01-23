@@ -18,7 +18,6 @@
 #include <Device.hpp>
 #include <Draw.hpp>
 
-#include "OpenGLPixelType.hpp"
 #include "State.hpp"
 
 namespace ag {
@@ -46,6 +45,14 @@ struct is_enum_flags<ag::opengl::DataAccessHints> : public std::true_type {};
 
 namespace ag {
 namespace opengl {
+	
+	struct GLPixelFormat
+	{
+		GLenum internalFormat;
+		GLenum externalFormat;
+		int numComponents;
+	};
+
 // Wrapper to use GLuint as a unique_ptr handle type
 // http://stackoverflow.com/questions/6265288/unique-ptr-custom-storage-type-example/6272139#6272139
 // TODO move this in a shared header
@@ -218,11 +225,8 @@ struct OpenGLBackend {
   SurfaceHandle initOutputSurface();
 
   ///////////////////// Resources: Textures
-  template <typename TPixel>
   Texture1DHandle createTexture1D(const Texture1DInfo& info);
-  template <typename TPixel>
   Texture2DHandle createTexture2D(const Texture2DInfo& info);
-  template <typename TPixel>
   Texture3DHandle createTexture3D(const Texture3DInfo& info);
 
   // used internally
@@ -337,26 +341,6 @@ private:
   BindState bind_state;
 };
 
-template <typename TPixel>
-inline OpenGLBackend::Texture1DHandle
-OpenGLBackend::createTexture1D(const Texture1DInfo& info) {
-  return createTexture1D(info.dimensions,
-                         OpenGLPixelTypeTraits<TPixel>::InternalFormat);
-}
-
-template <typename TPixel>
-inline OpenGLBackend::Texture2DHandle
-OpenGLBackend::createTexture2D(const Texture2DInfo& info) {
-  return createTexture2D(info.dimensions,
-                         OpenGLPixelTypeTraits<TPixel>::InternalFormat);
-}
-
-template <typename TPixel>
-inline OpenGLBackend::Texture3DHandle
-OpenGLBackend::createTexture3D(const Texture3DInfo& info) {
-  return createTexture3D(info.dimensions,
-                         OpenGLPixelTypeTraits<TPixel>::InternalFormat);
-}
 }
 }
 

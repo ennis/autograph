@@ -1,9 +1,9 @@
 #include "Backend.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <ostream>
 #include <sstream>
-#include <algorithm>
 
 #include <format.h>
 
@@ -98,6 +98,31 @@ GLenum primitiveTypeToGLenum(PrimitiveType primitiveType) {
     return gl::POINTS;
   default:
     return gl::POINTS;
+  }
+}
+
+GLPixelFormat pixelFormatToGL(PixelFormat format) {
+  switch (format) {
+  case PixelFormat::Uint8:
+    return GLPixelFormat{gl::R8UI, gl::UNSIGNED_BYTE, 1};
+  case PixelFormat::Uint8x2:
+    return GLPixelFormat{gl::RG8UI, gl::UNSIGNED_BYTE, 2};
+  case PixelFormat::Uint8x3:
+    return GLPixelFormat{gl::RGB8UI, gl::UNSIGNED_BYTE, 3};
+  case PixelFormat::Uint8x4:
+    return GLPixelFormat{gl::RGBA8UI, gl::UNSIGNED_BYTE, 4};
+  case PixelFormat::Unorm8:
+    return GLPixelFormat{gl::R8, gl::UNSIGNED_BYTE, 1};
+  case PixelFormat::Unorm8x2:
+    return GLPixelFormat{gl::RG8, gl::UNSIGNED_BYTE, 2};
+  case PixelFormat::Unorm8x3:
+    return GLPixelFormat{gl::RGB8, gl::UNSIGNED_BYTE, 3};
+  case PixelFormat::Unorm8x4:
+    return GLPixelFormat{gl::RGBA8, gl::UNSIGNED_BYTE, 4};
+  case PixelFormat::Float:
+    return GLPixelFormat{gl::R32F, gl::FLOAT, 1};
+  default:
+    failWith("TODO");
   }
 }
 
@@ -504,15 +529,17 @@ void OpenGLBackend::bindSurface(SurfaceHandle::pointer handle) {
   bindFramebufferObject(handle.id);
 }
 
-void OpenGLBackend::bindRenderTexture(unsigned slot, Texture2DHandle::pointer handle) {
+void OpenGLBackend::bindRenderTexture(unsigned slot,
+                                      Texture2DHandle::pointer handle) {
   bindFramebufferObject(render_to_texture_fbo);
-  gl::NamedFramebufferTexture(render_to_texture_fbo, gl::COLOR_ATTACHMENT0+slot, handle.id, 0);
+  gl::NamedFramebufferTexture(render_to_texture_fbo,
+                              gl::COLOR_ATTACHMENT0 + slot, handle.id, 0);
 }
 
-void OpenGLBackend::bindDepthRenderTexture(Texture2DHandle::pointer handle)
-{
-    bindFramebufferObject(render_to_texture_fbo);
-    gl::NamedFramebufferTexture(render_to_texture_fbo, gl::DEPTH_ATTACHMENT, handle.id, 0);
+void OpenGLBackend::bindDepthRenderTexture(Texture2DHandle::pointer handle) {
+  bindFramebufferObject(render_to_texture_fbo);
+  gl::NamedFramebufferTexture(render_to_texture_fbo, gl::DEPTH_ATTACHMENT,
+                              handle.id, 0);
 }
 
 void OpenGLBackend::bindGraphicsPipeline(
@@ -618,27 +645,31 @@ void OpenGLBackend::bindState() {
 }
 
 OpenGLBackend::Texture1DHandle
-OpenGLBackend::createTexture1D(unsigned dimensions, GLenum internalFormat) {
+OpenGLBackend::createTexture1D(const Texture1DInfo& info) {
   GLuint tex_obj;
+  auto glfmt = pixelFormatToGL(info.format);
   gl::CreateTextures(gl::TEXTURE_1D, 1, &tex_obj);
-  gl::TextureStorage1D(tex_obj, 1, internalFormat, dimensions);
+  gl::TextureStorage1D(tex_obj, 1, glfmt.internalFormat, info.dimensions);
   return Texture1DHandle(GLuintHandle(tex_obj), TextureDeleter());
 }
 
 OpenGLBackend::Texture2DHandle
-OpenGLBackend::createTexture2D(glm::uvec2 dimensions, GLenum internalFormat) {
+OpenGLBackend::createTexture2D(const Texture2DInfo& info) {
   GLuint tex_obj;
+  auto glfmt = pixelFormatToGL(info.format);
   gl::CreateTextures(gl::TEXTURE_2D, 1, &tex_obj);
-  gl::TextureStorage2D(tex_obj, 1, internalFormat, dimensions.x, dimensions.y);
+  gl::TextureStorage2D(tex_obj, 1, glfmt.internalFormat, info.dimensions.x,
+                       info.dimensions.y);
   return Texture2DHandle(GLuintHandle(tex_obj), TextureDeleter());
 }
 
 OpenGLBackend::Texture3DHandle
-OpenGLBackend::createTexture3D(glm::uvec3 dimensions, GLenum internalFormat) {
+OpenGLBackend::createTexture3D(const Texture3DInfo& info) {
   GLuint tex_obj;
+  auto glfmt = pixelFormatToGL(info.format);
   gl::CreateTextures(gl::TEXTURE_3D, 1, &tex_obj);
-  gl::TextureStorage3D(tex_obj, 1, internalFormat, dimensions.x, dimensions.y,
-                       dimensions.z);
+  gl::TextureStorage3D(tex_obj, 1, glfmt.internalFormat, info.dimensions.x,
+                       info.dimensions.y, info.dimensions.z);
   return Texture3DHandle(GLuintHandle(tex_obj), TextureDeleter());
 }
 }

@@ -6,13 +6,13 @@
 
 #include <gsl.h>
 
+#include <Buffer.hpp>
+#include <Error.hpp>
+#include <Fence.hpp>
+#include <Pipeline.hpp>
 #include <Surface.hpp>
 #include <Texture.hpp>
-#include <Buffer.hpp>
-#include <Pipeline.hpp>
 #include <UploadBuffer.hpp>
-#include <Fence.hpp>
-#include <Error.hpp>
 
 namespace ag {
 struct DeviceOptions {
@@ -59,26 +59,30 @@ public:
   }
 
   ///////////////////// createTexture1D
-  template <typename TPixel>
-  Texture1D<TPixel, D> createTexture1D(glm::uint width) {
-    Texture1DInfo info{width};
-    return Texture1D<TPixel, D>{info,
-                                backend.template createTexture1D<TPixel>(info)};
+  template <typename Pixel>
+  Texture1D<Pixel, D> createTexture1D(glm::uint width) {
+    static_assert(PixelTypeTraits<Pixel>::kIsPixelType,
+                  "Unsupported pixel type");
+    Texture1DInfo info{width, PixelTypeTraits<Pixel>::kFormat};
+    return Texture1D<TPixel, D>{info, backend.createTexture1D(info)};
   }
 
   ///////////////////// createTexture2D
-  template <typename TPixel>
-  Texture2D<TPixel, D> createTexture2D(glm::uvec2 dimensions) {
-    Texture2DInfo info{dimensions};
-    return Texture2D<TPixel, D>{info,
-                                backend.template createTexture2D<TPixel>(info)};
+  template <typename Pixel>
+  Texture2D<Pixel, D> createTexture2D(glm::uvec2 dimensions) {
+    static_assert(PixelTypeTraits<Pixel>::kIsPixelType,
+                  "Unsupported pixel type");
+    Texture2DInfo info{dimensions, PixelTypeTraits<Pixel>::kFormat};
+    return Texture2D<Pixel, D>{info, backend.createTexture2D(info)};
   }
 
   ///////////////////// createTexture3D
-  template <typename TPixel>
-  Texture3D<TPixel, D> createTexture3D(glm::uvec3 dimensions) {
-    Texture3DInfo info{dimensions};
-    return Texture3D<TPixel, D>{backend.template createTexture3D<TPixel>(info)};
+  template <typename Pixel>
+  Texture3D<Pixel, D> createTexture3D(glm::uvec3 dimensions) {
+    static_assert(PixelTypeTraits<Pixel>::kIsPixelType,
+                  "Unsupported pixel type");
+    Texture3DInfo info{dimensions, PixelTypeTraits<Pixel>::kFormat};
+    return Texture3D<Pixel, D>{info, backend.createTexture3D(info)};
   }
 
   ///////////////////// createSampler

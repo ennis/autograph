@@ -2,6 +2,7 @@
 #define TEXTURE_HPP
 
 #include <glm/glm.hpp>
+#include <PixelType.hpp>
 
 namespace ag {
 enum class TextureAddressMode { Repeat, Clamp, Mirror };
@@ -25,6 +26,7 @@ template <typename D> struct Sampler {
 ////////////////////////// Texture1D
 struct Texture1DInfo {
   glm::uint dimensions;
+  PixelFormat format;
 };
 
 template <typename T, typename D> struct Texture1D {
@@ -35,6 +37,7 @@ template <typename T, typename D> struct Texture1D {
 ////////////////////////// Texture2D
 struct Texture2DInfo {
   glm::uvec2 dimensions;
+  PixelFormat format;
 };
 
 template <typename T, typename D> struct Texture2D {
@@ -45,6 +48,7 @@ template <typename T, typename D> struct Texture2D {
 ////////////////////////// Texture3D
 struct Texture3DInfo {
   glm::uvec3 dimensions;
+  PixelFormat format;
 };
 
 template <typename T, typename D> struct Texture3D {
