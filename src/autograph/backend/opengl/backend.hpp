@@ -19,7 +19,7 @@
 #include "../../draw.hpp"
 #include "../../rect.hpp"
 
-#include "State.hpp"
+#include "state.hpp"
 
 namespace ag {
 namespace opengl {

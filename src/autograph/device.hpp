@@ -64,7 +64,7 @@ public:
     static_assert(PixelTypeTraits<Pixel>::kIsPixelType,
                   "Unsupported pixel type");
     Texture1DInfo info{width, PixelTypeTraits<Pixel>::kFormat};
-    return Texture1D<TPixel, D>{info, backend.createTexture1D(info)};
+    return Texture1D<Pixel, D>{info, backend.createTexture1D(info)};
   }
 
   ///////////////////// createTexture2D
