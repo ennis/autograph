@@ -564,19 +564,22 @@ void OpenGLBackend::clearDepth(SurfaceHandle::pointer framebuffer_obj,
   gl::ClearNamedFramebufferfv(framebuffer_obj.id, gl::DEPTH, 0, &depth);
 }
 
-void OpenGLBackend::clearTexture1DFloat(Texture1DHandle::pointer handle, ag::Box1D region, const ag::ClearColor& color)
-{
-	gl::ClearTexImage(handle.id, 0, gl::RGBA, gl::FLOAT, color.rgba);
+void OpenGLBackend::clearTexture1DFloat(Texture1DHandle::pointer handle,
+                                        ag::Box1D region,
+                                        const ag::ClearColor& color) {
+  gl::ClearTexImage(handle.id, 0, gl::RGBA, gl::FLOAT, color.rgba);
 }
 
-void OpenGLBackend::clearTexture2DFloat(Texture2DHandle::pointer handle, ag::Box2D region, const ag::ClearColor& color)
-{
-	gl::ClearTexImage(handle.id, 0, gl::RGBA, gl::FLOAT, color.rgba);
+void OpenGLBackend::clearTexture2DFloat(Texture2DHandle::pointer handle,
+                                        ag::Box2D region,
+                                        const ag::ClearColor& color) {
+  gl::ClearTexImage(handle.id, 0, gl::RGBA, gl::FLOAT, color.rgba);
 }
 
-void OpenGLBackend::clearTexture3DFloat(Texture3DHandle::pointer handle, ag::Box3D region, const ag::ClearColor& color)
-{
-	gl::ClearTexImage(handle.id, 0, gl::RGBA, gl::FLOAT, color.rgba);
+void OpenGLBackend::clearTexture3DFloat(Texture3DHandle::pointer handle,
+                                        ag::Box3D region,
+                                        const ag::ClearColor& color) {
+  gl::ClearTexImage(handle.id, 0, gl::RGBA, gl::FLOAT, color.rgba);
 }
 
 void OpenGLBackend::draw(PrimitiveType primitiveType, unsigned first,
