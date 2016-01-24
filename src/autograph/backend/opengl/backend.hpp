@@ -6,17 +6,18 @@
 #include <array>
 
 #include <glm/glm.hpp>
-#include <optional.hpp>
 #include <format.h>
 #include <gl_core_4_5.hpp>
 #include <GLFW/glfw3.h>
 #include <gsl.h>
 
-#include <Utils.hpp>
-#include <Surface.hpp>
-#include <Texture.hpp>
-#include <Device.hpp>
-#include <Draw.hpp>
+#include "../../optional.hpp"
+#include "../../utils.hpp"
+#include "../../surface.hpp"
+#include "../../texture.hpp"
+#include "../../device.hpp"
+#include "../../draw.hpp"
+#include "../../rect.hpp"
 
 #include "State.hpp"
 
@@ -283,9 +284,11 @@ struct OpenGLBackend {
   void bindDepthRenderTexture(Texture2DHandle::pointer handle);
 
   ///////////////////// Clear command
-  void clearColor(SurfaceHandle::pointer framebuffer_obj,
-                  const glm::vec4& color);
+  void clearColor(SurfaceHandle::pointer framebuffer_obj, const ag::ClearColor& color);
   void clearDepth(SurfaceHandle::pointer framebuffer_obj, float depth);
+  void clearTexture1DFloat(Texture1DHandle::pointer handle, ag::Box1D region, const ag::ClearColor& color);
+  void clearTexture2DFloat(Texture2DHandle::pointer handle, ag::Box2D region, const ag::ClearColor& color);
+  void clearTexture3DFloat(Texture3DHandle::pointer handle, ag::Box3D region, const ag::ClearColor& color);
 
   ///////////////////// Draw calls
   void draw(PrimitiveType primitiveType, unsigned first, unsigned count);

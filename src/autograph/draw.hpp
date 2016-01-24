@@ -3,7 +3,9 @@
 
 #include <tuple>
 
-#include <Bind.hpp>
+#include "bind.hpp"
+#include "optional.hpp"
+#include "rect.hpp"
 
 namespace ag {
 
@@ -85,9 +87,9 @@ template <typename TVertex> struct DrawArraysImmediate_ {
 template <typename D, typename TVertex>
 DrawArrays_<D> DrawArrays(PrimitiveType primitiveType,
                           const Buffer<D, TVertex[]>& vertex_buffer) {
-  return DrawArrays_<D>{primitiveType, vertex_buffer.handle.get(), 0,
-                        vertex_buffer.byteSize(), sizeof(TVertex),
-                        vertex_buffer.size()};
+  return DrawArrays_<D>{
+      primitiveType,   vertex_buffer.handle.get(), 0, vertex_buffer.byteSize(),
+      sizeof(TVertex), vertex_buffer.size()};
 }
 
 template <typename TVertex>
@@ -96,6 +98,7 @@ DrawArraysImmediate_<TVertex> DrawArrays(PrimitiveType primitiveType,
   return DrawArraysImmediate_<TVertex>{primitiveType, vertices};
 }
 
+////////////////////////// ag::draw (no resources)
 template <typename D, typename TSurface, typename Drawable>
 void draw(Device<D>& device, TSurface&& surface,
           GraphicsPipeline<D>& graphicsPipeline, Drawable&& drawable) {
@@ -105,6 +108,7 @@ void draw(Device<D>& device, TSurface&& surface,
   drawable.draw(device, context);
 }
 
+////////////////////////// ag::draw
 template <typename D, typename TSurface, typename Drawable,
           typename... TShaderResources>
 void draw(Device<D>& device, TSurface&& surface,
@@ -115,6 +119,47 @@ void draw(Device<D>& device, TSurface&& surface,
   bindRenderTarget(device, context, surface);
   device.backend.bindGraphicsPipeline(graphicsPipeline.handle.get());
   drawable.draw(device, context);
+}
+
+struct ClearColor {
+  float rgba[4];
+};
+
+////////////////////////// ag::clear(Surface)
+template <typename D, typename Depth, typename... Pixels>
+void clear(Device<D>& device, Surface<D, Depth, Pixels...>& surface,
+           const ClearColor& color,
+           std::experimental::optional<const ag::Box2D&> region = std::experimental::nullopt) {
+  device.backend.clearColor(surface.handle.get(), color);
+}
+
+////////////////////////// ag::clear(Surface)
+template <typename D, typename Depth, typename... Pixels>
+void clearDepth(
+    Device<D>& device, Surface<D, Depth, Pixels...>& surface, float depth,
+    std::experimental::optional<const ag::Box2D&> region = std::experimental::nullopt) {
+  device.backend.clearColor(surface.handle.get(), depth);
+}
+
+////////////////////////// ag::clear(Texture1D)
+template <typename D, typename Pixel>
+void clear(Device<D>& device, Texture1D<Pixel, D>& tex, const ClearColor& color,
+           std::experimental::optional<const ag::Box1D&> region = std::experimental::nullopt) {
+  device.backend.clearTexture1D(tex.handle.get(), color);
+}
+
+////////////////////////// ag::clear(Texture2D)
+template <typename D, typename Pixel>
+void clear(Device<D>& device, Texture2D<Pixel, D>& tex, const ClearColor& color,
+           std::experimental::optional<const ag::Box2D&> region = std::experimental::nullopt) {
+  device.backend.clearTexture1D(tex.handle.get(), color);
+}
+
+////////////////////////// ag::clear(Texture3D)
+template <typename D, typename Pixel>
+void clear(Device<D>& device, Texture3D<Pixel, D>& tex, const ClearColor& color,
+           std::experimental::optional<const ag::Box3D&> region = std::experimental::nullopt) {
+  device.backend.clearTexture1D(tex.handle.get(), color);
 }
 }
 

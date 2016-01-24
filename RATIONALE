@@ -334,6 +334,9 @@ _____________________________
 
 * Blocking version of UploadBuffer::upload 
 * kUniformBufferOffsetAlignment should be dynamically queried
+* Upload buffers should return correctly aligned regions depending on the use
+	Should not need to specify the alignment manaully
+	-> explicitly typed buffers / tagged buffers 
 * Normalize the order of template parameters (D, T...)
 * Rename source files in backend
 * Const-correctness in buffer and buffer slice types
@@ -346,11 +349,11 @@ _____________________________
 	- rendering of meshes
 * Force debug breakpoint
 * Break on shader compilation error
-* Clean the samples boilerplate
-* Use an unique cmake file for the samples
 * CRTP for the backend
-* Bikeshedding: lowercase file names
 
+DONE Clean the samples boilerplate
+DONE Use an unique cmake file for the samples
+DONE Bikeshedding: lowercase file names
 DONE Samples: automatically find the root asset folder
 DONE Remove OpenGLPixelType.hpp
 DONE Remove templated methods in backend (createTexturenD<TPixel>)
@@ -384,6 +387,37 @@ _____________________________
 
 Specialization of texturenD types
 To be used when the pixel type is not known at compile time
+
+
+
+Feature: multiDraw 
+_____________________________
+
+
+Feature: multiDrawIndirect
+_____________________________
+
+
+Feature: dispatchIndirect
+_____________________________
+
+
+
+Feature: clear/copy command
+_____________________________
+
+ag::clear
+Clear textures, surfaces, buffers, etc.
+Question: clear value should be raw bits or float[4]?
+Facts about texture data:
+	The layout of texture data is generally unknown. (tiling?)
+	The driver or GPU must sometimes perform a conversion on upload.
+	In general, there is no direct mapping between a pixel's color and a sequence of bits in texture data 
+		(see compressed formats)
+	Two types of conversion: 
+		layout conversion (tiling) => opaque, GPU-specific
+		format conversion (different pixel types) => avoid
+	Possible format conversions vary between APIs, drivers and GPU
 
 
 Feature: Command lists
@@ -452,6 +486,8 @@ _____________________________
 Feature: Partially resident textures
 _____________________________
 
+Cool
+
 
 Feature: Texture blit operations
 _____________________________
@@ -482,15 +518,45 @@ _____________________________
 Move these in separate libraries
 
 
+Feature: graphics debugging and profiling
+_____________________________
+
+Record/replay frame
+
+
+
+Feature: GPU flow graphs
+_____________________________
+
+Intel TBB for the GPU
+may require backend support 
+(implement as an optional feature)
+
+
+Feature: autograph-shaders
+_____________________________
+
+Shaders in C++ code (as lambdas), extracted by clang and transpiled to GLSL
+Issue: host compiler, generation of correctly aligned data structures
+At first: separate C++ code files (modularized)
+
 
 Feature: extras
 _____________________________
 
 in namespace ag::extras, separate library
 
-
-image: image loader, designed to be used easily with ag::Texturexx types
+event: framework for interactive applications
+	observables, reactive operations	
+input: library to handle various input devices
+	mouses, keyboards, gamepads and graphics tablets
+mesh: generic mesh library
+	use assimp for loading
+	type-safe mesh types
+	automatic normal generation
+image_io: image loader, designed to be used easily with ag::Texturexx types
 	depends on: stb_image? gli?
+	image manipulation library? (video++ comes to mind)
 text: draw text on a render target
 	depends on freetype?
 sdftext: signed distance field font rendering
@@ -499,7 +565,28 @@ sprite: texture/sprite blitting operations
 	no dependencies
 postfx: post-process effects
 	no dependencies
-vector: vector drawing library
-	nvg?
-
-
+video: render video?
+vector: vector drawing library (2D)
+	nvg? 
+	vector::draw(): extensions to ag::draw
+visualization: visualizers/debuggers for various structures
+	debug textures, structured buffers, meshes, etc.
+	ex: draw mesh in wireframe
+		draw mesh with its normals, tangents, etc.
+gui: user interface
+graph: graphs (histograms, plots, etc.)
+scene: scene graph rendering?
+shade: load shader graphs and flow graphs from a description file
+assets: asset management (load assets by key, cache resources)
+ecs: entity-component systems
+pcg: procedural content generation utilities?
+animation: animation curves, CPU/GPU skinning and skeletal animation
+	use assimp to load motion files
+terrain: heightmap rendering
+canvas: digital painting canvas structures and operations
+	- layers (dirty region management)
+	- blend modes
+	- brush engine
+	- support for undo buffer
+	- support for painting in texture maps
+	(high priority)

@@ -1,13 +1,13 @@
 #ifndef RING_BUFFER_HPP
 #define RING_BUFFER_HPP
 
-#include <vector>
-#include <queue>
 #include <algorithm>
+#include <mutex>
+#include <queue>
+#include <vector>
 
-#include <optional.hpp>
-
-#include <Fence.hpp>
+#include "fence.hpp"
+#include "optional.hpp"
 
 namespace ag {
 namespace {
@@ -83,6 +83,7 @@ public:
 
   bool tryAllocateContiguousFreeSpace(FenceValue expirationDate, size_t size,
                                       size_t align, size_t& alloc_begin) {
+    std::lock_guard<std::mutex> guard(mutex);
     assert(size < buf_size);
     if ((begin_ptr < write_ptr) || ((begin_ptr == write_ptr) && (used == 0))) {
       size_t slack_space = buf_size - write_ptr;
@@ -143,6 +144,7 @@ private:
   size_t buf_size;
   void* mappedRegion;
   std::queue<FencedRegion> fencedRegions;
+  std::mutex mutex;
 };
 }
 

@@ -24,13 +24,13 @@ file(GLOB SHADERPP_HEADERS src/shaderpp/*.hpp)
 source_group("Source files\\shaderpp" FILES ${SHADERPP_SOURCES})
 source_group("Header files\\shaderpp" FILES ${SHADERPP_HEADERS})
 
-file(GLOB AG_SOURCES_CORE src/*.cpp)
-file(GLOB AG_SOURCES_OPENGL src/backend/opengl/*.cpp)
+file(GLOB AG_SOURCES_CORE src/autograph/*.cpp)
+file(GLOB AG_SOURCES_OPENGL src/autograph/backend/opengl/*.cpp)
 source_group("Source files\\Core" FILES ${AG_SOURCES_CORE})
 source_group("Source files\\OpenGL" FILES  ${AG_SOURCES_OPENGL})
 
-file(GLOB AG_HEADERS_CORE src/*.hpp)
-file(GLOB AG_HEADERS_OPENGL src/backend/opengl/*.hpp)
+file(GLOB AG_HEADERS_CORE src/autograph/*.hpp)
+file(GLOB AG_HEADERS_OPENGL src/autograph/backend/opengl/*.hpp)
 source_group("Header files\\Core" FILES ${AG_HEADERS_CORE})
 source_group("Header files\\OpenGL" FILES ${AG_HEADERS_OPENGL})
 

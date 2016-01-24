@@ -6,13 +6,13 @@
 
 #include <gsl.h>
 
-#include <Buffer.hpp>
-#include <Error.hpp>
-#include <Fence.hpp>
-#include <Pipeline.hpp>
-#include <Surface.hpp>
-#include <Texture.hpp>
-#include <UploadBuffer.hpp>
+#include "buffer.hpp"
+#include "error.hpp"
+#include "fence.hpp"
+#include "pipeline.hpp"
+#include "surface.hpp"
+#include "texture.hpp"
+#include "upload_buffer.hpp"
 
 namespace ag {
 struct DeviceOptions {

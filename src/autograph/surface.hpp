@@ -1,7 +1,7 @@
 #ifndef SURFACE_HPP
 #define SURFACE_HPP
 
-#include <PixelType.hpp>
+#include "pixel_format.hpp"
 
 namespace ag {
 // A type representing a target for a draw operation

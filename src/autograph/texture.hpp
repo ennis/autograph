@@ -2,7 +2,8 @@
 #define TEXTURE_HPP
 
 #include <glm/glm.hpp>
-#include <PixelType.hpp>
+
+#include "pixel_format.hpp"
 
 namespace ag {
 enum class TextureAddressMode { Repeat, Clamp, Mirror };

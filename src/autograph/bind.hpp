@@ -3,10 +3,10 @@
 
 #include <tuple>
 
-#include <Texture.hpp>
-#include <Buffer.hpp>
-#include <Device.hpp>
-#include <Utils.hpp>
+#include "texture.hpp"
+#include "buffer.hpp"
+#include "device.hpp"
+#include "utils.hpp"
 
 namespace ag {
 

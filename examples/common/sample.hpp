@@ -3,10 +3,10 @@
 
 #include <filesystem/path.h>
 
-#include <Device.hpp>
-#include <Draw.hpp>
-#include <Pipeline.hpp>
-#include <backend/opengl/Backend.hpp>
+#include <autograph/device.hpp>
+#include <autograph/draw.hpp>
+#include <autograph/pipeline.hpp>
+#include <autograph/backend/opengl/backend.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -175,8 +175,7 @@ public:
   }
 
   ag::GraphicsPipeline<GL>
-  loadMeshShaderPipeline(ag::opengl::GraphicsPipelineInfo& baseInfo,
-                         const char* path, gsl::span<const char*> defines) {
+  loadGraphicsPipeline(const char* path, ag::opengl::GraphicsPipelineInfo& baseInfo, gsl::span<const char*> defines) {
     using namespace shaderpp;
 
     ShaderSource src((samplesRoot / path).str().c_str());
@@ -184,7 +183,6 @@ public:
     auto PSSource = src.preprocess(PipelineStage::Pixel, defines, nullptr);
     baseInfo.VSSource = VSSource.c_str();
     baseInfo.PSSource = PSSource.c_str();
-    baseInfo.vertexAttribs = gsl::as_span(kMeshVertexDesc);
     return device->createGraphicsPipeline(baseInfo);
   }
 

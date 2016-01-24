@@ -1,4 +1,4 @@
-#include "Backend.hpp"
+#include "backend.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -7,7 +7,7 @@
 
 #include <format.h>
 
-#include <Error.hpp>
+#include "../../error.hpp"
 
 namespace ag {
 namespace opengl {
@@ -477,8 +477,8 @@ GLuint OpenGLBackend::createProgramFromShaderPipeline(
   return program_obj;
 }
 
-GLuint
-OpenGLBackend::createVertexArrayObject(gsl::span<const VertexAttribute> attribs) {
+GLuint OpenGLBackend::createVertexArrayObject(
+    gsl::span<const VertexAttribute> attribs) {
   GLuint strides[OpenGLBackend::kMaxVertexBufferSlots] = {0};
   GLuint vertex_array_obj;
   gl::CreateVertexArrays(1, &vertex_array_obj);
@@ -554,22 +554,14 @@ void OpenGLBackend::bindGraphicsPipeline(
 }
 
 void OpenGLBackend::clearColor(SurfaceHandle::pointer framebuffer_obj,
-                               const glm::vec4& color) {
-  // bind the framebuffer
-  bindFramebufferObject(framebuffer_obj.id);
-  // set clear color
-  gl::ClearColor(color.r, color.g, color.b, color.a);
-  // clear
-  gl::Clear(gl::COLOR_BUFFER_BIT);
+                               const ag::ClearColor& color) {
+  // XXX: clear specific draw buffer?
+  gl::ClearNamedFramebufferfv(framebuffer_obj.id, gl::COLOR, 0, color.rgba);
 }
 
 void OpenGLBackend::clearDepth(SurfaceHandle::pointer framebuffer_obj,
                                float depth) {
-  gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer_obj.id);
-  // set clear color
-  gl::ClearDepth(depth);
-  // clear
-  gl::Clear(gl::DEPTH_BUFFER_BIT);
+  gl::ClearNamedFramebufferfv(framebuffer_obj.id, gl::DEPTH, 0, &depth);
 }
 
 void OpenGLBackend::draw(PrimitiveType primitiveType, unsigned first,
