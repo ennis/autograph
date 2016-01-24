@@ -67,7 +67,7 @@ const ag::opengl::VertexAttribute kMeshVertexDesc[4] = {
 // OpenGL sample class, needs glfw
 template <typename Derived> class GLSample {
 public:
-  GLSample::GLSample(unsigned width_, unsigned height_,
+  GLSample(unsigned width_, unsigned height_,
                      const char* window_title_)
       : width(width_), height(height_) {
     namespace fs = filesystem;

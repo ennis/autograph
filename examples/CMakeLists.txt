@@ -8,4 +8,8 @@ function(autograph_add_sample)
     target_include_directories(${AG_SAMPLE_TARGET} PRIVATE ${AG_INCLUDE_DIR})
 endfunction()
 
-autograph_add_sample(TARGET simple DIRECTORY simple REQUIRES assimp docopt_s)
+# The target executable and directory cannot have the same name.
+# (otherwise, it will fail at build time with linker complaining that the target file is a directory) 
+# Doesn't happen on windows (executables have the .exe suffix)
+# Ah, cmake, you never cease to amaze me.
+autograph_add_sample(TARGET sample_simple DIRECTORY simple REQUIRES assimp docopt_s)

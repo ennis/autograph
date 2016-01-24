@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <autograph/backend/opengl/Backend.hpp>
+#include <autograph/backend/opengl/backend.hpp>
 #include <autograph/device.hpp>
 #include <autograph/draw.hpp>
 #include <autograph/pipeline.hpp>
