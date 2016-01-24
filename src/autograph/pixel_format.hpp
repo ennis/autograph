@@ -79,27 +79,58 @@ template <typename T> struct PixelTypeTraits {
   static constexpr bool kIsPixelType = false;
 };
 
-template <PixelFormat Format>
-struct PixelTypeTraitsImpl {
+template <PixelFormat Format> struct PixelTypeTraitsImpl {
   static constexpr bool kIsPixelType = true;
   static constexpr PixelFormat kFormat = Format;
 };
 
-template <> struct PixelTypeTraits<float> : public PixelTypeTraitsImpl<PixelFormat::Float> {};
-template <> struct PixelTypeTraits<float[2]> : public PixelTypeTraitsImpl<PixelFormat::Float2> {};
-template <> struct PixelTypeTraits<float[3]> : public PixelTypeTraitsImpl<PixelFormat::Float3> {};
-template <> struct PixelTypeTraits<float[4]> : public PixelTypeTraitsImpl<PixelFormat::Float4> {};
+template <>
+struct PixelTypeTraits<float> : public PixelTypeTraitsImpl<PixelFormat::Float> {
+};
+template <>
+struct PixelTypeTraits<float[2]>
+    : public PixelTypeTraitsImpl<PixelFormat::Float2> {};
+template <>
+struct PixelTypeTraits<float[3]>
+    : public PixelTypeTraitsImpl<PixelFormat::Float3> {};
+template <>
+struct PixelTypeTraits<float[4]>
+    : public PixelTypeTraitsImpl<PixelFormat::Float4> {};
 
-template <> struct PixelTypeTraits<uint8_t> : public PixelTypeTraitsImpl<PixelFormat::Uint8> {};
-template <> struct PixelTypeTraits<uint8_t[2]> : public PixelTypeTraitsImpl<PixelFormat::Uint8x2> {};
-template <> struct PixelTypeTraits<uint8_t[3]> : public PixelTypeTraitsImpl<PixelFormat::Uint8x3> {};
-template <> struct PixelTypeTraits<uint8_t[4]> : public PixelTypeTraitsImpl<PixelFormat::Uint8x4> {};
+template <>
+struct PixelTypeTraits<uint8_t>
+    : public PixelTypeTraitsImpl<PixelFormat::Uint8> {};
+template <>
+struct PixelTypeTraits<uint8_t[2]>
+    : public PixelTypeTraitsImpl<PixelFormat::Uint8x2> {};
+template <>
+struct PixelTypeTraits<uint8_t[3]>
+    : public PixelTypeTraitsImpl<PixelFormat::Uint8x3> {};
+template <>
+struct PixelTypeTraits<uint8_t[4]>
+    : public PixelTypeTraitsImpl<PixelFormat::Uint8x4> {};
 
-using RGBA8 = uint8_t[4];
-using RGB8 = uint8_t[3];
+// wrapper type for normalized pixel formats
+template <typename T> struct Normalized { T value; };
+
+template <>
+struct PixelTypeTraits<Normalized<uint8_t>>
+    : public PixelTypeTraitsImpl<PixelFormat::Unorm8> {};
+template <>
+struct PixelTypeTraits<Normalized<uint8_t>[2]>
+    : public PixelTypeTraitsImpl<PixelFormat::Unorm8x2> {};
+template <>
+struct PixelTypeTraits<Normalized<uint8_t>[3]>
+    : public PixelTypeTraitsImpl<PixelFormat::Unorm8x3> {};
+template <>
+struct PixelTypeTraits<Normalized<uint8_t>[4]>
+    : public PixelTypeTraitsImpl<PixelFormat::Unorm8x4> {};
+
+using RGBA8 = Normalized<uint8_t>[4];
+using RGB8 = Normalized<uint8_t>[3];
+using RG8 = Normalized<uint8_t>[3];
 using R32F = float;
-using R8 = uint8_t;
-
+using R8 = Normalized<uint8_t>;
 }
 
 #endif

@@ -129,37 +129,42 @@ struct ClearColor {
 template <typename D, typename Depth, typename... Pixels>
 void clear(Device<D>& device, Surface<D, Depth, Pixels...>& surface,
            const ClearColor& color,
-           std::experimental::optional<const ag::Box2D&> region = std::experimental::nullopt) {
+           std::experimental::optional<const ag::Box2D&> region =
+               std::experimental::nullopt) {
   device.backend.clearColor(surface.handle.get(), color);
 }
 
 ////////////////////////// ag::clear(Surface)
 template <typename D, typename Depth, typename... Pixels>
-void clearDepth(
-    Device<D>& device, Surface<D, Depth, Pixels...>& surface, float depth,
-    std::experimental::optional<const ag::Box2D&> region = std::experimental::nullopt) {
+void clearDepth(Device<D>& device, Surface<D, Depth, Pixels...>& surface,
+                float depth,
+                std::experimental::optional<const ag::Box2D&> region =
+                    std::experimental::nullopt) {
   device.backend.clearColor(surface.handle.get(), depth);
 }
 
 ////////////////////////// ag::clear(Texture1D)
 template <typename D, typename Pixel>
 void clear(Device<D>& device, Texture1D<Pixel, D>& tex, const ClearColor& color,
-           std::experimental::optional<const ag::Box1D&> region = std::experimental::nullopt) {
-  device.backend.clearTexture1D(tex.handle.get(), color);
+           std::experimental::optional<const ag::Box1D&> region =
+               std::experimental::nullopt) {
+  device.backend.clearTexture1DFloat(tex.handle.get(), Box1D{}, color);
 }
 
 ////////////////////////// ag::clear(Texture2D)
 template <typename D, typename Pixel>
 void clear(Device<D>& device, Texture2D<Pixel, D>& tex, const ClearColor& color,
-           std::experimental::optional<const ag::Box2D&> region = std::experimental::nullopt) {
-  device.backend.clearTexture1D(tex.handle.get(), color);
+           std::experimental::optional<const ag::Box2D&> region =
+               std::experimental::nullopt) {
+  device.backend.clearTexture2DFloat(tex.handle.get(), Box2D{}, color);
 }
 
 ////////////////////////// ag::clear(Texture3D)
 template <typename D, typename Pixel>
 void clear(Device<D>& device, Texture3D<Pixel, D>& tex, const ClearColor& color,
-           std::experimental::optional<const ag::Box3D&> region = std::experimental::nullopt) {
-  device.backend.clearTexture1D(tex.handle.get(), color);
+           std::experimental::optional<const ag::Box3D&> region =
+               std::experimental::nullopt) {
+  device.backend.clearTexture3DFloat(tex.handle.get(), Box3D{}, color);
 }
 }
 

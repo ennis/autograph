@@ -40,6 +40,7 @@ public:
 
     auto out = device->getOutputSurface();
     ag::clear(*device, out, ag::ClearColor { 1.0f, 0.0f, 1.0f, 1.0f });
+	ag::clear(*device, texRender, ag::ClearColor{ 0.0f, 1.0f, 0.0f, 1.0f });
     samples::drawMesh(bunnyMesh, *device, out, pipeline, cbSceneData,
                       glm::scale(glm::mat4(1.0f), glm::vec3(0.1f)));
 
