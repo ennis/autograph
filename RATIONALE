@@ -559,6 +559,7 @@ mesh: generic mesh library
 	use assimp for loading
 	type-safe mesh types
 	automatic normal generation
+	smoothing groups
 image_io: image loader, designed to be used easily with ag::Texturexx types
 	depends on: stb_image? gli?
 	image manipulation library? (video++ comes to mind)
@@ -581,9 +582,9 @@ visualization: visualizers/debuggers for various structures
 gui: user interface
 graph: graphs (histograms, plots, etc.)
 scene: scene graph rendering?
-shade: load shader graphs and flow graphs from a description file
+shade_graph: load shader graphs and flow graphs from a description file
 assets: asset management (load assets by key, cache resources)
-ecs: entity-component systems
+ecs: entity-component system
 pcg: procedural content generation utilities?
 animation: animation curves, CPU/GPU skinning and skeletal animation
 	use assimp to load motion files
