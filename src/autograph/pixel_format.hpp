@@ -85,7 +85,7 @@ struct PixelTypeTraitsImpl {
   static constexpr PixelFormat kFormat = Format;
   // type of elements in raw texture data
   using storage_type = Storage;
-  // interpolated/sampled pixel type
+  // interpolated/sampled pixel type (e.g. for unorm types this is float, for integer types, this is (u)intX)
   using sample_type = Sample;
 };
 
