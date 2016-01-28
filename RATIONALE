@@ -419,6 +419,11 @@ Facts about texture data:
 		format conversion (different pixel types) => avoid
 	Possible format conversions vary between APIs, drivers and GPU
 
+	For one texture format, 2 different associated types:
+		- sample_type: interpolated/sampled pixel type
+		- storage_type: type of elements in a texture 
+			can be different from storage_type for compressed formats
+
 
 Feature: Command lists
 _____________________________
