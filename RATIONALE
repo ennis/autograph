@@ -338,7 +338,6 @@ _____________________________
 	Should not need to specify the alignment manaully
 	-> explicitly typed buffers / tagged buffers 
 * Normalize the order of template parameters (D, T...)
-* Rename source files in backend
 * Const-correctness in buffer and buffer slice types
 	(buffer<const T> is immutable, buffer<T> is mutable and binds as a RWBuffer)
 * Extract boilerplate for samples (pipeline creation, etc.)
@@ -350,7 +349,11 @@ _____________________________
 * Force debug breakpoint
 * Break on shader compilation error
 * CRTP for the backend
+* Bikeshedding: rename Backend to Driver
+* Bikeshedding: snake_case names
+* Simplify the passing of handles to backend functions
 
+DONE Rename source files in backend
 DONE Clean the samples boilerplate
 DONE Use an unique cmake file for the samples
 DONE Bikeshedding: lowercase file names
@@ -504,6 +507,19 @@ Copy texture data to RenderTarget? No: this is a rendering operation
 ag::copy(commandlist, buffer_src, buffer_dst)
 ag::copy(commandlist, texture_view_src, texture_view_dst)
 
+Mappable buffer vs unmappable buffers
+Mapped slices (accessible by the CPU) and buffer slices (not accessible by the GPU)
+
+RawBuffer
+Buffer<T>
+Buffer<T[]>
+RawBufferSlice
+BufferSlice<T>
+BufferSlice<T[]>
+MappedRawBufferSlice
+MappedBufferSlice<T>
+MappedBufferSlice<T[]>
+
 
 Feature: Data readback
 _____________________________
@@ -530,6 +546,14 @@ Record/replay frame
 
 
 
+Feature: more texture types
+____________________________
+
+* Mip maps
+* Cube maps
+* texture arrays
+
+
 Feature: GPU flow graphs
 _____________________________
 
@@ -551,8 +575,10 @@ _____________________________
 
 in namespace ag::extras, separate library
 
+math: lightweight math support library
+	ONLY: perspective transformations 
 event: framework for interactive applications
-	observables, reactive operations	
+	observables, reactive operations => use RxCpp
 input: library to handle various input devices
 	mouses, keyboards, gamepads and graphics tablets
 mesh: generic mesh library
@@ -596,3 +622,30 @@ canvas: digital painting canvas structures and operations
 	- support for undo buffer
 	- support for painting in texture maps
 	(high priority)
+
+
+Painter:
+
+- Brush engine
+	-> draw to stroke mask (pipeline)
+	-> compose stroke (compute pipeline)
+
+Brush(draw_pipeline, compose_pipeline, parameters)
+
+
+
+Feature: event and input 
+_____________________________
+
+Based on observable objects
+Observable object:
+	Observable<T>
+	can subscribe to changes
+Events: fed to observables
+
+One-way:
+	signal -> receiver
+Two-way:
+	data binding
+
+auto key_press_event = keyboard.onKey(Key::F1).map(Key::Pressed)

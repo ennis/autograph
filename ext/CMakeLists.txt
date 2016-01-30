@@ -42,6 +42,16 @@ set_property(TARGET docopt PROPERTY FOLDER "External")
 set_property(TARGET docopt_s PROPERTY FOLDER "External")
 
 
+# stb
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE stb)
+
+# RxCpp
+add_subdirectory(RxCpp)
+add_library(rxcpp INTERFACE)
+target_include_directories(rxcpp INTERFACE RxCpp/Rx/v2/src)
+
+
 # glslang
 
 #add_subdirectory(glslang)

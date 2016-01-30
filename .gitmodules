@@ -28,3 +28,9 @@
 [submodule "ext/filesystem"]
 	path = ext/filesystem
 	url = https://github.com/wjakob/filesystem.git
+[submodule "ext/stb"]
+	path = ext/stb
+	url = https://github.com/nothings/stb
+[submodule "ext/RxCpp"]
+	path = ext/RxCpp
+	url = https://github.com/Reactive-Extensions/RxCpp

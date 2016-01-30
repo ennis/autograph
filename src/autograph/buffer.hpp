@@ -64,6 +64,7 @@ struct BufferSlice<D, T[]> : public RawBufferSlice<D> {
 
   constexpr std::size_t size() const { return this->byteSize / sizeof(T); }
 };
+
 }
 
 #endif

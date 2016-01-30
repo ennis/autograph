@@ -11,6 +11,8 @@
 #include <autograph/pixel_format.hpp>
 #include <autograph/surface.hpp>
 
+#include <extra/image_io/load_image.hpp>
+
 #include "../common/sample.hpp"
 #include "../common/uniforms.hpp"
 
@@ -28,6 +30,7 @@ public:
     pipeline =
         loadGraphicsPipeline("common/glsl/model_viewer.glsl", gpinfo, nullptr);
     texRender = device->createTexture2D<ag::RGBA8>({512, 512});
+    texDefault = loadTexture2D("common/img/tonberry.jpg");
   }
 
   void render() {
@@ -39,18 +42,20 @@ public:
         objectData, GL::kUniformBufferOffsetAlignment);*/
 
     auto out = device->getOutputSurface();
-    ag::clear(*device, out, ag::ClearColor { 1.0f, 0.0f, 1.0f, 1.0f });
-	ag::clear(*device, texRender, ag::ClearColor{ 0.0f, 1.0f, 0.0f, 1.0f });
+    ag::clear(*device, out, ag::ClearColor{1.0f, 0.0f, 1.0f, 1.0f});
+    ag::clear(*device, texRender, ag::ClearColor{0.0f, 1.0f, 0.0f, 1.0f});
     samples::drawMesh(bunnyMesh, *device, out, pipeline, cbSceneData,
                       glm::scale(glm::mat4(1.0f), glm::vec3(0.1f)));
 
-    copyTex(texRender, out, 1000, 800, {0, 0}, 1.0);
+    // copyTex(texRender, out, width, height, {10, 10}, 1.0);
+    copyTex(texDefault, out, width, height, {20, 20}, 1.0);
   }
 
 private:
   ag::GraphicsPipeline<GL> pipeline;
   samples::Mesh<GL> bunnyMesh;
   ag::Texture2D<ag::RGBA8, GL> texRender;
+  ag::Texture2D<ag::RGBA8, GL> texDefault;
 };
 
 int main() {

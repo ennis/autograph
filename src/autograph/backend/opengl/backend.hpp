@@ -1,23 +1,25 @@
 #ifndef OPENGL_BACKEND_HPP
 #define OPENGL_BACKEND_HPP
 
-#include <stdexcept>
-#include <deque>
 #include <array>
+#include <deque>
+#include <stdexcept>
 
-#include <glm/glm.hpp>
-#include <format.h>
+// this must be included before glfw3
 #include <gl_core_4_5.hpp>
+
 #include <GLFW/glfw3.h>
+#include <format.h>
+#include <glm/glm.hpp>
 #include <gsl.h>
 
-#include "../../optional.hpp"
-#include "../../utils.hpp"
-#include "../../surface.hpp"
-#include "../../texture.hpp"
 #include "../../device.hpp"
 #include "../../draw.hpp"
+#include "../../optional.hpp"
 #include "../../rect.hpp"
+#include "../../surface.hpp"
+#include "../../texture.hpp"
+#include "../../utils.hpp"
 
 #include "state.hpp"
 
@@ -46,13 +48,13 @@ struct is_enum_flags<ag::opengl::DataAccessHints> : public std::true_type {};
 
 namespace ag {
 namespace opengl {
-	
-	struct GLPixelFormat
-	{
-		GLenum internalFormat;
-		GLenum externalFormat;
-		int numComponents;
-	};
+
+struct GLPixelFormat {
+  GLenum internalFormat;
+  GLenum externalFormat;
+  GLenum type;
+  int numComponents;
+};
 
 // Wrapper to use GLuint as a unique_ptr handle type
 // http://stackoverflow.com/questions/6265288/unique-ptr-custom-storage-type-example/6272139#6272139
@@ -284,11 +286,34 @@ struct OpenGLBackend {
   void bindDepthRenderTexture(Texture2DHandle::pointer handle);
 
   ///////////////////// Clear command
-  void clearColor(SurfaceHandle::pointer framebuffer_obj, const ag::ClearColor& color);
+  void clearColor(SurfaceHandle::pointer framebuffer_obj,
+                  const ag::ClearColor& color);
   void clearDepth(SurfaceHandle::pointer framebuffer_obj, float depth);
-  void clearTexture1DFloat(Texture1DHandle::pointer handle, ag::Box1D region, const ag::ClearColor& color);
-  void clearTexture2DFloat(Texture2DHandle::pointer handle, ag::Box2D region, const ag::ClearColor& color);
-  void clearTexture3DFloat(Texture3DHandle::pointer handle, ag::Box3D region, const ag::ClearColor& color);
+  void clearTexture1DFloat(Texture1DHandle::pointer handle, ag::Box1D region,
+                           const ag::ClearColor& color);
+  void clearTexture2DFloat(Texture2DHandle::pointer handle, ag::Box2D region,
+                           const ag::ClearColor& color);
+  void clearTexture3DFloat(Texture3DHandle::pointer handle, ag::Box3D region,
+                           const ag::ClearColor& color);
+
+  ///////////////////// Texture upload
+
+  // These are blocking
+  void updateTexture1D(Texture1DHandle::pointer handle,
+                       const Texture1DInfo& info, unsigned mipLevel,
+                       Box1D region, gsl::span<const gsl::byte> data);
+  void updateTexture2D(Texture2DHandle::pointer handle,
+                       const Texture2DInfo& info, unsigned mipLevel,
+                       Box2D region, gsl::span<const gsl::byte> data);
+  void updateTexture3D(Texture3DHandle::pointer handle,
+                       const Texture3DInfo& info, unsigned mipLevel,
+                       Box3D region, gsl::span<const gsl::byte> data);
+
+  // staged texture upload: copy buffer data to texture
+  /*void copyTextureRegion1D(Texture1DHandle::pointer src_handle, Box1D
+     src_region, PixelFormat src_format,
+          Texture1DHandle::pointer dest_handle, unsigned dest_offset,
+     PixelFormat dest_format);*/
 
   ///////////////////// Draw calls
   void draw(PrimitiveType primitiveType, unsigned first, unsigned count);
@@ -338,7 +363,6 @@ private:
   // bind state
   BindState bind_state;
 };
-
 }
 }
 

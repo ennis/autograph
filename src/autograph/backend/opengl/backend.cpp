@@ -104,23 +104,23 @@ GLenum primitiveTypeToGLenum(PrimitiveType primitiveType) {
 GLPixelFormat pixelFormatToGL(PixelFormat format) {
   switch (format) {
   case PixelFormat::Uint8:
-    return GLPixelFormat{gl::R8UI, gl::UNSIGNED_BYTE, 1};
+    return GLPixelFormat{gl::R8UI, gl::RED, gl::UNSIGNED_BYTE, 1};
   case PixelFormat::Uint8x2:
-    return GLPixelFormat{gl::RG8UI, gl::UNSIGNED_BYTE, 2};
+    return GLPixelFormat{gl::RG8UI, gl::RG, gl::UNSIGNED_BYTE, 2};
   case PixelFormat::Uint8x3:
-    return GLPixelFormat{gl::RGB8UI, gl::UNSIGNED_BYTE, 3};
+    return GLPixelFormat{gl::RGB8UI, gl::RGB, gl::UNSIGNED_BYTE, 3};
   case PixelFormat::Uint8x4:
-    return GLPixelFormat{gl::RGBA8UI, gl::UNSIGNED_BYTE, 4};
+    return GLPixelFormat{gl::RGBA8UI, gl::RGBA, gl::UNSIGNED_BYTE, 4};
   case PixelFormat::Unorm8:
-    return GLPixelFormat{gl::R8, gl::UNSIGNED_BYTE, 1};
+    return GLPixelFormat{gl::R8, gl::RED, gl::UNSIGNED_BYTE, 1};
   case PixelFormat::Unorm8x2:
-    return GLPixelFormat{gl::RG8, gl::UNSIGNED_BYTE, 2};
+    return GLPixelFormat{gl::RG8, gl::RG, gl::UNSIGNED_BYTE, 2};
   case PixelFormat::Unorm8x3:
-    return GLPixelFormat{gl::RGB8, gl::UNSIGNED_BYTE, 3};
+    return GLPixelFormat{gl::RGB8, gl::RGB, gl::UNSIGNED_BYTE, 3};
   case PixelFormat::Unorm8x4:
-    return GLPixelFormat{gl::RGBA8, gl::UNSIGNED_BYTE, 4};
+    return GLPixelFormat{gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE, 4};
   case PixelFormat::Float:
-    return GLPixelFormat{gl::R32F, gl::FLOAT, 1};
+    return GLPixelFormat{gl::R32F, gl::RED, gl::FLOAT, 1};
   default:
     failWith("TODO");
   }
@@ -187,6 +187,10 @@ void OpenGLBackend::createWindow(const DeviceOptions& options) {
   window = createGlfwWindow(options);
   setDebugCallback();
   gl::CreateFramebuffers(1, &render_to_texture_fbo);
+  // Direct3D compatibility 
+  // (this is a GL 4.5 extension, so we are deliberately 
+  //  sacrificing compatibility here)
+  gl::ClipControl(gl::UPPER_LEFT, gl::ZERO_TO_ONE);
 }
 
 bool OpenGLBackend::processWindowEvents() {
@@ -580,6 +584,32 @@ void OpenGLBackend::clearTexture3DFloat(Texture3DHandle::pointer handle,
                                         ag::Box3D region,
                                         const ag::ClearColor& color) {
   gl::ClearTexImage(handle.id, 0, gl::RGBA, gl::FLOAT, color.rgba);
+}
+
+void OpenGLBackend::updateTexture1D(Texture1DHandle::pointer handle,
+	const Texture1DInfo& info, unsigned mipLevel, ag::Box1D region,
+                                    gsl::span<const gsl::byte> data) {
+  auto gl_fmt = pixelFormatToGL(info.format);
+  gl::TextureSubImage1D(handle.id, mipLevel, region.xmin, region.width(),
+                        gl_fmt.externalFormat, gl_fmt.type, data.data());
+}
+
+void OpenGLBackend::updateTexture2D(Texture2DHandle::pointer handle,
+	const Texture2DInfo& info, unsigned mipLevel, ag::Box2D region,
+                                    gsl::span<const gsl::byte> data) {
+  auto gl_fmt = pixelFormatToGL(info.format);
+  gl::TextureSubImage2D(handle.id, mipLevel, region.xmin, region.ymin, region.width(),
+                        region.height(), gl_fmt.externalFormat, gl_fmt.type,
+                        data.data());
+}
+
+void OpenGLBackend::updateTexture3D(Texture3DHandle::pointer handle,
+	const Texture3DInfo& info, unsigned mipLevel, ag::Box3D region,
+                                    gsl::span<const gsl::byte> data) {
+  auto gl_fmt = pixelFormatToGL(info.format);
+  gl::TextureSubImage3D(handle.id, mipLevel, region.xmin, region.ymin, region.zmin,
+                        region.width(), region.height(), region.depth(),
+                        gl_fmt.externalFormat, gl_fmt.type, data.data());
 }
 
 void OpenGLBackend::draw(PrimitiveType primitiveType, unsigned first,
