@@ -2,6 +2,7 @@
 #define BUFFER_HPP
 
 #include <cstdlib> // size_t
+#include <utility> // std::move
 
 namespace ag {
 enum class BufferUsage {

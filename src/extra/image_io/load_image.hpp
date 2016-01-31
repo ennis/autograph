@@ -20,7 +20,7 @@ ag::Texture2D<ag::RGBA8, D> loadTexture2D(Device<D>& device,
   int x, y, comp;
   auto raw_data = stbi_load(filename, &x, &y, &comp, 4);
   auto tex =
-      device.createTexture2D<ag::RGBA8>(glm::uvec2((unsigned)x, (unsigned)y));
+      device.template createTexture2D<ag::RGBA8>(glm::uvec2((unsigned)x, (unsigned)y));
   auto pixels_data_span =
       gsl::span<const ag::RGBA8>((const ag::RGBA8*)raw_data, x * y);
   ag::copy(device, pixels_data_span, tex);

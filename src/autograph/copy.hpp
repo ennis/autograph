@@ -13,6 +13,7 @@
 #include "device.hpp"
 #include "pixel_format.hpp"
 #include "texture.hpp"
+#include "rect.hpp"
 
 namespace ag {
 // issue: how to determine the type of the pointer to texture data on the CPU
