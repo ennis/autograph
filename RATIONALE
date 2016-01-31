@@ -577,10 +577,26 @@ in namespace ag::extras, separate library
 
 math: lightweight math support library
 	ONLY: perspective transformations 
-event: framework for interactive applications
+
+interactive: framework for interactive applications
 	observables, reactive operations => use RxCpp
+	application events: application close, etc.
+	forward events (backend-specific) to input handlers, rendering contexts and windows
+	not an extra!
+
+	application frameworks: 
+		- GLFW
+			using GraphicsDriver = OpenGLDriver
+		- Native X11
+			using GraphicsDriver = OpenGLDriver
+		- Native Win32
+			using GraphicsDriver = Win32GLDriver / DirectX11Driver / DirectX12Driver
+
 input: library to handle various input devices
 	mouses, keyboards, gamepads and graphics tablets
+	input handlers receive events (opaque) from the application framework
+	and translate them into input events
+
 mesh: generic mesh library
 	use assimp for loading
 	type-safe mesh types

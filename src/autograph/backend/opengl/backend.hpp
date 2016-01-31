@@ -217,6 +217,7 @@ struct OpenGLBackend {
   // create a swap chain to draw into (color buffer + depth buffer)
   void createWindow(const DeviceOptions& options);
   bool processWindowEvents();
+  GLFWwindow* getWindow() { return window; }
 
   // textures
 
