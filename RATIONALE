@@ -589,6 +589,10 @@ interactive: framework for interactive applications
 	application events: application close, etc.
 	forward events (backend-specific) to input handlers, rendering contexts and windows
 	not an extra!
+        must provide escape hatches
+        must be accessible by the application if needed
+        => application creates the object, pass reference to ag subsystems
+        => in charge of creating the main window
 
 	application frameworks: 
 		- GLFW
@@ -597,11 +601,14 @@ interactive: framework for interactive applications
 			using GraphicsDriver = OpenGLDriver
 		- Native Win32
 			using GraphicsDriver = Win32GLDriver / DirectX11Driver / DirectX12Driver
+                - WinRT
+        naming: core? interactive?
 
 input: library to handle various input devices
 	mouses, keyboards, gamepads and graphics tablets
 	input handlers receive events (opaque) from the application framework
 	and translate them into input events
+      (note: merge with ag::interactive)
 
 mesh: generic mesh library
 	use assimp for loading

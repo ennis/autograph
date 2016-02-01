@@ -30,6 +30,7 @@ struct StylusEvent {
 
 struct MouseButtonEvent {
   unsigned button;
+  MouseButtonState state;
 };
 
 struct MousePointerEvent {
@@ -54,7 +55,7 @@ struct InputSubscribers
 	rxcpp::rxsub::subject<KeyEvent>::subscriber_type sub_keys;
 	rxcpp::rxsub::subject<MouseButtonEvent>::subscriber_type sub_mouse_buttons;
 	rxcpp::rxsub::subject<MousePointerEvent>::subscriber_type sub_mouse_pointer;
-	rxcpp::rxsub::subject<StylusEvent>::subscriber_type subject_stylus;
+        rxcpp::rxsub::subject<StylusEvent>::subscriber_type sub_stylus;
 };
 
 // input backends:
@@ -69,14 +70,24 @@ struct InputSubscribers
 class InputEventSource
 {
 public:
-	virtual ~InputEventSource();
+        virtual ~InputEventSource() = 0;
 	virtual void poll(InputSubscribers& subscribers) = 0;
 };
 
 //////////////////// input
 class Input {
 public:
-  Input(typename D::InputOptions& options) : driver(options) {}
+  Input() {
+      subscribers.sub_keys = subject_keys.get_subscriber();
+      subscribers.sub_mouse_buttons = subject_mouse_buttons.get_subscriber();
+      subscribers.sub_mouse_pointer = subject_mouse_pointer.get_subscriber();
+      subscribers.sub_stylus = subject_stylus.get_subscriber();
+  }
+
+  void registerEventSource(std::unique_ptr<InputEventSource>&& eventSource)
+  {
+      eventSources.emplace_back(eventSource);
+  }
 
   auto keys() const { return obs_keys; }
   auto mouseButtons() const { return obs_mouse_buttons; }
@@ -89,6 +100,11 @@ public:
     obs_keys.filter([=](auto ev) { return ev.keyCode == key; })
         .subscribe([](auto ev) { b.on_next(ev.type); });
     return b;
+  }
+
+  void poll()
+  {
+      for (auto& src : eventSources) src->poll(subscribers);
   }
 
 private:
