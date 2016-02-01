@@ -1,12 +1,14 @@
 #ifndef SAMPLE_HPP
 #define SAMPLE_HPP
+#include <array>
+#include <cmath>
 
 #include <filesystem/path.h>
 
+#include <autograph/backend/opengl/backend.hpp>
 #include <autograph/device.hpp>
 #include <autograph/draw.hpp>
 #include <autograph/pipeline.hpp>
-#include <autograph/backend/opengl/backend.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -57,6 +59,32 @@ void drawMesh(Mesh<D>& mesh, ag::Device<D>& device, RenderTarget&& rt,
              std::forward<ShaderResources>(resources)...);
 }
 
+std::array<float, 16> perspectiveFovRH(float fovY, float aspectRatio,
+                                       float zNear, float zFar) {
+  std::array<float, 16> out;
+
+  float tanHalfFovy = std::tan(fovY / 2.0f);
+
+  out[0] = 1.0f / (aspectRatio * tanHalfFovy);
+  out[1] = 0;
+  out[2] = 0;
+  out[3] = 0;
+  out[4] = 0;
+  out[5] = -1.0f / (tanHalfFovy);
+  out[6] = 0;
+  out[7] = 0;
+  out[8] = 0;
+  out[9] = 0;
+  out[10] = zFar / (zNear - zFar);
+  out[11] = -1.0f;
+  out[12] = 0;
+  out[13] = 0;
+  out[14] = zNear * zFar / (zNear - zFar);
+  out[15] = 0;
+
+  return out;
+}
+
 const ag::opengl::VertexAttribute kMeshVertexDesc[4] = {
     ag::opengl::VertexAttribute{0, gl::FLOAT, 3, 3 * sizeof(float), false},
     ag::opengl::VertexAttribute{0, gl::FLOAT, 3, 3 * sizeof(float), false},
@@ -67,8 +95,7 @@ const ag::opengl::VertexAttribute kMeshVertexDesc[4] = {
 // OpenGL sample class, needs glfw
 template <typename Derived> class GLSample {
 public:
-  GLSample(unsigned width_, unsigned height_,
-                     const char* window_title_)
+  GLSample(unsigned width_, unsigned height_, const char* window_title_)
       : width(width_), height(height_) {
     namespace fs = filesystem;
 
@@ -108,16 +135,16 @@ public:
                     unsigned target_width, unsigned target_height,
                     glm::vec2 pos, float scale, gsl::span<Vertex2D, 6> out) {
     float xleft = (pos.x / target_width) * 2.0f - 1.0f;
-    float ytop = (1.0f - pos.y / target_height) * 2.0f - 1.0f;
+    float ytop = (pos.y / target_height) * 2.0f - 1.0f;
     float xright = xleft + ((float)tex_width / target_width * scale) * 2.0f;
-    float ybottom = ytop - ((float)tex_height / target_height * scale) * 2.0f;
+    float ybottom = ytop + ((float)tex_height / target_height * scale) * 2.0f;
 
-    out[0] = Vertex2D{xleft, ytop, 0.0, 1.0};
-    out[1] = Vertex2D{xright, ytop, 1.0, 1.0};
-    out[2] = Vertex2D{xleft, ybottom, 0.0, 0.0};
-    out[3] = Vertex2D{xleft, ybottom, 0.0, 0.0};
-    out[4] = Vertex2D{xright, ytop, 1.0, 1.0};
-    out[5] = Vertex2D{xright, ybottom, 1.0, 0.0};
+    out[0] = Vertex2D{xleft, ytop, 0.0, 0.0};
+    out[2] = Vertex2D{xright, ytop, 1.0, 0.0};
+    out[1] = Vertex2D{xleft, ybottom, 0.0, 1.0};
+    out[3] = Vertex2D{xleft, ybottom, 0.0, 1.0};
+    out[5] = Vertex2D{xright, ytop, 1.0, 0.0};
+    out[4] = Vertex2D{xright, ybottom, 1.0, 1.0};
   }
 
   template <typename SurfaceTy, typename T>
@@ -131,6 +158,12 @@ public:
              ag::DrawArrays(ag::PrimitiveType::Triangles,
                             gsl::span<Vertex2D>(target_rect)),
              glm::vec2(target_width, target_height), tex);
+  }
+
+  ag::Texture2D<ag::RGBA8, GL> loadTexture2D(const char* asset_path) {
+    auto full_path = samplesRoot / asset_path;
+    return std::move(
+        ag::extra::image_io::loadTexture2D(*device, full_path.str().c_str()));
   }
 
   Mesh<GL> loadMesh(const char* asset_path) {
@@ -175,9 +208,10 @@ public:
   }
 
   ag::GraphicsPipeline<GL>
-  loadGraphicsPipeline(const char* path, ag::opengl::GraphicsPipelineInfo& baseInfo, gsl::span<const char*> defines) {
+  loadGraphicsPipeline(const char* path,
+                       ag::opengl::GraphicsPipelineInfo& baseInfo,
+                       gsl::span<const char*> defines) {
     using namespace shaderpp;
-
     ShaderSource src((samplesRoot / path).str().c_str());
     auto VSSource = src.preprocess(PipelineStage::Vertex, defines, nullptr);
     auto PSSource = src.preprocess(PipelineStage::Pixel, defines, nullptr);
@@ -186,13 +220,30 @@ public:
     return device->createGraphicsPipeline(baseInfo);
   }
 
+  ag::ComputePipeline<GL> loadComputePipeline(const char* path,
+                                              gsl::span<const char*> defines) {
+    using namespace shaderpp;
+    ag::opengl::ComputePipelineInfo info;
+    ShaderSource src((samplesRoot / path).str().c_str());
+    auto CSSource = src.preprocess(PipelineStage::Compute, defines, nullptr);
+    info.CSSource = CSSource.c_str();
+    return device->createComputePipeline(info);
+  }
+
   int run() {
     device->run([this]() {
       // TODO camera and stuff
+      // Note: we use the DirectX convention, so -1 is at the top, +1 is at the
+      // bottom
       sceneData.viewMatrix =
           glm::lookAt(glm::vec3{0.0f, 0.0f, -4.0f}, glm::vec3{0.0f, 0.0f, 0.0f},
                       glm::vec3{0.0f, 1.0f, 0.0f});
-      sceneData.projMatrix = glm::perspective(45.0f, 1.0f, 0.01f, 10.0f);
+      auto projMat = perspectiveFovRH(45.0f, 1.0f, 0.01f, 10.0f);
+      sceneData.projMatrix =
+          glm::mat4(projMat[0], projMat[1], projMat[2], projMat[3], projMat[4],
+                    projMat[5], projMat[6], projMat[7], projMat[8], projMat[9],
+                    projMat[10], projMat[11], projMat[12], projMat[13],
+                    projMat[14], projMat[15]);
       sceneData.viewProjMatrix = sceneData.projMatrix * sceneData.viewMatrix;
       cbSceneData = device->pushDataToUploadBuffer(
           sceneData, GL::kUniformBufferOffsetAlignment);

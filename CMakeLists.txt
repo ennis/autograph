@@ -51,7 +51,32 @@ target_link_libraries(shaderpp ${Boost_LIBRARIES})
 target_include_directories(shaderpp PUBLIC ext/GSL/include ${Boost_INCLUDE_DIR})
 
 target_link_libraries(autograph shaderpp cppformat glloadgen glfw ${Boost_LIBRARIES} ${GLFW_LIBRARIES})
-target_include_directories(autograph PUBLIC ext/glm ext/GSL/include)
+target_include_directories(autograph PUBLIC src ext/glm ext/GSL/include)
+
+############## Extras ##############
+function(target_link_autograph_extra)
+    #cmake_parse_arguments(AG_SAMPLE "" "TARGET;DIRECTORY" "REQUIRES" ${ARGN} )
+    #file(GLOB SAMPLE_SOURCES ${AG_SAMPLE_DIRECTORY}/*.cpp)
+    #add_executable(${AG_SAMPLE_TARGET} ${AG_SAMPLE_COMMON_SOURCES} ${SAMPLE_SOURCES})
+    #target_link_libraries(${AG_SAMPLE_TARGET} autograph ${AG_SAMPLE_REQUIRES})
+    #target_include_directories(${AG_SAMPLE_TARGET} PRIVATE ${AG_INCLUDE_DIR})
+endfunction()
+
+function(add_extra)
+	cmake_parse_arguments(AG_EXTRA "" "TARGET" "REQUIRES" ${ARGN} )
+	set(EXTRA_DIR src/extra/${AG_EXTRA_TARGET})
+	file(GLOB EXTRA_SOURCES ${EXTRA_DIR}/*.cpp ${EXTRA_DIR}/*.c)
+	file(GLOB EXTRA_HEADERS ${EXTRA_DIR}/*.hpp)
+	if (EXTRA_SOURCES)
+		add_library(${AG_EXTRA_TARGET} STATIC ${EXTRA_SOURCES})
+	else() 
+		add_library(${AG_EXTRA_TARGET} INTERFACE)
+	endif()
+	target_include_directories(${AG_EXTRA_TARGET} INTERFACE src/extra/)
+	target_link_libraries(${AG_EXTRA_TARGET} ${AG_EXTRA_REQUIRES})
+endfunction()
+
+add_extra(TARGET image_io REQUIRES autograph stb)
 
 add_subdirectory(examples)
 

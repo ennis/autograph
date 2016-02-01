@@ -6,3 +6,7 @@ struct SceneData
 	vec2 viewportSize;
 };
 
+vec2 fragToTexCoord(vec2 viewportSize, vec2 fragCoord)
+{
+	return vec2(fragCoord.x, viewportSize.y-fragCoord.y) / viewportSize;
+}
