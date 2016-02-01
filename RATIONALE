@@ -424,6 +424,12 @@ Facts about texture data:
 		- storage_type: type of elements in a texture 
 			can be different from storage_type for compressed formats
 
+Texture transfers:
+glTexSubImage may copy the provided texture data to gl-managed memory and keep
+it until the texture is ready to be copied over.
+My guess is that D3D12, Vulkan and friends do no such thing (no extra memory allocations),
+and we have to manage this "staging buffer" ourselves.
+
 
 Feature: Command lists
 _____________________________
@@ -596,3 +602,9 @@ canvas: digital painting canvas structures and operations
 	- support for undo buffer
 	- support for painting in texture maps
 	(high priority)
+
+
+Needed for canvas
+_____________________________
+
+Texture upload/download
