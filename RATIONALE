@@ -522,6 +522,8 @@ ag::copy(commandlist, texture_view_src, texture_view_dst)
 
 Mappable buffer vs unmappable buffers
 Mapped slices (accessible by the CPU) and buffer slices (not accessible by the GPU)
+=> NO: hide mapped slices (they should only be WRITTEN by the CPU, not read)
+=> access only through upload buffers
 
 RawBuffer
 Buffer<T>
@@ -529,9 +531,9 @@ Buffer<T[]>
 RawBufferSlice
 BufferSlice<T>
 BufferSlice<T[]>
-MappedRawBufferSlice
-MappedBufferSlice<T>
-MappedBufferSlice<T[]>
+- MappedRawBufferSlice
+- MappedBufferSlice<T>
+- MappedBufferSlice<T[]>
 
 
 Feature: Data readback
