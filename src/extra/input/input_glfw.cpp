@@ -1,4 +1,4 @@
-#include "input_win32.hpp"
+#include "input_glfw.hpp"
 
 namespace ag
 {
@@ -6,10 +6,7 @@ namespace ag
 	{
 		namespace input
 		{
-			namespace win32
-			{
-				Win32GLFWInputBackend* Win32GLFWInputBackend::instance = nullptr;
-			}
+                GLFWInputEventSource* GLFWInputEventSource::instance = nullptr;
 		}
 	}
 }

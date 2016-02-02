@@ -13,4 +13,4 @@ endfunction()
 # Doesn't happen on windows (executables have the .exe suffix)
 # Ah, cmake, you never cease to amaze me.
 autograph_add_sample(TARGET sample_simple DIRECTORY simple REQUIRES image_io assimp docopt_s)
-autograph_add_sample(TARGET sample_input DIRECTORY input REQUIRES image_io rxcpp assimp)
+autograph_add_sample(TARGET sample_input DIRECTORY input REQUIRES input image_io rxcpp assimp)

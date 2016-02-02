@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include <rxcpp/rx-subjects.hpp>
 #include <rxcpp/rx.hpp>
+#include <rxcpp/rx-subjects.hpp>
 
 namespace ag {
 namespace extra {
@@ -21,7 +21,7 @@ struct KeyEvent {
 };
 
 struct StylusEvent {
-  StylusDeviceInfo& deviceInfo;
+  //StylusDeviceInfo& deviceInfo;
   unsigned positionX;
   unsigned positionY;
   float pressure;
@@ -70,23 +70,26 @@ struct InputSubscribers
 class InputEventSource
 {
 public:
-        virtual ~InputEventSource() = 0;
+        virtual ~InputEventSource()
+    {}
+
 	virtual void poll(InputSubscribers& subscribers) = 0;
 };
 
 //////////////////// input
 class Input {
 public:
-  Input() {
-      subscribers.sub_keys = subject_keys.get_subscriber();
-      subscribers.sub_mouse_buttons = subject_mouse_buttons.get_subscriber();
-      subscribers.sub_mouse_pointer = subject_mouse_pointer.get_subscriber();
-      subscribers.sub_stylus = subject_stylus.get_subscriber();
+    Input() : subscribers(InputSubscribers {
+                          subject_keys.get_subscriber(),
+                          subject_mouse_buttons.get_subscriber(),
+                          subject_mouse_pointer.get_subscriber(),
+                          subject_stylus.get_subscriber()
+}) {
   }
 
   void registerEventSource(std::unique_ptr<InputEventSource>&& eventSource)
   {
-      eventSources.emplace_back(eventSource);
+      eventSources.emplace_back(std::move(eventSource));
   }
 
   auto keys() const { return obs_keys; }
@@ -97,8 +100,8 @@ public:
   // returns a behavior that hold the last known key state of the specified key
   auto keyState(uint32_t keyCode, KeyState init_state = KeyState::Released) {
     auto b = rxcpp::rxsub::behavior<KeyState>(init_state);
-    obs_keys.filter([=](auto ev) { return ev.keyCode == key; })
-        .subscribe([](auto ev) { b.on_next(ev.type); });
+    obs_keys.filter([=](auto ev) { return ev.code == keyCode; })
+        .subscribe([=](auto ev) { b.get_subscriber().on_next(KeyState::Released); }) ;
     return b;
   }
 

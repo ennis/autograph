@@ -4,7 +4,7 @@
 #include "input.hpp"
 
 #include <vector>
-#include <GLFW/glfw3.hpp>
+#include <GLFW/glfw3.h>
 
 namespace ag {
 namespace extra {
@@ -28,13 +28,16 @@ public:
 
 	void onMouseButton(GLFWwindow* window, int button, int action, int mods) {
             mouseButtonEvents.push_back(MouseButtonEvent {
-                                            button,
-                                        button, action == GLFW_PRESS ? MouseButtonState::Pressed : MouseButtonState::Release
+                                            (unsigned)button,
+                                 action == GLFW_PRESS ? MouseButtonState::Pressed : MouseButtonState::Released
                                         });
 	}
 
 	void onCursorPos(GLFWwindow* window, double xpos, double ypos) {
-            mousePointerEvents.push_back()
+        mousePointerEvents.push_back(MousePointerEvent {
+                                         (unsigned)xpos,
+                                         (unsigned)ypos
+                                     });
 	}
 
 	void onCursorEnter(GLFWwindow* window, int entered) {}
@@ -45,10 +48,10 @@ public:
 
 	void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
             keyEvents.push_back(KeyEvent {
-                                    key,
+                                    (unsigned)key,
                                     action == GLFW_PRESS ? KeyEventType::Pressed : (
                                     action == GLFW_REPEAT ? KeyEventType::Repeat : (
-                                    action == GLFW_RELEASE ? KeyEventType::Release : KeyEventType::Release))
+                                    action == GLFW_RELEASE ? KeyEventType::Released : KeyEventType::Released))
                                 });
 	}
 
@@ -68,7 +71,8 @@ private:
         std::vector<MouseButtonEvent> mouseButtonEvents;
         std::vector<MousePointerEvent> mousePointerEvents;
 
-  static GLFWInputBackend* instance;
+        GLFWwindow* window;
+  static GLFWInputEventSource* instance;
 
   // GLFW event handlers
   static void GLFWMouseButtonHandler(GLFWwindow* window, int button, int action,
