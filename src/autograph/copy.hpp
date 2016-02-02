@@ -58,6 +58,16 @@ void copy(Device<D>& device, gsl::span<const Storage> pixels,
                                        texture.info.dimensions.z},
                                  gsl::as_bytes(pixels));
 }
+
+///////////////////// Texture -> CPU async readback operations
+// returns a waitable std::future that indicates when the span is ready
+// future<span> asyncCopy(device, texture, out_pixels, box)
+
+///////////////////// Texture -> CPU sync readback operations
+// force a CPU/GPU sync
+// void syncCopy(device, texture, out_pixels, box)
+// backend impl: run async copy op to unpack buffer, fence, wait for fence, copy to CPU main memory, return 
+
 }
 
 #endif

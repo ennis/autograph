@@ -21,7 +21,7 @@ struct KeyEvent {
 };
 
 struct StylusEvent {
-  //StylusDeviceInfo& deviceInfo;
+  // StylusDeviceInfo& deviceInfo;
   unsigned positionX;
   unsigned positionY;
   float pressure;
@@ -50,12 +50,11 @@ struct StylusDeviceInfo {
   unsigned sizeY;
 };
 
-struct InputSubscribers
-{
-	rxcpp::rxsub::subject<KeyEvent>::subscriber_type sub_keys;
-	rxcpp::rxsub::subject<MouseButtonEvent>::subscriber_type sub_mouse_buttons;
-	rxcpp::rxsub::subject<MousePointerEvent>::subscriber_type sub_mouse_pointer;
-        rxcpp::rxsub::subject<StylusEvent>::subscriber_type sub_stylus;
+struct InputSubscribers {
+  rxcpp::rxsub::subject<KeyEvent>::subscriber_type sub_keys;
+  rxcpp::rxsub::subject<MouseButtonEvent>::subscriber_type sub_mouse_buttons;
+  rxcpp::rxsub::subject<MousePointerEvent>::subscriber_type sub_mouse_pointer;
+  rxcpp::rxsub::subject<StylusEvent>::subscriber_type sub_stylus;
 };
 
 // input backends:
@@ -67,29 +66,24 @@ struct InputSubscribers
 // DX (HWND)
 // OpenGL (GLFWwindow?)
 
-class InputEventSource
-{
+class InputEventSource {
 public:
-        virtual ~InputEventSource()
-    {}
+  virtual ~InputEventSource() {}
 
-	virtual void poll(InputSubscribers& subscribers) = 0;
+  virtual void poll(InputSubscribers& subscribers) = 0;
 };
 
 //////////////////// input
 class Input {
 public:
-    Input() : subscribers(InputSubscribers {
-                          subject_keys.get_subscriber(),
-                          subject_mouse_buttons.get_subscriber(),
-                          subject_mouse_pointer.get_subscriber(),
-                          subject_stylus.get_subscriber()
-}) {
-  }
+  Input()
+      : subscribers(InputSubscribers{subject_keys.get_subscriber(),
+                                     subject_mouse_buttons.get_subscriber(),
+                                     subject_mouse_pointer.get_subscriber(),
+                                     subject_stylus.get_subscriber()}) {}
 
-  void registerEventSource(std::unique_ptr<InputEventSource>&& eventSource)
-  {
-      eventSources.emplace_back(std::move(eventSource));
+  void registerEventSource(std::unique_ptr<InputEventSource>&& eventSource) {
+    eventSources.emplace_back(std::move(eventSource));
   }
 
   auto keys() const { return obs_keys; }
@@ -101,13 +95,14 @@ public:
   auto keyState(uint32_t keyCode, KeyState init_state = KeyState::Released) {
     auto b = rxcpp::rxsub::behavior<KeyState>(init_state);
     obs_keys.filter([=](auto ev) { return ev.code == keyCode; })
-        .subscribe([=](auto ev) { b.get_subscriber().on_next(KeyState::Released); }) ;
+        .subscribe(
+            [=](auto ev) { b.get_subscriber().on_next(KeyState::Released); });
     return b;
   }
 
-  void poll()
-  {
-      for (auto& src : eventSources) src->poll(subscribers);
+  void poll() {
+    for (auto& src : eventSources)
+      src->poll(subscribers);
   }
 
 private:
@@ -127,7 +122,7 @@ private:
   rxcpp::observable<StylusEvent> obs_stylus;
 
   // backends (input event sources)
-  std::vector<std::unique_ptr<InputEventSource> > eventSources;
+  std::vector<std::unique_ptr<InputEventSource>> eventSources;
 };
 }
 }

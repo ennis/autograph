@@ -187,8 +187,8 @@ void OpenGLBackend::createWindow(const DeviceOptions& options) {
   window = createGlfwWindow(options);
   setDebugCallback();
   gl::CreateFramebuffers(1, &render_to_texture_fbo);
-  // Direct3D compatibility 
-  // (this is a GL 4.5 extension, so we are deliberately 
+  // Direct3D compatibility
+  // (this is a GL 4.5 extension, so we are deliberately
   //  sacrificing compatibility here)
   gl::ClipControl(gl::UPPER_LEFT, gl::ZERO_TO_ONE);
 }
@@ -533,6 +533,35 @@ void OpenGLBackend::bindSurface(SurfaceHandle::pointer handle) {
   bindFramebufferObject(handle.id);
 }
 
+void OpenGLBackend::bindRWTexture1D(unsigned slot,
+                                    Texture1DHandle::pointer handle) {
+  assert(slot < kMaxTextureUnits);
+  if (bind_state.images[slot] != handle.id) {
+    bind_state.images[slot] = handle.id;
+    bind_state.imagesUpdated = true;
+  }
+}
+
+void OpenGLBackend::bindRWTexture2D(unsigned slot,
+                                    Texture2DHandle::pointer handle) {
+
+  assert(slot < kMaxTextureUnits);
+  if (bind_state.images[slot] != handle.id) {
+    bind_state.images[slot] = handle.id;
+    bind_state.imagesUpdated = true;
+  }
+}
+
+void OpenGLBackend::bindRWTexture3D(unsigned slot,
+                                    Texture3DHandle::pointer handle) {
+
+  assert(slot < kMaxTextureUnits);
+  if (bind_state.images[slot] != handle.id) {
+    bind_state.images[slot] = handle.id;
+    bind_state.imagesUpdated = true;
+  }
+}
+
 void OpenGLBackend::bindRenderTexture(unsigned slot,
                                       Texture2DHandle::pointer handle) {
   bindFramebufferObject(render_to_texture_fbo);
@@ -587,7 +616,8 @@ void OpenGLBackend::clearTexture3DFloat(Texture3DHandle::pointer handle,
 }
 
 void OpenGLBackend::updateTexture1D(Texture1DHandle::pointer handle,
-	const Texture1DInfo& info, unsigned mipLevel, ag::Box1D region,
+                                    const Texture1DInfo& info,
+                                    unsigned mipLevel, ag::Box1D region,
                                     gsl::span<const gsl::byte> data) {
   auto gl_fmt = pixelFormatToGL(info.format);
   gl::TextureSubImage1D(handle.id, mipLevel, region.xmin, region.width(),
@@ -595,21 +625,24 @@ void OpenGLBackend::updateTexture1D(Texture1DHandle::pointer handle,
 }
 
 void OpenGLBackend::updateTexture2D(Texture2DHandle::pointer handle,
-	const Texture2DInfo& info, unsigned mipLevel, ag::Box2D region,
+                                    const Texture2DInfo& info,
+                                    unsigned mipLevel, ag::Box2D region,
                                     gsl::span<const gsl::byte> data) {
   auto gl_fmt = pixelFormatToGL(info.format);
-  gl::TextureSubImage2D(handle.id, mipLevel, region.xmin, region.ymin, region.width(),
-                        region.height(), gl_fmt.externalFormat, gl_fmt.type,
-                        data.data());
+  gl::TextureSubImage2D(handle.id, mipLevel, region.xmin, region.ymin,
+                        region.width(), region.height(), gl_fmt.externalFormat,
+                        gl_fmt.type, data.data());
 }
 
 void OpenGLBackend::updateTexture3D(Texture3DHandle::pointer handle,
-	const Texture3DInfo& info, unsigned mipLevel, ag::Box3D region,
+                                    const Texture3DInfo& info,
+                                    unsigned mipLevel, ag::Box3D region,
                                     gsl::span<const gsl::byte> data) {
   auto gl_fmt = pixelFormatToGL(info.format);
-  gl::TextureSubImage3D(handle.id, mipLevel, region.xmin, region.ymin, region.zmin,
-                        region.width(), region.height(), region.depth(),
-                        gl_fmt.externalFormat, gl_fmt.type, data.data());
+  gl::TextureSubImage3D(handle.id, mipLevel, region.xmin, region.ymin,
+                        region.zmin, region.width(), region.height(),
+                        region.depth(), gl_fmt.externalFormat, gl_fmt.type,
+                        data.data());
 }
 
 void OpenGLBackend::draw(PrimitiveType primitiveType, unsigned first,

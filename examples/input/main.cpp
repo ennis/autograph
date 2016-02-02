@@ -24,7 +24,6 @@
 #include "../common/sample.hpp"
 #include "../common/uniforms.hpp"
 
-
 using GL = ag::opengl::OpenGLBackend;
 
 namespace input = ag::extra::input;
@@ -32,9 +31,9 @@ namespace input = ag::extra::input;
 class InputSample : public samples::GLSample<InputSample> {
 public:
   InputSample(unsigned width, unsigned height)
-      : GLSample(width, height, "Input")
-  {
-    glfw_input_source = std::make_unique<input::GLFWInputEventSource>(gl.getWindow());
+      : GLSample(width, height, "Input") {
+    glfw_input_source =
+        std::make_unique<input::GLFWInputEventSource>(gl.getWindow());
     texDefault = loadTexture2D("common/img/tonberry.jpg");
 
     input.registerEventSource(std::move(glfw_input_source));

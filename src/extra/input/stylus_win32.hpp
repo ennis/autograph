@@ -25,21 +25,21 @@ public:
 
   // Methods whose data we use
   STDMETHOD(Packets)
-	  (IRealTimeStylus* pStylus, const StylusInfo* pStylusInfo, ULONG nPackets,
-		  ULONG nPacketBuf, LONG* pPackets, ULONG* nOutPackets, LONG** ppOutPackets) {
-	  fmt::print("Packets!\n");
-	  return S_OK;
+  (IRealTimeStylus* pStylus, const StylusInfo* pStylusInfo, ULONG nPackets,
+   ULONG nPacketBuf, LONG* pPackets, ULONG* nOutPackets, LONG** ppOutPackets) {
+    fmt::print("Packets!\n");
+    return S_OK;
   }
   STDMETHOD(InAirPackets)
-	  (IRealTimeStylus* pStylus, const StylusInfo* pStylusInfo, ULONG nPackets,
-		  ULONG nPacketBuf, LONG* pPackets, ULONG* nOutPackets, LONG** ppOutPackets) {
-	  fmt::print("In air packet!\n");
-	  return S_OK;
+  (IRealTimeStylus* pStylus, const StylusInfo* pStylusInfo, ULONG nPackets,
+   ULONG nPacketBuf, LONG* pPackets, ULONG* nOutPackets, LONG** ppOutPackets) {
+    fmt::print("In air packet!\n");
+    return S_OK;
   }
   STDMETHOD(DataInterest)(RealTimeStylusDataInterest* pEventInterest) {
-	  *pEventInterest =
-		  (RealTimeStylusDataInterest)(RTSDI_Packets | RTSDI_InAirPackets);
-	  return S_OK;
+    *pEventInterest =
+        (RealTimeStylusDataInterest)(RTSDI_Packets | RTSDI_InAirPackets);
+    return S_OK;
   }
 
   // Methods you can add if you need the alerts - don't forget to change
@@ -122,11 +122,11 @@ public:
       ag::failWith(fmt::format("put_HWND failed (HRESULT {})", hr));
 
     // Create eventhandler
-	rtStylusEvHandler = std::make_unique<CRTSEventHandler>();
+    rtStylusEvHandler = std::make_unique<CRTSEventHandler>();
 
     // Create free-threaded marshaller for this object and aggregate it.
     hr = CoCreateFreeThreadedMarshaler(
-		rtStylusEvHandler.get(), &stylus_event_handler->m_pPunkFTMarshaller);
+        rtStylusEvHandler.get(), &stylus_event_handler->m_pPunkFTMarshaller);
     if (FAILED(hr))
       ag::failWith(
           fmt::format("CoCreateFreeThreadedMarshaler failed (HRESULT {})", hr));
@@ -181,15 +181,13 @@ public:
       }
     }
 
-	~Win32StylusEventSource()
-	{
-	}
+    ~Win32StylusEventSource() {}
 
   private:
     HWND hwnd;
     IRealTimeStylus* rtStylus;
     std::unique_ptr<CRTSEventHandler> rtStylusEvHandler;
-	StylusDeviceInfo defaultDeviceInfo;
+    StylusDeviceInfo defaultDeviceInfo;
   };
 }
 }

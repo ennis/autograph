@@ -433,6 +433,13 @@ it until the texture is ready to be copied over.
 My guess is that D3D12, Vulkan and friends do no such thing (no extra memory allocations),
 and we have to manage this "staging buffer" ourselves.
 
+Layout of texture upload data:
+Must follow alignment constraints (each scanline must be correctly aligned)
+cf. PIXEL_UNPACK_ALIGNMENT
+
+=> Need a special span type for correctly aligned image data
+ImageData<T>, which is a view of an ImageBuffer<T>
+
 
 Feature: Command lists
 _____________________________

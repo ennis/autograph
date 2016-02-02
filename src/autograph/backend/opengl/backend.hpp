@@ -272,6 +272,9 @@ struct OpenGLBackend {
   void bindTexture1D(unsigned slot, Texture1DHandle::pointer handle);
   void bindTexture2D(unsigned slot, Texture2DHandle::pointer handle);
   void bindTexture3D(unsigned slot, Texture3DHandle::pointer handle);
+  void bindRWTexture1D(unsigned slot, Texture1DHandle::pointer handle);
+  void bindRWTexture2D(unsigned slot, Texture2DHandle::pointer handle);
+  void bindRWTexture3D(unsigned slot, Texture3DHandle::pointer handle);
   void bindSampler(unsigned slot, SamplerHandle::pointer handle);
   void bindVertexBuffer(unsigned slot, BufferHandle::pointer handle,
                         size_t offset, size_t size, unsigned stride);

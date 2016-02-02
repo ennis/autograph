@@ -11,67 +11,65 @@ namespace extra {
 namespace input {
 class GLFWInputEventSource : public InputEventSource {
 public:
-        GLFWInputEventSource(GLFWwindow* window_) : window(window_)
-	{
-            glfwSetCharCallback(window, GLFWCharHandler);
-            glfwSetCursorEnterCallback(window, GLFWCursorEnterHandler);
-            glfwSetCursorPosCallback(window, GLFWCursorPosHandler);
-            glfwSetKeyCallback(window, GLFWKeyHandler);
-            glfwSetMouseButtonCallback(window, GLFWMouseButtonHandler);
-            glfwSetScrollCallback(window, GLFWScrollHandler);
-            instance = this;
-	}
+  GLFWInputEventSource(GLFWwindow* window_) : window(window_) {
+    glfwSetCharCallback(window, GLFWCharHandler);
+    glfwSetCursorEnterCallback(window, GLFWCursorEnterHandler);
+    glfwSetCursorPosCallback(window, GLFWCursorPosHandler);
+    glfwSetKeyCallback(window, GLFWKeyHandler);
+    glfwSetMouseButtonCallback(window, GLFWMouseButtonHandler);
+    glfwSetScrollCallback(window, GLFWScrollHandler);
+    instance = this;
+  }
 
-        ~GLFWInputEventSource() override
-        {
-        }
+  ~GLFWInputEventSource() override {}
 
-	void onMouseButton(GLFWwindow* window, int button, int action, int mods) {
-            mouseButtonEvents.push_back(MouseButtonEvent {
-                                            (unsigned)button,
-                                 action == GLFW_PRESS ? MouseButtonState::Pressed : MouseButtonState::Released
-                                        });
-	}
+  void onMouseButton(GLFWwindow* window, int button, int action, int mods) {
+    mouseButtonEvents.push_back(MouseButtonEvent{
+        (unsigned)button, action == GLFW_PRESS ? MouseButtonState::Pressed
+                                               : MouseButtonState::Released});
+  }
 
-	void onCursorPos(GLFWwindow* window, double xpos, double ypos) {
-        mousePointerEvents.push_back(MousePointerEvent {
-                                         (unsigned)xpos,
-                                         (unsigned)ypos
-                                     });
-	}
+  void onCursorPos(GLFWwindow* window, double xpos, double ypos) {
+    mousePointerEvents.push_back(
+        MousePointerEvent{(unsigned)xpos, (unsigned)ypos});
+  }
 
-	void onCursorEnter(GLFWwindow* window, int entered) {}
+  void onCursorEnter(GLFWwindow* window, int entered) {}
 
-        void onScroll(GLFWwindow* window, double xoffset, double yoffset) {
-            // TODO (scroll event?)
-        }
+  void onScroll(GLFWwindow* window, double xoffset, double yoffset) {
+    // TODO (scroll event?)
+  }
 
-	void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
-            keyEvents.push_back(KeyEvent {
-                                    (unsigned)key,
-                                    action == GLFW_PRESS ? KeyEventType::Pressed : (
-                                    action == GLFW_REPEAT ? KeyEventType::Repeat : (
-                                    action == GLFW_RELEASE ? KeyEventType::Released : KeyEventType::Released))
-                                });
-	}
+  void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    keyEvents.push_back(KeyEvent{
+        (unsigned)key,
+        action == GLFW_PRESS
+            ? KeyEventType::Pressed
+            : (action == GLFW_REPEAT
+                   ? KeyEventType::Repeat
+                   : (action == GLFW_RELEASE ? KeyEventType::Released
+                                             : KeyEventType::Released))});
+  }
 
-	void onChar(GLFWwindow* window, unsigned int codepoint) {}
+  void onChar(GLFWwindow* window, unsigned int codepoint) {}
 
-        void poll(InputSubscribers& subscribers) override
-        {
-            // flush all events
-            for (const auto& e : keyEvents) subscribers.sub_keys.on_next(e);
-            for (const auto& e : mouseButtonEvents) subscribers.sub_mouse_buttons.on_next(e);
-            for (const auto& e : mousePointerEvents) subscribers.sub_mouse_pointer.on_next(e);
-            // TODO stylus, I guess
-        }
+  void poll(InputSubscribers& subscribers) override {
+    // flush all events
+    for (const auto& e : keyEvents)
+      subscribers.sub_keys.on_next(e);
+    for (const auto& e : mouseButtonEvents)
+      subscribers.sub_mouse_buttons.on_next(e);
+    for (const auto& e : mousePointerEvents)
+      subscribers.sub_mouse_pointer.on_next(e);
+    // TODO stylus, I guess
+  }
 
 private:
-        std::vector<KeyEvent> keyEvents;
-        std::vector<MouseButtonEvent> mouseButtonEvents;
-        std::vector<MousePointerEvent> mousePointerEvents;
+  std::vector<KeyEvent> keyEvents;
+  std::vector<MouseButtonEvent> mouseButtonEvents;
+  std::vector<MousePointerEvent> mousePointerEvents;
 
-        GLFWwindow* window;
+  GLFWwindow* window;
   static GLFWInputEventSource* instance;
 
   // GLFW event handlers

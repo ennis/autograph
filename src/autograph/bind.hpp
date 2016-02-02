@@ -23,6 +23,7 @@ struct BindContext {
   unsigned samplerBindingIndex = 0;
   unsigned vertexBufferBindingIndex = 0;
   unsigned uniformBufferBindingIndex = 0;
+  unsigned RWTextureBindingIndex = 0;
 };
 
 ////////////////////////// Binder: vertex buffer
@@ -90,6 +91,34 @@ TextureUnit_<Texture3D<T, D>, D> TextureUnit(unsigned unit_,
   return TextureUnit_<Texture3D<T, D>, D>(unit_, tex_, sampler_);
 }
 
+////////////////////////// Binder: RWTexture unit
+template <typename TextureTy> struct RWTextureUnit_ {
+  RWTextureUnit_(unsigned unit_, TextureTy& tex_)
+      : unit(unit_), tex(tex_) {}
+
+  unsigned unit;
+  TextureTy& tex;
+};
+
+template <typename T, typename D>
+RWTextureUnit_<Texture1D<T, D>> RWTextureUnit(unsigned unit_,
+                                             Texture1D<T, D>& tex_) {
+  return RWTextureUnit_<Texture1D<T, D>>(unit_, tex_);
+}
+
+template <typename T, typename D>
+RWTextureUnit_<Texture2D<T, D>> RWTextureUnit(unsigned unit_,
+                                             Texture2D<T, D>& tex_) {
+  return RWTextureUnit_<Texture2D<T, D>>(unit_, tex_);
+}
+
+template <typename T, typename D>
+RWTextureUnit_<Texture3D<T, D>> RWTextureUnit(unsigned unit_,
+                                             Texture3D<T, D>& tex_) {
+  return RWTextureUnit_<Texture3D<T, D>>(unit_, tex_);
+}
+
+
 ////////////////////////// Binder: uniform slot
 template <typename ResTy // Buffer, BufferSlice or just a value
           >
@@ -108,7 +137,7 @@ Uniform_<ResTy> Uniform(unsigned slot_, const ResTy& buf_) {
 ////////////////////////// Binder: SurfaceRT
 template <typename D, typename T>
 void bindRTImpl(Device<D>& device, BindContext& context, Texture2D<T,D>& resource) {
-    //device.backend.
+    device.backend.bindRenderTexture(context.renderTargetBindingIndex++, resource.handle.get());
 }
 
 template <typename D, typename T, typename... Rest>
@@ -231,6 +260,31 @@ void bindOne(Device<D>& device, BindContext& context,
   bindOne(device, context, tex_unit.sampler);
   bindOne(device, context, tex_unit.tex);
 }
+
+////////////////////////// Bind<RWTextureUnit<Texture1D<T>>>
+template <typename D, typename Pixel>
+void bindOne(Device<D>& device, BindContext& context,
+             const RWTextureUnit_<Texture1D<D, Pixel>>& tex_unit) {
+  context.RWTextureBindingIndex = tex_unit.unit;
+  device.backend.bindRWTexture1D(context.RWTextureBindingIndex++, tex_unit.tex);  
+}
+
+////////////////////////// Bind<RWTextureUnit<Texture2D<T>>>
+template <typename D, typename Pixel>
+void bindOne(Device<D>& device, BindContext& context,
+             const RWTextureUnit_<Texture2D<D, Pixel>>& tex_unit) {
+  context.RWTextureBindingIndex = tex_unit.unit;
+  device.backend.bindRWTexture2D(context.RWTextureBindingIndex++, tex_unit.tex);  
+}
+
+////////////////////////// Bind<RWTextureUnit<Texture3D<T>>>
+template <typename D, typename Pixel>
+void bindOne(Device<D>& device, BindContext& context,
+             const RWTextureUnit_<Texture3D<D, Pixel>>& tex_unit) {
+  context.RWTextureBindingIndex = tex_unit.unit;
+  device.backend.bindRWTexture3D(context.RWTextureBindingIndex++, tex_unit.tex);  
+}
+
 
 ////////////////////////// Bind<RawBufferSlice>
 template <typename D>
