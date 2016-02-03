@@ -3,13 +3,32 @@
 
 #include <filesystem/path.h>
 #include "types.hpp"
+#include "../common/sample.hpp"
+#include "../common/uniforms.hpp"
+
+namespace uniforms 
+{
+  struct ViewportSize 
+  {
+    float width;
+    float height;
+  };
+
+  struct Scene 
+  {
+    glm::mat4 viewMatrix;
+    glm::mat4 projMatrix;
+    glm::mat4 viewProjMatrix;
+    glm::vec2 viewportSize;
+  };
+}
 
 struct Pipelines {
-  Pipelines(const filesystem::path& samplesRoot) {
+  Pipelines(Device& device, const filesystem::path& samplesRoot) {
 
   }
 
-  // Render the normal map of a model
+  // Render the normal map and the shading of a model
   // [normal_map.glsl]
   GraphicsPipeline ppRenderNormalMap;
 
@@ -21,6 +40,7 @@ struct Pipelines {
   ComputePipeline ppComputeLitSphere;
 
   // Draw stroke mask
+  // [draw_stroke_mask.glsl]
   GraphicsPipeline ppDrawStrokeMask;
 
   // Compose stroke mask onto target
