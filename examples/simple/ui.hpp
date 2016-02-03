@@ -6,9 +6,9 @@
 #include <glm/glm.hpp>
 
 #include <rxcpp/rx.hpp>
-#include <extras/input/input.hpp>
+#include <extra/input/input.hpp>
 
-namespace input = ag::extras::input;
+namespace input = ag::extra::input;
 template <typename T> using subject = rxcpp::rxsub::subject<T>;
 template <typename T> using behavior = rxcpp::rxsub::behavior<T>;
 
