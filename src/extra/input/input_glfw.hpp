@@ -61,6 +61,9 @@ public:
       subscribers.sub_mouse_buttons.on_next(e);
     for (const auto& e : mousePointerEvents)
       subscribers.sub_mouse_pointer.on_next(e);
+	keyEvents.clear();
+	mouseButtonEvents.clear();
+	mousePointerEvents.clear();
     // TODO stylus, I guess
   }
 

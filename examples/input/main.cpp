@@ -44,6 +44,7 @@ public:
   void render() {
     using namespace glm;
     samples::uniforms::Object objectData;
+	input.poll();
     auto out = device->getOutputSurface();
     ag::clear(*device, out, ag::ClearColor{1.0f, 0.0f, 1.0f, 1.0f});
     copyTex(texDefault, out, width, height, {20, 20}, 1.0);

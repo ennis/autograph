@@ -620,6 +620,7 @@ input: library to handle various input devices
 	and translate them into input events
       (note: merge with ag::interactive)
 
+
 mesh: generic mesh library
 	use assimp for loading
 	type-safe mesh types
@@ -692,3 +693,12 @@ Two-way:
 	data binding
 
 auto key_press_event = keyboard.onKey(Key::F1).map(Key::Pressed)
+
+observables:
+	raw mouse/pointer events (delta values)
+	keyboard events
+	mouse button events
+
+published behaviors: 
+	mouse button state
+	mouse cursor position

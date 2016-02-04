@@ -5,14 +5,15 @@
 
 #include <glm/glm.hpp>
 
-#include <rxcpp/rx.hpp>
-#include <rxcpp/rx-subjects.hpp>
 #include <extra/input/input.hpp>
+#include <rxcpp/rx-subjects.hpp>
+#include <rxcpp/rx.hpp>
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw_gl3.h"
 
 #include "tool.hpp"
+#include "types.hpp"
 
 namespace input = ag::extra::input;
 namespace rxsub = rxcpp::rxsub;
@@ -20,12 +21,12 @@ namespace rxsub = rxcpp::rxsub;
 // dummy event type
 struct event_t {};
 template <typename T> struct binding {
-  binding(const T &initial_value)
+  binding(const T& initial_value)
       : behavior(initial_value), subscriber(behavior.get_subscriber()) {}
 
   auto observable() const { return behavior.get_observable(); }
 
-  void set(const T &value) { subscriber.on_next(value); }
+  void set(const T& value) { subscriber.on_next(value); }
 
   T value() const { return behavior.get_value(); }
 
@@ -43,28 +44,25 @@ struct event {
 // ImGui-based user interface
 class Ui {
 public:
-  Ui(GLFWwindow *window, input::Input &input_)
-      : input(input_), lastMouseButtonOnGUI(false), activeTool(Tool::None),
-        brushTip(BrushTip::Round), brushRotationJitter(0.0f),
-        brushPositionJitter(0.0f), brushWidthJitter(0.0f), brushSpacing(1.0f),
-        brushSpacingJitter(0.0f) {
+  Ui(GLFWwindow* window, input::Input& input_) : input(input_) {
     // do not register callbacks
     ImGui_ImplGlfwGL3_Init(window, false);
 
     canvasMouseButtons = input.mouseButtons().filter([this](auto ev) {
       return (ev.state == input::MouseButtonState::Pressed)
-                 ? (lastMouseButtonOnGUI = ImGui::IsMouseHoveringAnyWindow())
-                 : (lastMouseButtonOnGUI = false);
+                 ? !(lastMouseButtonOnGUI = ImGui::IsMouseHoveringAnyWindow())
+                 : !(lastMouseButtonOnGUI = false);
     });
 
     canvasMousePointer = input.mousePointer().filter(
         [this](auto ev) { return !lastMouseButtonOnGUI; });
   }
 
-  void render(Device &device) {
-
-    ImGui::ColorEdit3("Stroke color", strokeColor);
-    ImGui::SliderFloat2("Light pos", lightPosXY, -0.5, 0.5);
+  void render(Device& device) {
+    input.poll();
+    ImGui_ImplGlfwGL3_NewFrame();
+    ImGui::ColorEdit3("Stroke color", strokeColor.data());
+    ImGui::SliderFloat2("Light pos", lightPosXY.data(), -0.5, 0.5);
     ImGui::SliderFloat("Stroke opacity", &strokeOpacity, 0.0, 1.0);
     ImGui::SliderFloat("Stroke width", &strokeWidth, 1.0, 300.0);
     /*ImGui::PlotHistogram("Illum curve", illumHist,
@@ -92,7 +90,7 @@ public:
       break;
     }
 
-    const char *toolNames[] = {"None", "Brush", "Blur", "Smudge", "Select"};
+    const char* toolNames[] = {"None", "Brush", "Blur", "Smudge", "Select"};
     ImGui::Combo("Tool", &nActiveTool, toolNames, 5);
 
     switch (nActiveTool) {
@@ -123,7 +121,7 @@ public:
       break;
     }
 
-    const char *tipNames[] = {"Round", "Textured"};
+    const char* tipNames[] = {"Round", "Textured"};
     ImGui::Combo("Brush tip", &nBrushTip, tipNames, 2);
 
     switch (nBrushTip) {
@@ -133,7 +131,8 @@ public:
       brushTip = BrushTip::Textured;
     }
 
-    ImGui::SliderFloat("Brush opacity jitter", &strokeOpacityJitter, 0.0f, 1.0f);
+    ImGui::SliderFloat("Brush opacity jitter", &strokeOpacityJitter, 0.0f,
+                       1.0f);
     ImGui::SliderFloat("Brush width jitter", &brushWidthJitter, 0.0f, 100.0f);
     ImGui::SliderFloat("Brush rotation jitter", &brushRotationJitter, 0.0f,
                        1.0f);
@@ -154,6 +153,7 @@ public:
       loadCanvas.signal();
 
     ImGui::InputText("Path", saveFileName, 100);
+    ImGui::Render();
   }
 
   void poll() {}
@@ -166,30 +166,30 @@ public:
   event saveCanvas;
 
   // stroke color in RGB
-  float strokeColor[3];
+  std::array<float, 3> strokeColor = {0.0f, 0.0f, 0.0f};
   // stroke opacity in %
-  float strokeOpacity;
-  float strokeOpacityJitter;
+  float strokeOpacity = 1.0f;
+  float strokeOpacityJitter = 0.0f;
   // brush radius in pixels
-  float strokeWidth;
+  float strokeWidth = 5.0f;
   // light position over the painting
-  float lightPosXY[2];
+  std::array<float, 2> lightPosXY = {0.0f, 0.0f};
 
   // TODO
-  bool useTexturedBrush;
-  bool showReferenceShading;
-  bool showIsolines;
+  bool useTexturedBrush = false;
+  bool showReferenceShading = true;
+  bool showIsolines = true;
 
   char saveFileName[100] = "output.paint";
 
-  Tool activeTool;
-  BrushTip brushTip;
+  Tool activeTool = Tool::Brush;
+  BrushTip brushTip = BrushTip::Round;
   // brush tip rotation jitter
-  float brushRotationJitter;
-  float brushPositionJitter;
-  float brushWidthJitter;
-  float brushSpacing;
-  float brushSpacingJitter;
+  float brushRotationJitter = 0.0f;
+  float brushPositionJitter = 0.0f;
+  float brushWidthJitter = 0.0f;
+  float brushSpacing = 1.0f;
+  float brushSpacingJitter = 0.0f;
 
   // mouse events on canvas (triggered when the mouse is not focused on the
   // canvas)
@@ -199,7 +199,7 @@ public:
   //
 
 private:
-  input::Input &input;
+  input::Input& input;
   bool lastMouseButtonOnGUI;
 };
 

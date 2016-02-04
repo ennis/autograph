@@ -80,21 +80,27 @@ public:
       : subscribers(InputSubscribers{subject_keys.get_subscriber(),
                                      subject_mouse_buttons.get_subscriber(),
                                      subject_mouse_pointer.get_subscriber(),
-                                     subject_stylus.get_subscriber()}) {}
+                                     subject_stylus.get_subscriber()}) 
+  {
+	  obs_keys = subject_keys.get_observable();
+	  obs_mouse_buttons = subject_mouse_buttons.get_observable();
+	  obs_mouse_pointer = subject_mouse_pointer.get_observable();
+	  obs_stylus = subject_stylus.get_observable();
+  }
 
   void registerEventSource(std::unique_ptr<InputEventSource>&& eventSource) {
     eventSources.emplace_back(std::move(eventSource));
   }
 
-  auto keys() const { return obs_keys; }
-  auto mouseButtons() const { return obs_mouse_buttons; }
-  auto stylus() const { return obs_stylus; }
-  auto mousePointer() const { return obs_mouse_pointer; }
+  auto& keys() const { return obs_keys; }
+  auto& mouseButtons() const { return obs_mouse_buttons; }
+  auto& stylus() const { return obs_stylus; }
+  auto& mousePointer() const { return obs_mouse_pointer; }
 
   // returns a behavior that hold the last known key state of the specified key
   auto keyState(uint32_t keyCode, KeyState init_state = KeyState::Released) {
     auto b = rxcpp::rxsub::behavior<KeyState>(init_state);
-    obs_keys.filter([=](auto ev) { return ev.code == keyCode; })
+	subject_keys.get_observable().filter([=](auto ev) { return ev.code == keyCode; })
         .subscribe(
             [=](auto ev) { b.get_subscriber().on_next(KeyState::Released); });
     return b;
@@ -120,6 +126,7 @@ private:
   rxcpp::observable<MouseButtonEvent> obs_mouse_buttons;
   rxcpp::observable<MousePointerEvent> obs_mouse_pointer;
   rxcpp::observable<StylusEvent> obs_stylus;
+
 
   // backends (input event sources)
   std::vector<std::unique_ptr<InputEventSource>> eventSources;

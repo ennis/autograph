@@ -4,11 +4,11 @@
 // See main.cpp for an example of using this.
 // https://github.com/ocornut/imgui
 
-#include <imgui.h>
+#include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
 
 // GL3W/GLFW
-#include <gl_core_4_4.hpp>
+#include <gl_core_4_5.hpp>
 #include <GLFW/glfw3.h>
 #ifdef _WIN32
 #undef APIENTRY
@@ -68,9 +68,9 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
     const float ortho_projection[4][4] =
     {
         { 2.0f/io.DisplaySize.x, 0.0f,                   0.0f, 0.0f },
-        { 0.0f,                  2.0f/-io.DisplaySize.y, 0.0f, 0.0f },
+        { 0.0f,                  2.0f/io.DisplaySize.y,  0.0f, 0.0f },
         { 0.0f,                  0.0f,                  -1.0f, 0.0f },
-        {-1.0f,                  1.0f,                   0.0f, 1.0f },
+        {-1.0f,                  -1.0f,                   0.0f, 1.0f },
     };
     gl::UseProgram(g_ShaderHandle);
     gl::Uniform1i(g_AttribLocationTex, 0);

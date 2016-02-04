@@ -5,6 +5,7 @@
 #include <autograph/device.hpp>
 #include <autograph/pixel_format.hpp>
 #include <autograph/texture.hpp>
+#include <autograph/error.hpp>
 
 #include <stb_image.h>
 
@@ -19,6 +20,8 @@ ag::Texture2D<ag::RGBA8, D> loadTexture2D(Device<D>& device,
                                           const char* filename) {
   int x, y, comp;
   auto raw_data = stbi_load(filename, &x, &y, &comp, 4);
+  if (!raw_data) 
+	  ag::failWith(fmt::format("Missing or corrupt image file: {}", filename));
   auto tex =
       device.template createTexture2D<ag::RGBA8>(glm::uvec2((unsigned)x, (unsigned)y));
   auto pixels_data_span =
