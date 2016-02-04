@@ -8,12 +8,6 @@
 
 namespace uniforms 
 {
-  struct ViewportSize 
-  {
-    float width;
-    float height;
-  };
-
   struct Scene 
   {
     glm::mat4 viewMatrix;
@@ -21,11 +15,23 @@ namespace uniforms
     glm::mat4 viewProjMatrix;
     glm::vec2 viewportSize;
   };
+
+  struct CanvasData
+  {
+      glm::vec2 size;
+  };
+
+  struct Splat 
+  {
+      // splat transform: contains scale and center position
+    glm::mat2x3 transform;
+    glm::vec2 center;
+  };
 }
 
 struct Pipelines {
   Pipelines(Device& device, const filesystem::path& samplesRoot) {
-
+    // TODO: load
   }
 
   // Render the normal map and the shading of a model
@@ -41,7 +47,8 @@ struct Pipelines {
 
   // Draw stroke mask
   // [draw_stroke_mask.glsl]
-  GraphicsPipeline ppDrawStrokeMask;
+  GraphicsPipeline ppDrawRoundSplatToStrokeMask;
+  GraphicsPipeline ppDrawTexturedSplatToStrokeMask;
 
   // Compose stroke mask onto target
   ComputePipeline ppComposeStroke;

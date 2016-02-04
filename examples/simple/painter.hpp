@@ -14,6 +14,8 @@
 #include <autograph/pixel_format.hpp>
 #include <autograph/surface.hpp>
 
+#include <extra/input/input.hpp>
+#include <extra/input/input_glfw.hpp>
 #include <extra/image_io/load_image.hpp>
 
 #include "../common/sample.hpp"
@@ -24,6 +26,10 @@
 #include "ui.hpp"
 #include "brush_path.hpp"
 
+namespace input = ag::extra::input;
+namespace image_io = ag::extra::image_io;
+
+static constexpr const char kDefaultBrushTip[] = "simple/img/brush_tip.png";
 
 class Painter : public samples::GLSample<Painter> {
 public:
@@ -32,16 +38,19 @@ public:
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
     canvas = std::make_unique<Canvas>(*device, 1000, 1000);
-    input = std::make_unique<Input>();
-    input.registerEventSource(
-        std::make_unique<GLFWInputEventSource>(gl.getWindow()));
-    ui = std::make_unique<UI>(gl.getWindow(), input);
+    input = std::make_unique<input::Input>();
+    input->registerEventSource(
+        std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
+    ui = std::make_unique<Ui>(gl.getWindow(), *input);
+    texBrushTip = image_io::loadTexture2D(
+        *device, (samplesRoot / kDefaultBrushTip).str().c_str());
   }
 
   auto makeSceneData() {
     const auto aspectRatio = (float)canvas->width / (float)canvas->height;
     const auto eyePos = glm::vec3(0, 2, -3);
-    const auto lookAt = glm::lookAt(eyePos, glm::vec3(0, 0, 0), CamUp);
+    const auto lookAt =
+        glm::lookAt(eyePos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
     const auto proj = glm::perspective(45.0f, aspectRatio, 0.01f, 100.0f);
     uniforms::Scene scene;
     scene.viewMatrix = lookAt;
@@ -56,33 +65,30 @@ public:
     using namespace glm;
     auto out = device->getOutputSurface();
     ag::clear(*device, out, ag::ClearColor{1.0f, 0.0f, 1.0f, 1.0f});
-    ag::clear(*device, texRender, ag::ClearColor{0.0f, 1.0f, 0.0f, 1.0f});
-    /*samples::drawMesh(bunnyMesh, *device, out, pipeline, cbSceneData,
-                      glm::scale(glm::mat4(1.0f), glm::vec3(0.1f)));*/
-
-    copyTex(texDefault, out, width, height, {20, 20}, 1.0);
   }
 
   void setupInput() {
     // on mouse button clicks
     ui->canvasMouseButtons.subscribe([this](auto ev) {
-      if (ev.button == GLFW_MOUSE_BUTTON_LEFT && ev.type == GLFW_PRESS) {
-        isMakingStroke = true;  // go into stroke mode
-        beginStroke();
-      }
-      else if (ev.button == GLFW_MOUSE_BUTTON_LEFT && ev.type == GLFW_RELEASE) {
+      if (ev.button == GLFW_MOUSE_BUTTON_LEFT && ev.state == input::MouseButtonState::Pressed) {
+        isMakingStroke = true; // go into stroke mode
+        brushPath = BrushPath(); // reset brush path
+        // beginStroke();
+      } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+                 ev.state == input::MouseButtonState::Released) {
         isMakingStroke = false; // end stroke mode
-        endStroke();
+        // endStroke();
       }
     });
 
     // on mouse move
-    ui->canvasMousePointer.get_observable().subscribe([this](auto ev) {
+    ui->canvasMousePointer.subscribe([this](auto ev) {
       // brush tool selected
-      if (isMakingStroke == true && activeTool = Tool::Brush) {
+      if (isMakingStroke == true && ui->activeTool == Tool::Brush) {
+        auto props = this->brushPropsFromUi();
         // on mouse move, add splats with the current brush
-        brushPath.addPointerEvent(ev, [this](auto pos) {
-          drawBrushSplat(*canvas, pos);
+        brushPath.addPointerEvent(ev, props, [this](auto splat) {
+          this->drawBrushSplat(*canvas, splat);
         });
       } else {
         // TODO other tools (blur, smudge, etc.)
@@ -90,20 +96,34 @@ public:
     });
   }
 
+  BrushProperties brushPropsFromUi()
+  {
+      BrushProperties props;
+      props.color[0] = ui->strokeColor[0];
+      props.color[1] = ui->strokeColor[1];
+      props.color[2] = ui->strokeColor[2];
+      props.opacity = ui->strokeOpacity;
+      props.opacityJitter = ui->strokeOpacityJitter;
+      props.width = ui->strokeWidth;
+      props.widthJitter = ui->brushWidthJitter;
+      props.spacing = ui->brushSpacing;
+      props.spacingJitter = ui->brushSpacingJitter;
+      props.rotation = 0.0f;
+      props.rotationJitter = ui->brushRotationJitter;
+  }
+
+  void drawBrushSplat(Canvas &canvas, const SplatProperties &pos) {
+    if (ui->brushTip == BrushTip::Round)
+      ag::draw(*device, pipelines->ppDrawRoundSplatToStrokeMask, ...);
+    else if (ui->brushTip == BrushTip::Textured)
+      ag::draw(*device, pipelines->ppDrawTexturedSplatToStrokeMask, ...);
+  }
+
   // create textures
   // load pipelines
 
   // render normal map
   // render isolines
-
-  enum class Tool 
-  {
-    None,
-    Brush,
-    Blur,
-    Smudge,
-    Select
-  };
 
 private:
   // shaders
@@ -113,17 +133,20 @@ private:
   // mesh
   std::unique_ptr<Mesh> mesh;
   // UI
-  std::unique_ptr<UI> ui;
+  std::unique_ptr<Ui> ui;
   // input
-  std::unique_ptr<Input> input;
+  std::unique_ptr<input::Input> input;
+  // brush tip texture
+  Texture2D<ag::RGBA8> texBrushTip;
 
   // is the user making a stroke
   bool isMakingStroke;
+  // active tool
+  Tool activeTool;
 
   /////////// Brush tool state
   // current brush path
   BrushPath brushPath;
-
 };
 
 #endif

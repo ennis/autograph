@@ -5,21 +5,67 @@
 
 #include "ui.hpp"
 
-// Brush path: convert a sequence of mouse pointer events to a sequence of 
-// splat positions. 
+#include <glm/gtc/random.hpp>
+
+namespace input = ag::extra::input;
+
+struct BrushProperties {
+  float color[3];
+  float opacity;
+  float opacityJitter;
+  float width;
+  float widthJitter;
+  float spacing;
+  float spacingJitter;
+  float rotation;
+  float rotationJitter;
+};
+
+// Evaluated properties of the splat to draw
+struct SplatProperties {
+  glm::vec2 center;
+  float color[3];
+  float opacity;
+  float width; // scale
+  float rotation;
+};
+
+template <typename T> T evalJitter(T ref, T jitter) {
+  return ref + glm::linearRand(-jitter, jitter);
+}
+
+SplatProperties evalSplat(const BrushProperties &props, glm::vec2 center) {
+  SplatProperties ret;
+  ret.center = center;
+  ret.color[0] = props.color[0];
+  ret.color[1] = props.color[1];
+  ret.color[2] = props.color[2];
+  ret.opacity = evalJitter(props.opacity, props.opacityJitter);
+  ret.width = evalJitter(props.width, props.widthJitter);
+  ret.rotation = evalJitter(props.rotation, props.rotationJitter);
+  return ret;
+}
+
+// Brush path: convert a sequence of mouse pointer events to a sequence of
+// splat positions.
 // TODO smoothing
 struct BrushPath {
+  // Call this when the mouse has moved
   template <typename F>
-  void addPointerEvent(const MousePointerEvent& ev, float spacing, F f) {
+  void addPointerEvent(const input::MousePointerEvent &ev,
+                       const BrushProperties &props, F f) {
+    // eval spacing
+    auto spacing = evalJitter(props.spacing, props.spacingJitter);
+
     if (pointerEvents.empty()) {
       pointerEvents.push_back(ev);
-      f(glm::vec2((float)ev.x, (float)ev.y));
+      f(evalSplat(props, glm::vec2((float)ev.positionX, (float)ev.positionY)));
       return;
     }
 
     auto last = pointerEvents.back();
-    glm::vec2 curF((float)ev.x, (float)ev.y);
-    glm::vec2 lastF((float)last.x, (float)last.y);
+    glm::vec2 curF((float)ev.positionX, (float)ev.positionY);
+    glm::vec2 lastF((float)last.positionX, (float)last.positionY);
     auto length = glm::distance(lastF, curF);
     auto slack = pathLength;
     pathLength += length;
@@ -28,17 +74,16 @@ struct BrushPath {
     while (pathLength > spacing) {
       // emit splat
       auto P = glm::mix(lastF, curF, (length > 0.01) ? pos / length : 0.0f);
-      f(P);
+      f(evalSplat(props, P));
       pathLength -= spacing;
       pos += spacing;
     }
 
-    pointerEvents.push_back(cursorPos);
+    pointerEvents.push_back(ev);
   }
 
-  std::vector<MousePointerEvent> pointerEvents;
+  std::vector<input::MousePointerEvent> pointerEvents;
   float pathLength;
 };
-
 
 #endif
