@@ -17,6 +17,8 @@
 #include <extra/input/input.hpp>
 #include <extra/input/input_glfw.hpp>
 #include <extra/image_io/load_image.hpp>
+#include <extra/input/input.hpp>
+#include <extra/input/input_glfw.hpp>
 
 #include "../common/sample.hpp"
 #include "../common/uniforms.hpp"
@@ -38,19 +40,30 @@ public:
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
     canvas = std::make_unique<Canvas>(*device, 1000, 1000);
+<<<<<<< HEAD
     input = std::make_unique<input::Input>();
     input->registerEventSource(
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
     ui = std::make_unique<Ui>(gl.getWindow(), *input);
     texBrushTip = image_io::loadTexture2D(
         *device, (samplesRoot / kDefaultBrushTip).str().c_str());
+=======
+    input = std::make_unique<ag::extra::input::Input>();
+    input->registerEventSource(
+        std::make_unique<ag::extra::input::GLFWInputEventSource>(gl.getWindow()));
+    ui = std::make_unique<Ui>(gl.getWindow(), input);
+>>>>>>> 25fe19c9b14fafc15101894b880361787addcac6
   }
 
   auto makeSceneData() {
     const auto aspectRatio = (float)canvas->width / (float)canvas->height;
     const auto eyePos = glm::vec3(0, 2, -3);
+<<<<<<< HEAD
     const auto lookAt =
         glm::lookAt(eyePos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+=======
+    const auto lookAt = glm::lookAt(eyePos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+>>>>>>> 25fe19c9b14fafc15101894b880361787addcac6
     const auto proj = glm::perspective(45.0f, aspectRatio, 0.01f, 100.0f);
     uniforms::Scene scene;
     scene.viewMatrix = lookAt;
@@ -135,9 +148,13 @@ private:
   // UI
   std::unique_ptr<Ui> ui;
   // input
+<<<<<<< HEAD
   std::unique_ptr<input::Input> input;
   // brush tip texture
   Texture2D<ag::RGBA8> texBrushTip;
+=======
+  std::unique_ptr<ag::extra::input::Input> input;
+>>>>>>> 25fe19c9b14fafc15101894b880361787addcac6
 
   // is the user making a stroke
   bool isMakingStroke;

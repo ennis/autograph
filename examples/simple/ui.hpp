@@ -19,7 +19,6 @@ namespace rxsub = rxcpp::rxsub;
 
 // dummy event type
 struct event_t {};
-
 template <typename T> struct binding {
   binding(const T &initial_value)
       : behavior(initial_value), subscriber(behavior.get_subscriber()) {}
