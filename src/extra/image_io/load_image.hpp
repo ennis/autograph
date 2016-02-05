@@ -1,6 +1,8 @@
 #ifndef EXTRAS_LOAD_IMAGE_HPP
 #define EXTRAS_LOAD_IMAGE_HPP
 
+#include <format.h>
+
 #include <autograph/copy.hpp>
 #include <autograph/device.hpp>
 #include <autograph/pixel_format.hpp>

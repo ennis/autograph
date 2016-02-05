@@ -21,12 +21,12 @@ namespace rxsub = rxcpp::rxsub;
 // dummy event type
 struct event_t {};
 template <typename T> struct binding {
-  binding(const T& initial_value)
+  binding(const T &initial_value)
       : behavior(initial_value), subscriber(behavior.get_subscriber()) {}
 
   auto observable() const { return behavior.get_observable(); }
 
-  void set(const T& value) { subscriber.on_next(value); }
+  void set(const T &value) { subscriber.on_next(value); }
 
   T value() const { return behavior.get_value(); }
 
@@ -44,7 +44,7 @@ struct event {
 // ImGui-based user interface
 class Ui {
 public:
-  Ui(GLFWwindow* window, input::Input& input_) : input(input_) {
+  Ui(GLFWwindow *window, input::Input &input_) : input(input_) {
     // do not register callbacks
     ImGui_ImplGlfwGL3_Init(window, false);
 
@@ -58,7 +58,7 @@ public:
         [this](auto ev) { return !lastMouseButtonOnGUI; });
   }
 
-  void render(Device& device) {
+  void render(Device &device) {
     input.poll();
     ImGui_ImplGlfwGL3_NewFrame();
     ImGui::ColorEdit3("Stroke color", strokeColor.data());
@@ -90,7 +90,7 @@ public:
       break;
     }
 
-    const char* toolNames[] = {"None", "Brush", "Blur", "Smudge", "Select"};
+    const char *toolNames[] = {"None", "Brush", "Blur", "Smudge", "Select"};
     ImGui::Combo("Tool", &nActiveTool, toolNames, 5);
 
     switch (nActiveTool) {
@@ -121,14 +121,16 @@ public:
       break;
     }
 
-    const char* tipNames[] = {"Round", "Textured"};
+    const char *tipNames[] = {"Round", "Textured"};
     ImGui::Combo("Brush tip", &nBrushTip, tipNames, 2);
 
     switch (nBrushTip) {
     case 0:
       brushTip = BrushTip::Round;
+      break;
     case 1:
       brushTip = BrushTip::Textured;
+      break;
     }
 
     ImGui::SliderFloat("Brush opacity jitter", &strokeOpacityJitter, 0.0f,
@@ -166,14 +168,14 @@ public:
   event saveCanvas;
 
   // stroke color in RGB
-  std::array<float, 3> strokeColor = {0.0f, 0.0f, 0.0f};
+  std::array<float, 3> strokeColor{{0.0f, 0.0f, 0.0f}};
   // stroke opacity in %
   float strokeOpacity = 1.0f;
   float strokeOpacityJitter = 0.0f;
   // brush radius in pixels
   float strokeWidth = 5.0f;
   // light position over the painting
-  std::array<float, 2> lightPosXY = {0.0f, 0.0f};
+  std::array<float, 2> lightPosXY{{0.0f, 0.0f}};
 
   // TODO
   bool useTexturedBrush = false;
@@ -198,9 +200,16 @@ public:
   rxcpp::observable<input::MousePointerEvent> canvasMousePointer;
   //
 
+  void getPointerPosition(unsigned &x, unsigned &y) const {
+    x = mouseX;
+    y = mouseY;
+  }
+
 private:
-  input::Input& input;
+  input::Input &input;
   bool lastMouseButtonOnGUI;
+  unsigned mouseX;
+  unsigned mouseY;
 };
 
 #endif

@@ -79,12 +79,13 @@ public:
           ev.state == input::MouseButtonState::Pressed) {
         isMakingStroke = true;   // go into stroke mode
         brushPath = BrushPath(); // reset brush path
-        fmt::print("Brush path begin\n");
+        fmt::print(std::clog, "Brush path begin\n");
         // beginStroke();
       } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-                 ev.state == input::MouseButtonState::Released) {
+                 ev.state == input::MouseButtonState::Released &&
+                 isMakingStroke) {
         isMakingStroke = false; // end stroke mode
-        fmt::print("Brush path end\n");
+        fmt::print(std::clog, "Brush path end\n");
         // endStroke();
       }
     });
@@ -120,11 +121,12 @@ public:
     return props;
   }
 
-  void drawBrushSplat(Canvas& canvas, const SplatProperties& pos) {
+  void drawBrushSplat(Canvas& canvas, const SplatProperties& splat) {
     /*if (ui->brushTip == BrushTip::Round)
       ag::draw(*device, pipelines->ppDrawRoundSplatToStrokeMask, ...);
     else if (ui->brushTip == BrushTip::Textured)
       ag::draw(*device, pipelines->ppDrawTexturedSplatToStrokeMask, ...);*/
+    fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x, splat.center.y, splat.width, splat.rotation);
   }
 
   // create textures
