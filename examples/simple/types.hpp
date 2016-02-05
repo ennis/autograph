@@ -11,5 +11,7 @@ template <typename Pixel> using Texture1D = ag::Texture1D<Pixel, GL>;
 using GraphicsPipeline = ag::GraphicsPipeline<GL>;
 using ComputePipeline = ag::ComputePipeline<GL>;
 using Mesh = samples::Mesh<GL>;
+template <typename T> using Buffer = ag::Buffer<GL, T>;
+using RawBufferSlice = ag::RawBufferSlice<GL>;
 
 #endif

@@ -678,6 +678,11 @@ Brush(draw_pipeline, compose_pipeline, parameters)
 
 
 
+Feature: primitive types encoded in the vertex buffer type 
+_____________________________
+
+
+
 Feature: event and input 
 _____________________________
 

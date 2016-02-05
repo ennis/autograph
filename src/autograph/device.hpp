@@ -97,10 +97,17 @@ public:
   }
 
   ///////////////////// createBuffer(span)
-  template <typename T> Buffer<D, T[]> createBuffer(gsl::span<T> data) {
+  template <typename T> Buffer<D, T[]> createBuffer(gsl::span<const T> data) {
     return Buffer<D, T[]>(data.size(),
                           backend.createBuffer(data.size_bytes(), data.data(),
                                                BufferUsage::Default));
+  }
+
+  ///////////////////// createBuffer(fixed-size array)
+  template <typename T, size_t N>
+  Buffer<D, T[]> createBuffer(const T (&data)[N]) {
+    return Buffer<D, T[]>(
+        N, backend.createBuffer(N * sizeof(T), data, BufferUsage::Default));
   }
 
   ///////////////////// Upload heap management

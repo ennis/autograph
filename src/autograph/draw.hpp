@@ -88,7 +88,7 @@ template <typename D, typename TVertex>
 DrawArrays_<D> DrawArrays(PrimitiveType primitiveType,
                           const Buffer<D, TVertex[]>& vertex_buffer) {
   return DrawArrays_<D>{
-      primitiveType,   vertex_buffer.handle.get(), 0, vertex_buffer.byteSize(),
+      primitiveType,   vertex_buffer.handle.get(), 0, vertex_buffer.byteSize,
       sizeof(TVertex), vertex_buffer.size()};
 }
 

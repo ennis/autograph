@@ -6,6 +6,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_transform_2d.hpp>
 
 #include <autograph/backend/opengl/backend.hpp>
 #include <autograph/device.hpp>
@@ -44,10 +45,16 @@ public:
     ui = std::make_unique<Ui>(gl.getWindow(), *input);
     texBrushTip = image_io::loadTexture2D(
         *device, (samplesRoot / kDefaultBrushTip).str().c_str());
+    samples::Vertex2D vboQuadData[] = {
+        {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0, 1.0},
+        {1.0f, 0.0f, 1.0, 0.0},   {0.0f, 1.0f, 0.0, 1.0},
+        {1.0f, 1.0f, 1.0, 1.0},   {1.0f, 0.0f, 1.0, 0.0},
+    };
+    vboQuad = device->createBuffer(vboQuadData);
     setupInput();
   }
 
-  auto makeSceneData() {
+  void makeSceneData() {
     const auto aspectRatio = (float)canvas->width / (float)canvas->height;
     const auto eyePos = glm::vec3(0, 2, -3);
     const auto lookAt =
@@ -59,14 +66,30 @@ public:
     scene.viewProjMatrix = proj * lookAt;
     scene.viewportSize.x = (float)canvas->width;
     scene.viewportSize.y = (float)canvas->height;
-    return device->pushDataToUploadBuffer(scene);
+    sceneData = device->pushDataToUploadBuffer(scene);
+  }
+
+  void makeCanvasData() {
+    uniforms::CanvasData uCanvasData;
+    uCanvasData.size.x = (float)canvas->width;
+    uCanvasData.size.y = (float)canvas->height;
+    canvasData = device->pushDataToUploadBuffer(uCanvasData);
   }
 
   void render() {
     using namespace glm;
+    makeSceneData();
+    makeCanvasData();
     auto out = device->getOutputSurface();
     ag::clear(*device, out, ag::ClearColor{1.0f, 0.0f, 1.0f, 1.0f});
     ui->render(*device);
+  }
+
+  void onBrushPointerEvent(const BrushProperties& props, unsigned x,
+                           unsigned y) {
+    brushPath.addPointerEvent(
+        PointerEvent{x, y, 1.0f}, props,
+        [this](auto splat) { this->drawBrushSplat(*canvas, splat); });
   }
 
   void setupInput() {
@@ -79,14 +102,17 @@ public:
           ev.state == input::MouseButtonState::Pressed) {
         isMakingStroke = true;   // go into stroke mode
         brushPath = BrushPath(); // reset brush path
-        fmt::print(std::clog, "Brush path begin\n");
+        unsigned x, y;
+        ui->getPointerPosition(x, y);
+        onBrushPointerEvent(this->brushPropsFromUi(), x, y);
         // beginStroke();
       } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
                  ev.state == input::MouseButtonState::Released &&
                  isMakingStroke) {
+        unsigned x, y;
+        ui->getPointerPosition(x, y);
+        onBrushPointerEvent(this->brushPropsFromUi(), x, y);
         isMakingStroke = false; // end stroke mode
-        fmt::print(std::clog, "Brush path end\n");
-        // endStroke();
       }
     });
 
@@ -94,11 +120,9 @@ public:
     ui->canvasMousePointer.subscribe([this](auto ev) {
       // brush tool selected
       if (isMakingStroke == true && ui->activeTool == Tool::Brush) {
-        auto props = this->brushPropsFromUi();
         // on mouse move, add splats with the current brush
-        brushPath.addPointerEvent(ev, props, [this](auto splat) {
-          this->drawBrushSplat(*canvas, splat);
-        });
+        onBrushPointerEvent(this->brushPropsFromUi(), ev.positionX,
+                            ev.positionY);
       } else {
         // TODO other tools (blur, smudge, etc.)
       }
@@ -122,11 +146,33 @@ public:
   }
 
   void drawBrushSplat(Canvas& canvas, const SplatProperties& splat) {
-    /*if (ui->brushTip == BrushTip::Round)
-      ag::draw(*device, pipelines->ppDrawRoundSplatToStrokeMask, ...);
+    fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x,
+               splat.center.y, splat.width, splat.rotation);
+    uniforms::Splat uSplat;
+    glm::vec2 scale{1.0f};
+    if (ui->brushTip == BrushTip::Textured)
+      if (texBrushTip.info.dimensions.x < texBrushTip.info.dimensions.y)
+        scale = glm::vec2{1.0f, (float)texBrushTip.info.dimensions.y /
+                                    (float)texBrushTip.info.dimensions.x};
+      else
+        scale = glm::vec2{(float)texBrushTip.info.dimensions.x /
+                              (float)texBrushTip.info.dimensions.y,
+                          1.0f};
+    scale *= splat.width;
+
+    uSplat.center = splat.center;
+    uSplat.transform = glm::mat2x3(
+        glm::scale(glm::rotate(glm::translate(glm::mat3x3(1.0f), splat.center),
+                               splat.rotation),
+                   scale));
+    if (ui->brushTip == BrushTip::Round)
+      ag::draw(*device, canvas.texMask, pipelines->ppDrawRoundSplatToStrokeMask,
+               ag::DrawArrays(ag::PrimitiveType::Triangles, vboQuad), canvasData, uSplat);
     else if (ui->brushTip == BrushTip::Textured)
-      ag::draw(*device, pipelines->ppDrawTexturedSplatToStrokeMask, ...);*/
-    fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x, splat.center.y, splat.width, splat.rotation);
+      ag::draw(
+          *device, canvas.texMask, pipelines->ppDrawTexturedSplatToStrokeMask,
+		  ag::DrawArrays(ag::PrimitiveType::Triangles, vboQuad),
+          ag::TextureUnit(0, texBrushTip, samLinearClamp), canvasData, uSplat);
   }
 
   // create textures
@@ -152,6 +198,12 @@ private:
   bool isMakingStroke;
   // active tool
   Tool activeTool;
+
+  Buffer<samples::Vertex2D[]> vboQuad;
+
+  ///////////
+  RawBufferSlice canvasData;
+  RawBufferSlice sceneData;
 
   /////////// Brush tool state
   // current brush path

@@ -9,6 +9,19 @@
 
 namespace input = ag::extra::input;
 
+struct PointerEvent
+{
+	PointerEvent(unsigned x_, unsigned y_, float pressure_ = 1.0f) :
+		positionX(x_),
+		positionY(y_),
+		pressure(pressure_)
+	{}
+
+	unsigned positionX;
+	unsigned positionY;
+	float pressure = 1.0f;
+};
+
 struct BrushProperties {
   float color[3];
   float opacity;
@@ -46,13 +59,13 @@ SplatProperties evalSplat(const BrushProperties &props, glm::vec2 center) {
   return ret;
 }
 
-// Brush path: convert a sequence of mouse pointer events to a sequence of
+// Brush path: convert a sequence of pointer position to a sequence of
 // splat positions.
 // TODO smoothing
 struct BrushPath {
   // Call this when the mouse has moved
   template <typename F>
-  void addPointerEvent(const input::MousePointerEvent &ev,
+  void addPointerEvent(const PointerEvent &ev,
                        const BrushProperties &props, F f) {
     // eval spacing
     auto spacing = evalJitter(props.spacing, props.spacingJitter);
@@ -82,7 +95,7 @@ struct BrushPath {
     pointerEvents.push_back(ev);
   }
 
-  std::vector<input::MousePointerEvent> pointerEvents;
+  std::vector<PointerEvent> pointerEvents;
   float pathLength;
 };
 

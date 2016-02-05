@@ -5,12 +5,9 @@
 layout(std140, binding=0) uniform U0 { Canvas canvas; };
 layout(std140, binding=1) uniform U1 { BrushSplat splat; };
 
-layout(binding=0) uniform sampler2D texStrokeMask;
 #ifdef TEXTURED
-layout(binding=1) uniform sampler2D splatTex;
+layout(binding=0) uniform sampler2D splatTex;
 #endif
-
-layout(binding=0, r32f) restrict uniform image2D target;
 
 #ifdef _VERTEX_
 layout(location=0) in vec2 position;
@@ -18,7 +15,7 @@ layout(location=1) in vec2 texcoord;
 out vec2 fTexcoord;
 void main()
 {
-	vec2 clip_pos = toClipPos(canvas, position);
+	vec2 clip_pos = toClipPos(canvas, splat.transform*position);
 	gl_Position = vec4(clip_pos.x, -clip_pos.y, 0.0, 1.0);
 	fTexcoord = texcoord;
 }

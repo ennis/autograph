@@ -56,6 +56,11 @@ public:
 
     canvasMousePointer = input.mousePointer().filter(
         [this](auto ev) { return !lastMouseButtonOnGUI; });
+
+	input.mousePointer().subscribe([this](auto ev) {
+		this->mouseX = ev.positionX;
+		this->mouseY = ev.positionY;
+	});
   }
 
   void render(Device &device) {
