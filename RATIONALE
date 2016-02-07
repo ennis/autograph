@@ -329,8 +329,30 @@ Draw call:
 
 * Upload texture data!
 
+
 First simplification pass
 _____________________________
+
+TOP PRIORITY ITEMS
+* Render target specification and caching (render target descriptors, etc.)
+	RenderTargets(depth, color0, color1, ...) -> RenderTarget<Depth, Colors...>
+	MakeRenderTargetNoDepth(color0, color1, ...) -> ...
+
+	Binding: RenderTarget(tex), DepthStencil(...) ... VS one RenderTargets(depth, color, ...)
+	// there must be at least one target, so only one bind site:
+	RenderTargets(depth_view, color_views...)
+	
+	backend: setRenderTargets(RenderTargetView: union, DepthStencilView: union)
+
+	// color0, color1 are texture subresource views (textures, texture views of a layer, etc.)
+	backend.createRenderTargetDescriptor(span<RenderLayer> layers)
+	RenderLayer: union (texture2D mip level, texture2D view, ...)
+
+* Command list semantics (stateless?)
+	Redundant state elimination should be done in API wrapper
+* Reform of input observables
+* asynchronous command list generation (see brush task: generate draw commands in a coroutine, yield command buffers)
+
 
 * Blocking version of UploadBuffer::upload 
 * kUniformBufferOffsetAlignment should be dynamically queried
@@ -361,6 +383,7 @@ _____________________________
 * Binders: scissor rectangle
 * replace associated consts with static constexpr **functions**
 *?? Simpler pipeline creation (for OpenGL)
+
 
 DONE Rename source files in backend
 DONE Clean the samples boilerplate
@@ -727,3 +750,11 @@ observables:
 published behaviors: 
 	mouse button state
 	mouse cursor position
+	
+
+Rationale: on variable scopes 
+_____________________________
+
+Some variables make sense only when drawing a stroke
+Ideally, they should have coroutine scope.
+Instead: create object that holds all this temporary state.

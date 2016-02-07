@@ -40,6 +40,21 @@ int roundUp(int numToRound, int multiple) {
   return ((numToRound + multiple - 1) / multiple) * multiple;
 }
 
+// Stroke task
+// start on canvas touch event
+// wait for canvas event
+/*[[coroutine]]
+void strokeTask(Device& device, Painter& painter, Canvas& canvas, Texture2D<RGBA8>& texStrokeMask, uvec2 position)
+{
+	BrushPath path;
+
+	while (last_event is not mouse released)
+	{
+		auto ev = await(...);
+		yield ag::draw(...);
+	}
+}*/
+
 class Painter : public samples::GLSample<Painter> {
 public:
   Painter(unsigned width, unsigned height)
