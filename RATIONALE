@@ -336,10 +336,13 @@ _____________________________
 * kUniformBufferOffsetAlignment should be dynamically queried
 * Upload buffers should return correctly aligned regions depending on the use
 	Should not need to specify the alignment manaully
-	-> explicitly typed buffers / tagged buffers 
+	-> explicitly typed buffers / tagged buffers ?
+	```
+	uploadBuf.allocateConstantBuffer<T>(value...) -> BufferSlice<T>
+	```
 * Normalize the order of template parameters (D, T...)
 * Const-correctness in buffer and buffer slice types
-	(buffer<const T> is immutable, buffer<T> is mutable and binds as a RWBuffer)
+	(buffer<const T> is immutable, buffer<T> is mutable and binds as a RWBuffer, as_const method that returns a const buffer slice)
 * Extract boilerplate for samples (pipeline creation, etc.)
 	- common shaders
 	- resource loading (meshes, textures)
@@ -350,9 +353,14 @@ _____________________________
 * Break on shader compilation error
 * CRTP for the backend
 * Bikeshedding: rename Backend to Driver
-* Bikeshedding: snake_case names
+* Bikeshedding: snake_case names?
 * Simplify the passing of handles to backend functions
 * pushDataToUploadBuffer is very poorly named
+* move input module out of extras
+* Binders: viewports
+* Binders: scissor rectangle
+* replace associated consts with static constexpr **functions**
+*?? Simpler pipeline creation (for OpenGL)
 
 DONE Rename source files in backend
 DONE Clean the samples boilerplate
@@ -363,6 +371,7 @@ DONE Remove OpenGLPixelType.hpp
 DONE Remove templated methods in backend (createTexturenD<TPixel>)
 DONE Clean indentation (LLVM-style, 2 spaces)
 DONE Remove refcounted resources
+
 
 
 
@@ -439,13 +448,15 @@ Must follow alignment constraints (each scanline must be correctly aligned)
 cf. PIXEL_UNPACK_ALIGNMENT
 
 => Need a special span type for correctly aligned image data
-ImageData<T>, which is a view of an ImageBuffer<T>
+ImageData<T>, which is a view of an ImageBuffer<T>, with special methods
+to write a pixel / a scanline / a block.
 
 
 Feature: Command lists
 _____________________________
 
 * For multithreaded command submission
+* Semantics of bindings?
 
 
 Feature: Upload buffers
@@ -482,6 +493,7 @@ _____________________________
 ag::compute(device, pipeline, <work group config>)
 
 
+
 Feature: Render targets
 _____________________________
 
@@ -503,6 +515,7 @@ draw(Surface(tex_color, tex_depth, tex_stencil))
 Feature: D3D12 backend
 _____________________________
 
+medium-priority
 
 
 Feature: Partially resident textures
@@ -540,7 +553,7 @@ BufferSlice<T[]>
 Feature: Data readback
 _____________________________
 
-Needed!
+Needed! High priority (can be only synchronous for now)
 Asynchronous VS synchronous
 something like 
 	texture.readBack([](auto view) {...})	// executed when the data is available. no syncing
@@ -602,7 +615,11 @@ interactive: framework for interactive applications
         must provide escape hatches
         must be accessible by the application if needed
         => application creates the object, pass reference to ag subsystems
-        => in charge of creating the main window
+        => in charge of creating the main window/main device
+		=> call API to get/set a render output surface
+
+	ag::api::glfw::GLFW_api
+	ag::api::x11::
 
 	application frameworks: 
 		- GLFW
@@ -612,7 +629,7 @@ interactive: framework for interactive applications
 		- Native Win32
 			using GraphicsDriver = Win32GLDriver / DirectX11Driver / DirectX12Driver
                 - WinRT
-        naming: core? interactive?
+        naming: core? interactive? framework?
 
 input: library to handle various input devices
 	mouses, keyboards, gamepads and graphics tablets
@@ -681,7 +698,10 @@ Brush(draw_pipeline, compose_pipeline, parameters)
 Feature: primitive types encoded in the vertex buffer type 
 _____________________________
 
-
+and in general, more things encoded in the type
+like, if the mesh should be used with index data, or as a vertex array, etc.
+=> mesh type?
+Low priority
 
 Feature: event and input 
 _____________________________

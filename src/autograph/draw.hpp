@@ -140,7 +140,7 @@ void clearDepth(Device<D>& device, Surface<D, Depth, Pixels...>& surface,
                 float depth,
                 std::experimental::optional<const ag::Box2D&> region =
                     std::experimental::nullopt) {
-  device.backend.clearColor(surface.handle.get(), depth);
+  device.backend.clearDepth(surface.handle.get(), depth);
 }
 
 ////////////////////////// ag::clear(Texture1D)

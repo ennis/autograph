@@ -1,8 +1,8 @@
 #ifndef COMPUTE_HPP
 #define COMPUTE_HPP
 
-#include <Device.hpp>
-#include <Bind.hpp>
+#include "device.hpp"
+#include "bind.hpp"
 
 namespace ag {
 

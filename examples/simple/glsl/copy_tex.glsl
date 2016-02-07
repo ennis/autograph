@@ -21,13 +21,13 @@ void main() {
 in vec2 fTexcoord;
 out vec4 color;
 void main() {
-#ifdef USE_MASK
   vec2 screen_tex = fragToTexCoord(viewportSize, gl_FragCoord.xy);
+#ifdef USE_MASK
   float m = 1.0 - texture(mask, screen_tex).a;
 #else
   float m = 1.0f;
 #endif
-  color = texture(tex, fTexcoord.xy) * m;
-  //color = vec4(fTexcoord, 0, 1) * m;
+  //color = texture(tex, screen_tex) * m;
+  color = vec4(fTexcoord, 0, 1) * m;
 }
 #endif

@@ -85,11 +85,15 @@ std::array<float, 16> perspectiveFovRH(float fovY, float aspectRatio,
   return out;
 }
 
-const ag::opengl::VertexAttribute kMeshVertexDesc[4] = {
-    ag::opengl::VertexAttribute{0, gl::FLOAT, 3, 3 * sizeof(float), false},
-    ag::opengl::VertexAttribute{0, gl::FLOAT, 3, 3 * sizeof(float), false},
-    ag::opengl::VertexAttribute{0, gl::FLOAT, 3, 3 * sizeof(float), false},
-    ag::opengl::VertexAttribute{0, gl::FLOAT, 2, 2 * sizeof(float), false}};
+constexpr ag::opengl::VertexAttribute kMeshVertexDesc[] = {
+    {0, gl::FLOAT, 3, 3 * sizeof(float), false},
+    {0, gl::FLOAT, 3, 3 * sizeof(float), false},
+    {0, gl::FLOAT, 3, 3 * sizeof(float), false},
+    {0, gl::FLOAT, 2, 2 * sizeof(float), false}};
+
+constexpr ag::opengl::VertexAttribute vertexAttribs_2D[] = {
+	{ 0, gl::FLOAT, 2, 2 * sizeof(float), false },
+	{ 0, gl::FLOAT, 2, 2 * sizeof(float), false } };
 
 // utility methods and shared resources for the samples
 // OpenGL sample class, needs glfw
@@ -281,9 +285,6 @@ private:
     using namespace ag::opengl;
     using namespace shaderpp;
 
-    VertexAttribute vertexAttribs_2D[] = {
-        VertexAttribute{0, gl::FLOAT, 2, 2 * sizeof(float), false},
-        VertexAttribute{0, gl::FLOAT, 2, 2 * sizeof(float), false}};
 
     ShaderSource src_copy(
         (samplesRoot / "common/glsl/copy_tex.glsl").str().c_str());

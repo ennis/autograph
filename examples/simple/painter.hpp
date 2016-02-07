@@ -9,6 +9,7 @@
 #include <glm/gtx/matrix_transform_2d.hpp>
 
 #include <autograph/backend/opengl/backend.hpp>
+#include <autograph/compute.hpp>
 #include <autograph/device.hpp>
 #include <autograph/draw.hpp>
 #include <autograph/pipeline.hpp>
@@ -30,7 +31,14 @@
 namespace input = ag::extra::input;
 namespace image_io = ag::extra::image_io;
 
-static constexpr const char kDefaultBrushTip[] = "simple/img/brush_tip.png";
+constexpr const char kDefaultBrushTip[] = "simple/img/brush_tip.png";
+constexpr unsigned kCSThreadGroupSizeX = 16;
+constexpr unsigned kCSThreadGroupSizeY = 16;
+constexpr unsigned kCSThreadGroupSizeZ = 1;
+
+int roundUp(int numToRound, int multiple) {
+  return ((numToRound + multiple - 1) / multiple) * multiple;
+}
 
 class Painter : public samples::GLSample<Painter> {
 public:
@@ -39,6 +47,7 @@ public:
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
     canvas = std::make_unique<Canvas>(*device, 1000, 1000);
+    texEvalCanvas = device->createTexture2D<ag::RGBA8>(glm::uvec2{1000, 1000});
     input = std::make_unique<input::Input>();
     input->registerEventSource(
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
@@ -46,11 +55,12 @@ public:
     texBrushTip = image_io::loadTexture2D(
         *device, (samplesRoot / kDefaultBrushTip).str().c_str());
     samples::Vertex2D vboQuadData[] = {
-        {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0, 1.0},
-        {1.0f, 0.0f, 1.0, 0.0},   {0.0f, 1.0f, 0.0, 1.0},
-        {1.0f, 1.0f, 1.0, 1.0},   {1.0f, 0.0f, 1.0, 0.0},
+        {-1.0f, -1.0f, 0.0f, 0.0f}, {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, -1.0f, 1.0f, 0.0f},  {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, 1.0f, 1.0f, 1.0f},   {1.0f, -1.0f, 1.0f, 0.0f},
     };
     vboQuad = device->createBuffer(vboQuadData);
+    surfOut = device->getOutputSurface();
     setupInput();
   }
 
@@ -66,23 +76,32 @@ public:
     scene.viewProjMatrix = proj * lookAt;
     scene.viewportSize.x = (float)canvas->width;
     scene.viewportSize.y = (float)canvas->height;
-    sceneData = device->pushDataToUploadBuffer(scene);
+    sceneData = device->pushDataToUploadBuffer(
+        scene, GL::kUniformBufferOffsetAlignment);
   }
 
   void makeCanvasData() {
     uniforms::CanvasData uCanvasData;
     uCanvasData.size.x = (float)canvas->width;
     uCanvasData.size.y = (float)canvas->height;
-    canvasData = device->pushDataToUploadBuffer(uCanvasData);
+    canvasData = device->pushDataToUploadBuffer(
+        uCanvasData, GL::kUniformBufferOffsetAlignment);
   }
 
   void render() {
     using namespace glm;
+    ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+    ag::clearDepth(*device, surfOut, 1.0f);
+    input->poll();
     makeSceneData();
     makeCanvasData();
-    auto out = device->getOutputSurface();
-    ag::clear(*device, out, ag::ClearColor{1.0f, 0.0f, 1.0f, 1.0f});
+    renderCanvas();
     ui->render(*device);
+  }
+
+  void renderCanvas() {
+    copyTex(canvas->texStrokeMask, surfOut, 1000, 1000, glm::vec2{0.0f, 0.0f},
+            1.0f);
   }
 
   void onBrushPointerEvent(const BrushProperties& props, unsigned x,
@@ -146,8 +165,8 @@ public:
   }
 
   void drawBrushSplat(Canvas& canvas, const SplatProperties& splat) {
-    fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x,
-               splat.center.y, splat.width, splat.rotation);
+    /*fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x,
+               splat.center.y, splat.width, splat.rotation);*/
     uniforms::Splat uSplat;
     glm::vec2 scale{1.0f};
     if (ui->brushTip == BrushTip::Textured)
@@ -161,18 +180,38 @@ public:
     scale *= splat.width;
 
     uSplat.center = splat.center;
-    uSplat.transform = glm::mat2x3(
+    uSplat.width = splat.width;
+    uSplat.transform = glm::mat3x4(
         glm::scale(glm::rotate(glm::translate(glm::mat3x3(1.0f), splat.center),
                                splat.rotation),
                    scale));
     if (ui->brushTip == BrushTip::Round)
-      ag::draw(*device, canvas.texMask, pipelines->ppDrawRoundSplatToStrokeMask,
-               ag::DrawArrays(ag::PrimitiveType::Triangles, vboQuad), canvasData, uSplat);
+      ag::draw(*device, canvas.texStrokeMask,
+               pipelines->ppDrawRoundSplatToStrokeMask,
+               ag::DrawArrays(ag::PrimitiveType::Triangles, vboQuad),
+               canvasData, uSplat);
     else if (ui->brushTip == BrushTip::Textured)
-      ag::draw(
-          *device, canvas.texMask, pipelines->ppDrawTexturedSplatToStrokeMask,
-		  ag::DrawArrays(ag::PrimitiveType::Triangles, vboQuad),
-          ag::TextureUnit(0, texBrushTip, samLinearClamp), canvasData, uSplat);
+      ag::draw(*device, canvas.texStrokeMask,
+               pipelines->ppDrawTexturedSplatToStrokeMask,
+               ag::DrawArrays(ag::PrimitiveType::Triangles, vboQuad),
+               ag::TextureUnit(0, texBrushTip, samLinearClamp), canvasData,
+               uSplat);
+  }
+
+  void applyStroke(Canvas& canvas, const BrushProperties& brushProps) {
+    ag::compute(*device, pipelines->ppFlattenStroke,
+                ag::ThreadGroupCount{
+                    (unsigned)roundUp(canvas.width, kCSThreadGroupSizeX),
+                    (unsigned)roundUp(canvas.height, kCSThreadGroupSizeY), 1u},
+                canvasData, glm::vec4{brushProps.color[0], brushProps.color[1],
+                                      brushProps.color[2], brushProps.opacity},
+                canvas.texStrokeMask,
+                ag::RWTextureUnit(0, canvas.texHSVOffsetXY));
+  }
+
+  void evaluate(Canvas& canvas)
+  {
+	  //ag::compute(*device, pipelines->ppEvaluate,
   }
 
   // create textures
@@ -182,6 +221,7 @@ public:
   // render isolines
 
 private:
+  ag::Surface<GL, float, ag::RGBA8> surfOut;
   // shaders
   std::unique_ptr<Pipelines> pipelines;
   // canvas
@@ -198,6 +238,9 @@ private:
   bool isMakingStroke;
   // active tool
   Tool activeTool;
+
+  // evaluated canvas
+  Texture2D<ag::RGBA8> texEvalCanvas;
 
   Buffer<samples::Vertex2D[]> vboQuad;
 

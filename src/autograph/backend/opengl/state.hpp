@@ -38,7 +38,7 @@ struct GLDepthStencilState {
 };
 
 struct GLRasterizerState {
-  GLenum fillMode;
+  GLenum fillMode = gl::FILL;
 };
 }
 }

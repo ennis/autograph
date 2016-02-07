@@ -283,6 +283,7 @@ struct OpenGLBackend {
   void bindUniformBuffer(unsigned slot, BufferHandle::pointer handle,
                          size_t offset, size_t size);
   void bindGraphicsPipeline(GraphicsPipelineHandle::pointer handle);
+  void bindComputePipeline(ComputePipelineHandle::pointer handle);
 
   ///////////////////// Render targets
   void bindSurface(SurfaceHandle::pointer handle);

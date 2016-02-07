@@ -69,6 +69,7 @@ struct BrushPath {
                        const BrushProperties &props, F f) {
     // eval spacing
     auto spacing = evalJitter(props.spacing, props.spacingJitter);
+	if (spacing < 0.1f) spacing = 0.1f;
 
     if (pointerEvents.empty()) {
       pointerEvents.push_back(ev);
@@ -86,7 +87,7 @@ struct BrushPath {
 
     while (pathLength > spacing) {
       // emit splat
-      auto P = glm::mix(lastF, curF, (length > 0.01) ? pos / length : 0.0f);
+      auto P = glm::mix(lastF, curF, (length > 0.01f) ? pos / length : 0.0f);
       f(evalSplat(props, P));
       pathLength -= spacing;
       pos += spacing;

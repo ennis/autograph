@@ -64,7 +64,6 @@ public:
   }
 
   void render(Device &device) {
-    input.poll();
     ImGui_ImplGlfwGL3_NewFrame();
     ImGui::ColorEdit3("Stroke color", strokeColor.data());
     ImGui::SliderFloat2("Light pos", lightPosXY.data(), -0.5, 0.5);
@@ -162,8 +161,6 @@ public:
     ImGui::InputText("Path", saveFileName, 100);
     ImGui::Render();
   }
-
-  void poll() {}
 
   // 'Reload shaders' button
   event reloadShaders;

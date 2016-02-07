@@ -567,6 +567,14 @@ void OpenGLBackend::bindRenderTexture(unsigned slot,
   bindFramebufferObject(render_to_texture_fbo);
   gl::NamedFramebufferTexture(render_to_texture_fbo,
                               gl::COLOR_ATTACHMENT0 + slot, handle.id, 0);
+
+  static const GLenum drawBuffers[8] = {
+      gl::COLOR_ATTACHMENT0,     gl::COLOR_ATTACHMENT0 + 1,
+      gl::COLOR_ATTACHMENT0 + 2, gl::COLOR_ATTACHMENT0 + 3,
+      gl::COLOR_ATTACHMENT0 + 4, gl::COLOR_ATTACHMENT0 + 5,
+      gl::COLOR_ATTACHMENT0 + 6, gl::COLOR_ATTACHMENT0 + 7};
+
+  gl::DrawBuffers(1, drawBuffers);
 }
 
 void OpenGLBackend::bindDepthRenderTexture(Texture2DHandle::pointer handle) {
@@ -575,15 +583,40 @@ void OpenGLBackend::bindDepthRenderTexture(Texture2DHandle::pointer handle) {
                               handle.id, 0);
 }
 
+void OpenGLBackend::bindComputePipeline(ComputePipelineHandle::pointer handle) {
+  gl::UseProgram(handle->program);
+}
+
 void OpenGLBackend::bindGraphicsPipeline(
     GraphicsPipelineHandle::pointer handle) {
   gl::UseProgram(handle->program);
   gl::BindVertexArray(handle->vao);
-  // TODO optimize state changes
   if (handle->depthStencilState.depthTestEnable)
     gl::Enable(gl::DEPTH_TEST);
   else
     gl::Disable(gl::DEPTH_TEST);
+  if (handle->blendState.enabled) {
+    gl::Enable(gl::BLEND);
+    gl::BlendEquationSeparatei(0, handle->blendState.modeRGB,
+                               handle->blendState.modeAlpha);
+    gl::BlendFuncSeparatei(
+        0, handle->blendState.funcSrcRGB, handle->blendState.funcDstRGB,
+        handle->blendState.funcSrcAlpha, handle->blendState.funcDstAlpha);
+  } else
+    gl::Disable(gl::BLEND);
+  if (handle->depthStencilState.stencilEnable) {
+    gl::Enable(gl::STENCIL_TEST);
+    gl::StencilFuncSeparate(handle->depthStencilState.stencilFace,
+                            handle->depthStencilState.stencilFunc,
+                            handle->depthStencilState.stencilRef,
+                            handle->depthStencilState.stencilMask);
+    gl::StencilOp(handle->depthStencilState.stencilOpSfail,
+                  handle->depthStencilState.stencilOpDPFail,
+                  handle->depthStencilState.stencilOpDPPass);
+  } else
+    gl::Disable(gl::STENCIL_TEST);
+  gl::PolygonMode(gl::FRONT_AND_BACK, handle->rasterizerState.fillMode);
+  gl::Disable(gl::CULL_FACE);
 }
 
 void OpenGLBackend::clearColor(SurfaceHandle::pointer framebuffer_obj,
