@@ -41,6 +41,13 @@ struct event {
   rxsub::subject<event_t> subject;
 };
 
+
+struct BrushTipTexture
+{
+    std::string name;
+    Texture2D<ag::RGBA8> tex;
+};
+
 // ImGui-based user interface
 class Ui {
 public:
@@ -137,6 +144,15 @@ public:
       break;
     }
 
+    if (!brushTipTextures.empty())
+    {
+        std::vector<const char*> tipTexNames;
+        tipTexNames.reserve(brushTipTextures.size());
+        for (const auto& tip : brushTipTextures)
+            tipTexNames.push_back(tip.name.c_str());
+        ImGui::Combo("Tip texture", &selectedBrushTip, tipTexNames.data(), tipTexNames.size());
+    }
+
     ImGui::SliderFloat("Brush opacity jitter", &strokeOpacityJitter, 0.0f,
                        1.0f);
     ImGui::SliderFloat("Brush width jitter", &brushWidthJitter, 0.0f, 100.0f);
@@ -185,6 +201,8 @@ public:
   bool showIsolines = true;
 
   char saveFileName[100] = "output.paint";
+  std::vector<BrushTipTexture> brushTipTextures;
+  int selectedBrushTip = 0;
 
   Tool activeTool = Tool::Brush;
   BrushTip brushTip = BrushTip::Round;

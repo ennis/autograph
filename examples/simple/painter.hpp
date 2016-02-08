@@ -28,10 +28,12 @@
 #include "pipelines.hpp"
 #include "ui.hpp"
 
+#include <boost/filesystem.hpp>
+
 namespace input = ag::extra::input;
 namespace image_io = ag::extra::image_io;
 
-constexpr const char kDefaultBrushTip[] = "simple/img/brush_tip.png";
+constexpr const char kDefaultBrushTip[] = "simple/img/brushes/brush_tip.png";
 constexpr unsigned kCSThreadGroupSizeX = 16;
 constexpr unsigned kCSThreadGroupSizeY = 16;
 constexpr unsigned kCSThreadGroupSizeZ = 1;
@@ -44,16 +46,19 @@ int roundUp(int numToRound, int multiple) {
 // start on canvas touch event
 // wait for canvas event
 /*[[coroutine]]
-void strokeTask(Device& device, Painter& painter, Canvas& canvas, Texture2D<RGBA8>& texStrokeMask, uvec2 position)
+void strokeTask(Device& device, Painter& painter, Canvas& canvas,
+Texture2D<RGBA8>& texStrokeMask, uvec2 position)
 {
-	BrushPath path;
+        BrushPath path;
 
-	while (last_event is not mouse released)
-	{
-		auto ev = await(...);
-		yield ag::draw(...);
-	}
+        while (last_event is not mouse released)
+        {
+                auto ev = await(...);
+                yield ag::draw(...);
+        }
 }*/
+
+namespace fs = boost::filesystem;
 
 class Painter : public samples::GLSample<Painter> {
 public:
@@ -67,16 +72,43 @@ public:
     input->registerEventSource(
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
     ui = std::make_unique<Ui>(gl.getWindow(), *input);
-    texBrushTip = image_io::loadTexture2D(
-        *device, (samplesRoot / kDefaultBrushTip).str().c_str());
     samples::Vertex2D vboQuadData[] = {
-        {-1.0f, -1.0f, 0.0f, 0.0f}, {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, -1.0f, 1.0f, 0.0f},  {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, 1.0f, 1.0f, 1.0f},   {1.0f, -1.0f, 1.0f, 0.0f},
+        {-1.0f, -1.0f, 0.0f, 0.0f},
+        {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, -1.0f, 1.0f, 0.0f},
+        {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, 1.0f, 1.0f, 1.0f},
+        {1.0f, -1.0f, 1.0f, 0.0f},
     };
     vboQuad = device->createBuffer(vboQuadData);
     surfOut = device->getOutputSurface();
     setupInput();
+    loadBrushTips();
+  }
+
+  // load brush tips from img directories
+  void loadBrushTips() {
+    using namespace fs;
+    auto path1 = fs::path(samplesRoot.str().c_str()) / "simple/img/brushes";
+    auto path2 = fs::path(samplesRoot.str().c_str()) / "common/img/brushes";
+
+    if (exists(path1) && is_directory(path1))
+      for (auto it = fs::directory_iterator(path1);
+           it != fs::directory_iterator(); ++it)
+        loadBrushTip((*it).path());
+
+    if (exists(path2) && is_directory(path2))
+      for (auto it = fs::directory_iterator(path2);
+           it != fs::directory_iterator(); ++it)
+        loadBrushTip((*it).path());
+  }
+
+  void loadBrushTip(const fs::path &path) {
+    // filter by extension...
+    if (path.extension() != ".png")
+      return;
+    ui->brushTipTextures.emplace_back(BrushTipTexture{
+        path.stem().string(), image_io::loadTexture2D(*device, path.c_str())});
   }
 
   void makeSceneData() {
@@ -119,7 +151,7 @@ public:
             1.0f);
   }
 
-  void onBrushPointerEvent(const BrushProperties& props, unsigned x,
+  void onBrushPointerEvent(const BrushProperties &props, unsigned x,
                            unsigned y) {
     brushPath.addPointerEvent(
         PointerEvent{x, y, 1.0f}, props,
@@ -138,14 +170,14 @@ public:
         brushPath = BrushPath(); // reset brush path
         unsigned x, y;
         ui->getPointerPosition(x, y);
-        onBrushPointerEvent(this->brushPropsFromUi(), x, y);
+        this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
         // beginStroke();
       } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
                  ev.state == input::MouseButtonState::Released &&
                  isMakingStroke) {
         unsigned x, y;
         ui->getPointerPosition(x, y);
-        onBrushPointerEvent(this->brushPropsFromUi(), x, y);
+        this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
         isMakingStroke = false; // end stroke mode
       }
     });
@@ -155,8 +187,8 @@ public:
       // brush tool selected
       if (isMakingStroke == true && ui->activeTool == Tool::Brush) {
         // on mouse move, add splats with the current brush
-        onBrushPointerEvent(this->brushPropsFromUi(), ev.positionX,
-                            ev.positionY);
+        this->onBrushPointerEvent(this->brushPropsFromUi(), ev.positionX,
+                                  ev.positionY);
       } else {
         // TODO other tools (blur, smudge, etc.)
       }
@@ -179,19 +211,18 @@ public:
     return props;
   }
 
-  void drawBrushSplat(Canvas& canvas, const SplatProperties& splat) {
+  void drawBrushSplat(Canvas &canvas, const SplatProperties &splat) {
     /*fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x,
                splat.center.y, splat.width, splat.rotation);*/
     uniforms::Splat uSplat;
     glm::vec2 scale{1.0f};
-    if (ui->brushTip == BrushTip::Textured)
-      if (texBrushTip.info.dimensions.x < texBrushTip.info.dimensions.y)
-        scale = glm::vec2{1.0f, (float)texBrushTip.info.dimensions.y /
-                                    (float)texBrushTip.info.dimensions.x};
+    if (ui->brushTip == BrushTip::Textured) {
+      auto dim = ui->brushTipTextures[ui->selectedBrushTip].tex.info.dimensions;
+      if (dim.x < dim.y)
+        scale = glm::vec2{1.0f, (float)dim.y / (float)dim.x};
       else
-        scale = glm::vec2{(float)texBrushTip.info.dimensions.x /
-                              (float)texBrushTip.info.dimensions.y,
-                          1.0f};
+        scale = glm::vec2{(float)dim.x / (float)dim.y, 1.0f};
+    }
     scale *= splat.width;
 
     uSplat.center = splat.center;
@@ -209,11 +240,13 @@ public:
       ag::draw(*device, canvas.texStrokeMask,
                pipelines->ppDrawTexturedSplatToStrokeMask,
                ag::DrawArrays(ag::PrimitiveType::Triangles, vboQuad),
-               ag::TextureUnit(0, texBrushTip, samLinearClamp), canvasData,
-               uSplat);
+               ag::TextureUnit(0,
+                               ui->brushTipTextures[ui->selectedBrushTip].tex,
+                               samLinearClamp),
+               canvasData, uSplat);
   }
 
-  void applyStroke(Canvas& canvas, const BrushProperties& brushProps) {
+  void applyStroke(Canvas &canvas, const BrushProperties &brushProps) {
     ag::compute(*device, pipelines->ppFlattenStroke,
                 ag::ThreadGroupCount{
                     (unsigned)roundUp(canvas.width, kCSThreadGroupSizeX),
@@ -224,9 +257,8 @@ public:
                 ag::RWTextureUnit(0, canvas.texHSVOffsetXY));
   }
 
-  void evaluate(Canvas& canvas)
-  {
-	  //ag::compute(*device, pipelines->ppEvaluate,
+  void evaluate(Canvas &canvas) {
+    // ag::compute(*device, pipelines->ppEvaluate,
   }
 
   // create textures
@@ -247,8 +279,6 @@ private:
   std::unique_ptr<Ui> ui;
   // input
   std::unique_ptr<input::Input> input;
-  // brush tip texture
-  Texture2D<ag::RGBA8> texBrushTip;
   // is the user making a stroke
   bool isMakingStroke;
   // active tool
