@@ -204,8 +204,8 @@ public:
       }
     }
 
-    auto vbo = device->createBuffer(gsl::as_span(vertices));
-    auto ibo = device->createBuffer(gsl::as_span(indices));
+    auto vbo = device->createBufferFromSpan(gsl::span<const Vertex3D>(vertices));
+    auto ibo = device->createBufferFromSpan(gsl::span<const unsigned int>(indices));
 
     return Mesh<GL>{std::move(vertices), std::move(indices), std::move(vbo),
                     std::move(ibo)};

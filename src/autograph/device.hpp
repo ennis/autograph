@@ -97,7 +97,7 @@ public:
   }
 
   ///////////////////// createBuffer(span)
-  template <typename T> Buffer<D, T[]> createBuffer(gsl::span<const T> data) {
+  template <typename T> Buffer<D, T[]> createBufferFromSpan(gsl::span<const T> data) {
     return Buffer<D, T[]>(data.size(),
                           backend.createBuffer(data.size_bytes(), data.data(),
                                                BufferUsage::Default));

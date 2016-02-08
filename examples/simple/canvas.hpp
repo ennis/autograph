@@ -34,18 +34,19 @@ struct Canvas {
         device.createTexture1D<ag::RGBA8>(kShadingCurveSamplesSize);
     texBlurParametersLN =
         device.createTexture1D<ag::RGBA8>(kShadingCurveSamplesSize);
-    texDetailMaskLN =
-        device.createTexture1D<ag::R8>(kShadingCurveSamplesSize);
+    texDetailMaskLN = device.createTexture1D<ag::R8>(kShadingCurveSamplesSize);
 
-    texBaseColorUV=
-            device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
+    texBaseColorUV =
+        device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
     texHSVOffsetUV =
         device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
-    texBlurParametersUV = device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
+    texBlurParametersUV =
+        device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
 
     ag::clear(device, texBaseColorUV, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
     ag::clear(device, texHSVOffsetUV, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-    ag::clear(device, texBlurParametersUV, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+    ag::clear(device, texBlurParametersUV,
+              ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
   }
 
   unsigned width;

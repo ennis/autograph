@@ -9,17 +9,13 @@
 
 namespace input = ag::extra::input;
 
-struct PointerEvent
-{
-	PointerEvent(unsigned x_, unsigned y_, float pressure_ = 1.0f) :
-		positionX(x_),
-		positionY(y_),
-		pressure(pressure_)
-	{}
+struct PointerEvent {
+  PointerEvent(unsigned x_, unsigned y_, float pressure_ = 1.0f)
+      : positionX(x_), positionY(y_), pressure(pressure_) {}
 
-	unsigned positionX;
-	unsigned positionY;
-	float pressure = 1.0f;
+  unsigned positionX;
+  unsigned positionY;
+  float pressure = 1.0f;
 };
 
 struct BrushProperties {
@@ -55,7 +51,8 @@ SplatProperties evalSplat(const BrushProperties &props, glm::vec2 center) {
   ret.color[2] = props.color[2];
   ret.opacity = evalJitter(props.opacity, props.opacityJitter);
   ret.width = evalJitter(props.width, props.widthJitter);
-  ret.rotation = evalJitter(props.rotation, props.rotationJitter);
+  ret.rotation = evalJitter(props.rotation,
+                            2.0f * glm::pi<float>() * props.rotationJitter);
   return ret;
 }
 
@@ -65,11 +62,12 @@ SplatProperties evalSplat(const BrushProperties &props, glm::vec2 center) {
 struct BrushPath {
   // Call this when the mouse has moved
   template <typename F>
-  void addPointerEvent(const PointerEvent &ev,
-                       const BrushProperties &props, F f) {
+  void addPointerEvent(const PointerEvent &ev, const BrushProperties &props,
+                       F f) {
     // eval spacing
     auto spacing = evalJitter(props.spacing, props.spacingJitter);
-	if (spacing < 0.1f) spacing = 0.1f;
+    if (spacing < 0.1f)
+      spacing = 0.1f;
 
     if (pointerEvents.empty()) {
       pointerEvents.push_back(ev);

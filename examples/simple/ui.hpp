@@ -41,11 +41,9 @@ struct event {
   rxsub::subject<event_t> subject;
 };
 
-
-struct BrushTipTexture
-{
-    std::string name;
-    Texture2D<ag::RGBA8> tex;
+struct BrushTipTexture {
+  std::string name;
+  Texture2D<ag::RGBA8> tex;
 };
 
 // ImGui-based user interface
@@ -64,10 +62,10 @@ public:
     canvasMousePointer = input.mousePointer().filter(
         [this](auto ev) { return !lastMouseButtonOnGUI; });
 
-	input.mousePointer().subscribe([this](auto ev) {
-		this->mouseX = ev.positionX;
-		this->mouseY = ev.positionY;
-	});
+    input.mousePointer().subscribe([this](auto ev) {
+      this->mouseX = ev.positionX;
+      this->mouseY = ev.positionY;
+    });
   }
 
   void render(Device &device) {
@@ -144,13 +142,13 @@ public:
       break;
     }
 
-    if (!brushTipTextures.empty())
-    {
-        std::vector<const char*> tipTexNames;
-        tipTexNames.reserve(brushTipTextures.size());
-        for (const auto& tip : brushTipTextures)
-            tipTexNames.push_back(tip.name.c_str());
-        ImGui::Combo("Tip texture", &selectedBrushTip, tipTexNames.data(), tipTexNames.size());
+    if (!brushTipTextures.empty()) {
+      std::vector<const char *> tipTexNames;
+      tipTexNames.reserve(brushTipTextures.size());
+      for (const auto &tip : brushTipTextures)
+        tipTexNames.push_back(tip.name.c_str());
+      ImGui::Combo("Tip texture", &selectedBrushTip, tipTexNames.data(),
+                   tipTexNames.size());
     }
 
     ImGui::SliderFloat("Brush opacity jitter", &strokeOpacityJitter, 0.0f,

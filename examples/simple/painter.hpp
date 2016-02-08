@@ -165,29 +165,27 @@ public:
   }
 
   void renderCanvas() {
-      ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
-    if (isMakingStroke)
-    {
-        auto brushProps = this->brushPropsFromUi();
-        // preview canvas
-        previewCanvas(*canvas, texEvalCanvas,
-                      pipelines->ppEvaluatePreviewBaseColorUV, canvasData,
-                      canvas->texStrokeMask,
-                      glm::vec4{brushProps.color[0], brushProps.color[1],
-                                brushProps.color[2], brushProps.opacity});
+    ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+    if (isMakingStroke) {
+      auto brushProps = this->brushPropsFromUi();
+      // preview canvas
+      previewCanvas(*canvas, texEvalCanvas,
+                    pipelines->ppEvaluatePreviewBaseColorUV, canvasData,
+                    canvas->texStrokeMask,
+                    glm::vec4{brushProps.color[0], brushProps.color[1],
+                              brushProps.color[2], brushProps.opacity});
     } else
-        previewCanvas(*canvas, texEvalCanvas,
-                      pipelines->ppEvaluate, canvasData,
-                      canvas->texStrokeMask);
-     copyTex(texEvalCanvas, surfOut, 1000, 1000, glm::vec2{0.0f, 0.0f}, 1.0f);
+      previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
+                    canvas->texStrokeMask);
+    copyTex(texEvalCanvas, surfOut, 1000, 1000, glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
   void onBrushPointerEvent(const BrushProperties &props, unsigned x,
                            unsigned y) {
     brushPath.addPointerEvent(PointerEvent{x, y, 1.0f}, props,
                               [this, props](auto splat) {
-      this->drawBrushSplat(*canvas, props, splat);
-    });
+                                this->drawBrushSplat(*canvas, props, splat);
+                              });
   }
 
   void setupInput() {
@@ -200,7 +198,8 @@ public:
           ev.state == input::MouseButtonState::Pressed) {
         isMakingStroke = true;   // go into stroke mode
         brushPath = BrushPath(); // reset brush path
-        ag::clear(*device, canvas->texStrokeMask, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+        ag::clear(*device, canvas->texStrokeMask,
+                  ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
         unsigned x, y;
         ui->getPointerPosition(x, y);
         this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
@@ -280,7 +279,6 @@ public:
                                ui->brushTipTextures[ui->selectedBrushTip].tex,
                                samLinearClamp),
                canvasData, uSplat);
-
   }
 
   void applyStroke(Canvas &canvas, const BrushProperties &brushProps) {
