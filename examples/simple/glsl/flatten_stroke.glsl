@@ -2,6 +2,7 @@
 /////////////// Merge stroke into UV parameter maps
 #include "brush.glsl"
 #include "canvas.glsl"
+#include "utils.glsl"
 
 /////////////// Uniforms
 layout(binding = 0) uniform U0 { Canvas canvas; };
@@ -25,7 +26,7 @@ layout(binding = 0, rgba8) coherent uniform image2D mapHSVOffsetXY;
 
 // blur parameters
 #ifdef TOOL_BLUR_UV
-layout(binding = 0, r8) coherent uniform image2D mapBlurParametersXY;
+layout(binding = 0, rgba8) coherent uniform image2D mapBlurParametersXY;
 #endif
 
 layout(local_size_x = 16, local_size_y = 16) in;
@@ -41,6 +42,8 @@ void main() {
   vec4 baseColor = brushColor;
   baseColor.a *= texture(texStrokeMask, uv).r;
   imageStore(mapBaseColorXY, texelCoords, blend(baseColor, D));
+  //imageStore(mapBaseColorXY, texelCoords, vec4(1.0f));
+  memoryBarrierImage();
 #endif
   // TODO other tools
 }

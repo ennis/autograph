@@ -38,8 +38,8 @@ constexpr unsigned kCSThreadGroupSizeX = 16;
 constexpr unsigned kCSThreadGroupSizeY = 16;
 constexpr unsigned kCSThreadGroupSizeZ = 1;
 
-int roundUp(int numToRound, int multiple) {
-  return ((numToRound + multiple - 1) / multiple) * multiple;
+int divRoundUp(int numToRound, int multiple) {
+  return (numToRound + multiple - 1) / multiple;
 }
 
 // Stroke task
@@ -84,6 +84,25 @@ public:
     surfOut = device->getOutputSurface();
     setupInput();
     loadBrushTips();
+  }
+
+  template <typename... Resources>
+  void previewCanvas(Canvas &canvas, Texture2D<ag::RGBA8> &out,
+                     ComputePipeline &pipeline, RawBufferSlice &canvasData,
+                     Resources &&... resources) {
+    ag::compute(
+        *device, pipeline,
+        ag::ThreadGroupCount{
+            (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
+            (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
+        canvasData,
+        ag::TextureUnit(0, canvas.texShadingProfileLN, samLinearClamp),
+        ag::TextureUnit(1, canvas.texBlurParametersLN, samLinearClamp),
+        ag::TextureUnit(2, canvas.texDetailMaskLN, samLinearClamp),
+        ag::TextureUnit(3, canvas.texBaseColorUV, samLinearClamp),
+        ag::TextureUnit(4, canvas.texHSVOffsetUV, samLinearClamp),
+        ag::TextureUnit(5, canvas.texBlurParametersUV, samLinearClamp),
+        ag::RWTextureUnit(0, out), std::forward<Resources>(resources)...);
   }
 
   // load brush tips from img directories
@@ -137,7 +156,6 @@ public:
 
   void render() {
     using namespace glm;
-    ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
     ag::clearDepth(*device, surfOut, 1.0f);
     input->poll();
     makeSceneData();
@@ -147,15 +165,29 @@ public:
   }
 
   void renderCanvas() {
-    copyTex(canvas->texStrokeMask, surfOut, 1000, 1000, glm::vec2{0.0f, 0.0f},
-            1.0f);
+      ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+    if (isMakingStroke)
+    {
+        auto brushProps = this->brushPropsFromUi();
+        // preview canvas
+        previewCanvas(*canvas, texEvalCanvas,
+                      pipelines->ppEvaluatePreviewBaseColorUV, canvasData,
+                      canvas->texStrokeMask,
+                      glm::vec4{brushProps.color[0], brushProps.color[1],
+                                brushProps.color[2], brushProps.opacity});
+    } else
+        previewCanvas(*canvas, texEvalCanvas,
+                      pipelines->ppEvaluate, canvasData,
+                      canvas->texStrokeMask);
+     copyTex(texEvalCanvas, surfOut, 1000, 1000, glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
   void onBrushPointerEvent(const BrushProperties &props, unsigned x,
                            unsigned y) {
-    brushPath.addPointerEvent(
-        PointerEvent{x, y, 1.0f}, props,
-        [this](auto splat) { this->drawBrushSplat(*canvas, splat); });
+    brushPath.addPointerEvent(PointerEvent{x, y, 1.0f}, props,
+                              [this, props](auto splat) {
+      this->drawBrushSplat(*canvas, props, splat);
+    });
   }
 
   void setupInput() {
@@ -168,6 +200,7 @@ public:
           ev.state == input::MouseButtonState::Pressed) {
         isMakingStroke = true;   // go into stroke mode
         brushPath = BrushPath(); // reset brush path
+        ag::clear(*device, canvas->texStrokeMask, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
         unsigned x, y;
         ui->getPointerPosition(x, y);
         this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
@@ -177,7 +210,9 @@ public:
                  isMakingStroke) {
         unsigned x, y;
         ui->getPointerPosition(x, y);
-        this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
+        auto brushProps = this->brushPropsFromUi();
+        this->onBrushPointerEvent(brushProps, x, y);
+        this->applyStroke(*canvas, brushProps);
         isMakingStroke = false; // end stroke mode
       }
     });
@@ -211,7 +246,8 @@ public:
     return props;
   }
 
-  void drawBrushSplat(Canvas &canvas, const SplatProperties &splat) {
+  void drawBrushSplat(Canvas &canvas, const BrushProperties &brushProps,
+                      const SplatProperties &splat) {
     /*fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x,
                splat.center.y, splat.width, splat.rotation);*/
     uniforms::Splat uSplat;
@@ -244,21 +280,18 @@ public:
                                ui->brushTipTextures[ui->selectedBrushTip].tex,
                                samLinearClamp),
                canvasData, uSplat);
+
   }
 
   void applyStroke(Canvas &canvas, const BrushProperties &brushProps) {
-    ag::compute(*device, pipelines->ppFlattenStroke,
-                ag::ThreadGroupCount{
-                    (unsigned)roundUp(canvas.width, kCSThreadGroupSizeX),
-                    (unsigned)roundUp(canvas.height, kCSThreadGroupSizeY), 1u},
-                canvasData, glm::vec4{brushProps.color[0], brushProps.color[1],
-                                      brushProps.color[2], brushProps.opacity},
-                canvas.texStrokeMask,
-                ag::RWTextureUnit(0, canvas.texHSVOffsetXY));
-  }
-
-  void evaluate(Canvas &canvas) {
-    // ag::compute(*device, pipelines->ppEvaluate,
+    ag::compute(
+        *device, pipelines->ppFlattenStroke,
+        ag::ThreadGroupCount{
+            (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
+            (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
+        canvasData, glm::vec4{brushProps.color[0], brushProps.color[1],
+                              brushProps.color[2], brushProps.opacity},
+        canvas.texStrokeMask, ag::RWTextureUnit(0, canvas.texBaseColorUV));
   }
 
   // create textures

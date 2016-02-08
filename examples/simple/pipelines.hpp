@@ -28,9 +28,9 @@ struct Splat {
 
 struct Pipelines {
 
-  Pipelines(Device& device, const filesystem::path& samplesRoot) {
-	  using namespace ag::opengl;
-	  using namespace shaderpp;
+  Pipelines(Device &device, const filesystem::path &samplesRoot) {
+    using namespace ag::opengl;
+    using namespace shaderpp;
 
     ShaderSource normal_map =
         loadShaderSource(samplesRoot / "simple/glsl/normal_map.glsl");
@@ -41,37 +41,55 @@ struct Pipelines {
     ShaderSource evaluate =
         loadShaderSource(samplesRoot / "simple/glsl/evaluate.glsl");
 
-	{
-		GraphicsPipelineInfo g;
-		g.blendState.enabled = true;
-		g.blendState.modeAlpha = gl::FUNC_ADD;
-		g.blendState.modeRGB = gl::FUNC_ADD;
-		g.blendState.funcSrcAlpha = gl::SRC_ALPHA;
-		g.blendState.funcDstAlpha = gl::ONE_MINUS_SRC_ALPHA;
-		g.blendState.funcSrcRGB = gl::ONE;
-		g.blendState.funcDstRGB = gl::ONE_MINUS_SRC_ALPHA;
-		g.vertexAttribs = gsl::as_span(samples::vertexAttribs_2D);
-		auto VSSource = draw_stroke_mask.preprocess(PipelineStage::Vertex, nullptr, nullptr);
-		auto PSSource = draw_stroke_mask.preprocess(PipelineStage::Pixel, nullptr, nullptr);
-		g.VSSource = VSSource.c_str();
-		g.PSSource = PSSource.c_str();
-		ppDrawRoundSplatToStrokeMask = device.createGraphicsPipeline(g);
+    {
+      GraphicsPipelineInfo g;
+      g.blendState.enabled = true;
+      g.blendState.modeAlpha = gl::FUNC_ADD;
+      g.blendState.modeRGB = gl::FUNC_ADD;
+      g.blendState.funcSrcAlpha = gl::SRC_ALPHA;
+      g.blendState.funcDstAlpha = gl::ONE_MINUS_SRC_ALPHA;
+      g.blendState.funcSrcRGB = gl::ONE;
+      g.blendState.funcDstRGB = gl::ONE_MINUS_SRC_ALPHA;
+      g.vertexAttribs = gsl::as_span(samples::vertexAttribs_2D);
+      auto VSSource =
+          draw_stroke_mask.preprocess(PipelineStage::Vertex, nullptr, nullptr);
+      auto PSSource =
+          draw_stroke_mask.preprocess(PipelineStage::Pixel, nullptr, nullptr);
+      g.VSSource = VSSource.c_str();
+      g.PSSource = PSSource.c_str();
+      ppDrawRoundSplatToStrokeMask = device.createGraphicsPipeline(g);
 
-		const char* defines[] = { "TEXTURED" };
-		VSSource = draw_stroke_mask.preprocess(PipelineStage::Vertex, defines, nullptr);
-		PSSource = draw_stroke_mask.preprocess(PipelineStage::Pixel, defines, nullptr);
-		g.VSSource = VSSource.c_str();
-		g.PSSource = PSSource.c_str();
-		ppDrawTexturedSplatToStrokeMask = device.createGraphicsPipeline(g);
-	}
+      const char *defines[] = {"TEXTURED"};
+      VSSource =
+          draw_stroke_mask.preprocess(PipelineStage::Vertex, defines, nullptr);
+      PSSource =
+          draw_stroke_mask.preprocess(PipelineStage::Pixel, defines, nullptr);
+      g.VSSource = VSSource.c_str();
+      g.PSSource = PSSource.c_str();
+      ppDrawTexturedSplatToStrokeMask = device.createGraphicsPipeline(g);
+    }
 
-	{
-		ComputePipelineInfo c;
-		const char* defines[] = { "TOOL_BASE_COLOR_UV" };
-		auto CSSource = flatten_stroke.preprocess(PipelineStage::Compute, nullptr, nullptr);
-		c.CSSource = CSSource.c_str();
-		ppFlattenStroke = device.createComputePipeline(c);
-	}
+    {
+      ComputePipelineInfo c;
+      const char *defines[] = {"TOOL_BASE_COLOR_UV"};
+      auto CSSource =
+          flatten_stroke.preprocess(PipelineStage::Compute, defines, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppFlattenStroke = device.createComputePipeline(c);
+    }
+
+    {
+      ComputePipelineInfo c;
+      auto CSSource =
+          evaluate.preprocess(PipelineStage::Compute, nullptr, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppEvaluate = device.createComputePipeline(c);
+
+      const char *defines[] = {"PREVIEW_BASE_COLOR_UV"};
+      CSSource = evaluate.preprocess(PipelineStage::Compute, defines, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppEvaluatePreviewBaseColorUV = device.createComputePipeline(c);
+    }
   }
 
   // Render the normal map and the shading of a model
@@ -94,13 +112,15 @@ struct Pipelines {
   ComputePipeline ppFlattenStroke;
 
   // Evaluate final image
-  GraphicsPipeline ppEvalutate;
+  ComputePipeline ppEvaluate;
+  // Evaluate preview: brush stroke mask to base color
+  ComputePipeline ppEvaluatePreviewBaseColorUV;
 
   // Copy a texture with a mask
   GraphicsPipeline ppCopyTexWithMask;
 
 private:
-  shaderpp::ShaderSource loadShaderSource(const filesystem::path& path) {
+  shaderpp::ShaderSource loadShaderSource(const filesystem::path &path) {
     return shaderpp::ShaderSource(path.str().c_str());
   }
 };
