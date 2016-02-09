@@ -68,8 +68,8 @@ public:
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
     mesh = loadMesh("common/meshes/skull.obj");
-    canvas = std::make_unique<Canvas>(*device, 1000, 1000);
-    texEvalCanvas = device->createTexture2D<ag::RGBA8>(glm::uvec2{1000, 1000});
+    canvas = std::make_unique<Canvas>(*device, width, height);
+    texEvalCanvas = device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
     input = std::make_unique<input::Input>();
     input->registerEventSource(
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
@@ -185,8 +185,8 @@ public:
     } else
       previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
                     canvas->texStrokeMask);
-    copyTex(canvas->texNormals, surfOut, 1000, 1000, glm::vec2{0.0f, 0.0f}, 1.0f);
-    copyTex(texEvalCanvas, surfOut, 1000, 1000, glm::vec2{0.0f, 0.0f}, 1.0f);
+    copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
+    copyTex(texEvalCanvas, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
   void onBrushPointerEvent(const BrushProperties& props, unsigned x,
@@ -326,7 +326,7 @@ public:
        ag::ThreadGroupCount{
             (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
             (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
-            canvasData, glm::vec3{0.0f},
+            canvasData, glm::normalize(glm::vec3{1.0f}),
                 canvas.texNormals,
                 canvas.texStencil,
                 canvas.texBaseColorUV,
