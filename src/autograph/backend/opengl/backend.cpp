@@ -104,13 +104,13 @@ GLenum primitiveTypeToGLenum(PrimitiveType primitiveType) {
 GLPixelFormat pixelFormatToGL(PixelFormat format) {
   switch (format) {
   case PixelFormat::Uint8:
-    return GLPixelFormat{gl::R8UI, gl::RED, gl::UNSIGNED_BYTE, 1};
+    return GLPixelFormat{gl::R8UI, gl::RED_INTEGER, gl::UNSIGNED_BYTE, 1};
   case PixelFormat::Uint8x2:
-    return GLPixelFormat{gl::RG8UI, gl::RG, gl::UNSIGNED_BYTE, 2};
+    return GLPixelFormat{gl::RG8UI, gl::RG_INTEGER, gl::UNSIGNED_BYTE, 2};
   case PixelFormat::Uint8x3:
-    return GLPixelFormat{gl::RGB8UI, gl::RGB, gl::UNSIGNED_BYTE, 3};
+    return GLPixelFormat{gl::RGB8UI, gl::RGB_INTEGER, gl::UNSIGNED_BYTE, 3};
   case PixelFormat::Uint8x4:
-    return GLPixelFormat{gl::RGBA8UI, gl::RGBA, gl::UNSIGNED_BYTE, 4};
+    return GLPixelFormat{gl::RGBA8UI, gl::RGBA_INTEGER, gl::UNSIGNED_BYTE, 4};
   case PixelFormat::Unorm8:
     return GLPixelFormat{gl::R8, gl::RED, gl::UNSIGNED_BYTE, 1};
   case PixelFormat::Unorm8x2:
@@ -121,6 +121,12 @@ GLPixelFormat pixelFormatToGL(PixelFormat format) {
     return GLPixelFormat{gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE, 4};
   case PixelFormat::Float:
     return GLPixelFormat{gl::R32F, gl::RED, gl::FLOAT, 1};
+  case PixelFormat::Uint32:
+    return GLPixelFormat{gl::R32UI, gl::RED_INTEGER, gl::UNSIGNED_INT, 1};
+  case PixelFormat::Depth32:
+    return GLPixelFormat{gl::DEPTH_COMPONENT32F, 0, 0, 1};  // TODO
+  case PixelFormat::Depth24_Stencil8:
+    return GLPixelFormat{gl::DEPTH24_STENCIL8, 0, 0, 1};
   default:
     failWith("TODO");
   }
@@ -574,7 +580,7 @@ void OpenGLBackend::bindRenderTexture(unsigned slot,
       gl::COLOR_ATTACHMENT0 + 4, gl::COLOR_ATTACHMENT0 + 5,
       gl::COLOR_ATTACHMENT0 + 6, gl::COLOR_ATTACHMENT0 + 7};
 
-  gl::DrawBuffers(1, drawBuffers);
+  gl::DrawBuffers(slot+1, drawBuffers);
 }
 
 void OpenGLBackend::bindDepthRenderTexture(Texture2DHandle::pointer handle) {
@@ -642,6 +648,12 @@ void OpenGLBackend::clearTexture2DFloat(Texture2DHandle::pointer handle,
   gl::ClearTexImage(handle.id, 0, gl::RGBA, gl::FLOAT, color.rgba);
 }
 
+void OpenGLBackend::clearTexture2DDepth(Texture2DHandle::pointer handle,
+                                        ag::Box2D region,
+                                        float depth) {
+  gl::ClearTexImage(handle.id, 0, gl::DEPTH_COMPONENT, gl::FLOAT, &depth);
+}
+
 void OpenGLBackend::clearTexture3DFloat(Texture3DHandle::pointer handle,
                                         ag::Box3D region,
                                         const ag::ClearColor& color) {
@@ -676,6 +688,30 @@ void OpenGLBackend::updateTexture3D(Texture3DHandle::pointer handle,
                         region.zmin, region.width(), region.height(),
                         region.depth(), gl_fmt.externalFormat, gl_fmt.type,
                         data.data());
+}
+
+void OpenGLBackend::readTexture1D(Texture1DHandle::pointer handle,
+                                  const Texture1DInfo& info, unsigned mipLevel,
+                                  Box1D region, gsl::span<gsl::byte> outData) {
+  auto gl_fmt = pixelFormatToGL(info.format);
+  gl::GetTextureImage(handle.id, mipLevel, gl_fmt.externalFormat, gl_fmt.type,
+                      outData.size(), outData.data());
+}
+
+void OpenGLBackend::readTexture2D(Texture2DHandle::pointer handle,
+                                  const Texture2DInfo& info, unsigned mipLevel,
+                                  Box2D region, gsl::span<gsl::byte> outData) {
+  auto gl_fmt = pixelFormatToGL(info.format);
+  gl::GetTextureImage(handle.id, mipLevel, gl_fmt.externalFormat, gl_fmt.type,
+                      outData.size(), outData.data());
+}
+
+void OpenGLBackend::readTexture3D(Texture3DHandle::pointer handle,
+                                  const Texture3DInfo& info, unsigned mipLevel,
+                                  Box3D region, gsl::span<gsl::byte> outData) {
+  auto gl_fmt = pixelFormatToGL(info.format);
+  gl::GetTextureImage(handle.id, mipLevel, gl_fmt.externalFormat, gl_fmt.type,
+                      outData.size(), outData.data());
 }
 
 void OpenGLBackend::draw(PrimitiveType primitiveType, unsigned first,

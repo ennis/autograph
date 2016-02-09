@@ -40,6 +40,8 @@ struct Pipelines {
         loadShaderSource(samplesRoot / "simple/glsl/flatten_stroke.glsl");
     ShaderSource evaluate =
         loadShaderSource(samplesRoot / "simple/glsl/evaluate.glsl");
+    ShaderSource curves =
+        loadShaderSource(samplesRoot / "simple/glsl/shading_curve.glsl");
 
     {
       GraphicsPipelineInfo g;
@@ -70,6 +72,20 @@ struct Pipelines {
     }
 
     {
+      GraphicsPipelineInfo g;
+      g.depthStencilState.depthTestEnable = true;
+      g.blendState.enabled = false;
+      g.vertexAttribs = gsl::as_span(samples::kMeshVertexDesc);
+      auto VSSource =
+          normal_map.preprocess(PipelineStage::Vertex, nullptr, nullptr);
+      auto PSSource =
+          normal_map.preprocess(PipelineStage::Pixel, nullptr, nullptr);
+      g.VSSource = VSSource.c_str();
+      g.PSSource = PSSource.c_str();
+      ppRenderGbuffers = device.createGraphicsPipeline(g);
+    }
+
+    {
       ComputePipelineInfo c;
       const char *defines[] = {"TOOL_BASE_COLOR_UV"};
       auto CSSource =
@@ -90,18 +106,26 @@ struct Pipelines {
       c.CSSource = CSSource.c_str();
       ppEvaluatePreviewBaseColorUV = device.createComputePipeline(c);
     }
+
+    {
+      ComputePipelineInfo c;
+      auto CSSource =
+          curves.preprocess(PipelineStage::Compute, nullptr, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppComputeShadingCurveHSV = device.createComputePipeline(c);
+    }
   }
 
-  // Render the normal map and the shading of a model
+  // Render the normal map 
   // [normal_map.glsl]
-  GraphicsPipeline ppRenderNormalMap;
+  GraphicsPipeline ppRenderGbuffers;
 
   // Compute the average shading curve
   // [shading_curve.glsl]
-  ComputePipeline ppComputeShadingCurve;
+  ComputePipeline ppComputeShadingCurveHSV;  
 
   // Compute the lit-sphere
-  ComputePipeline ppComputeLitSphere;
+  //ComputePipeline ppComputeLitSphere;
 
   // Draw stroke mask
   // [draw_stroke_mask.glsl]

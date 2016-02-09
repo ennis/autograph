@@ -14,6 +14,7 @@
 
 #include "tool.hpp"
 #include "types.hpp"
+#include "canvas.hpp"
 
 namespace input = ag::extra::input;
 namespace rxsub = rxcpp::rxsub;
@@ -49,7 +50,11 @@ struct BrushTipTexture {
 // ImGui-based user interface
 class Ui {
 public:
-  Ui(GLFWwindow *window, input::Input &input_) : input(input_) {
+  Ui(GLFWwindow *window, input::Input &input_) : input(input_), histH(kShadingCurveSamplesSize), histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize) {
+
+      std::fill(begin(histH), end(histH), 0.0f);
+      std::fill(begin(histS), end(histS), 0.0f);
+      std::fill(begin(histV), end(histV), 0.0f);
     // do not register callbacks
     ImGui_ImplGlfwGL3_Init(window, false);
 
@@ -173,6 +178,14 @@ public:
       loadCanvas.signal();
 
     ImGui::InputText("Path", saveFileName, 100);
+
+    ImGui::PlotHistogram("H curve", histH.data(), kShadingCurveSamplesSize, 0,
+                         "", 0.0, 1.0, ImVec2(300, 100));
+    ImGui::PlotHistogram("S curve", histS.data(), kShadingCurveSamplesSize, 0,
+                         "", 0.0, 1.0, ImVec2(300, 100));
+    ImGui::PlotHistogram("V curve", histV.data(), kShadingCurveSamplesSize, 0,
+                         "", 0.0, 1.0, ImVec2(300, 100));
+
     ImGui::Render();
   }
 
@@ -210,6 +223,11 @@ public:
   float brushWidthJitter = 0.0f;
   float brushSpacing = 1.0f;
   float brushSpacingJitter = 0.0f;
+
+  // histograms
+  std::vector<float> histH;
+  std::vector<float> histS;
+  std::vector<float> histV;
 
   // mouse events on canvas (triggered when the mouse is not focused on the
   // canvas)

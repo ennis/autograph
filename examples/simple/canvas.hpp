@@ -26,9 +26,24 @@ struct Canvas {
 
   Canvas(Device &device, unsigned width_, unsigned height_)
       : width(width_), height(height_) {
+
     texStrokeMask = device.createTexture2D<ag::R8>(glm::uvec2{width, height});
+
+    texHistH = device.createTexture1D<ag::R32UI>(kShadingCurveSamplesSize);
+    texHistS = device.createTexture1D<ag::R32UI>(kShadingCurveSamplesSize);
+    texHistV = device.createTexture1D<ag::R32UI>(kShadingCurveSamplesSize);
+    texHistAccum = device.createTexture1D<ag::R32UI>(kShadingCurveSamplesSize);
+
+    ag::clear(device, texHistH, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+    ag::clear(device, texHistS, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+    ag::clear(device, texHistV,
+              ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+    ag::clear(device, texHistAccum,
+              ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+
+    texDepth = device.createTexture2D<ag::Depth32>(glm::uvec2{width, height});
     texNormals = device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
-    texShadingTerm = device.createTexture2D<float>(glm::uvec2{width, height});
+    texStencil = device.createTexture2D<ag::R8>(glm::uvec2{width, height});
 
     texShadingProfileLN =
         device.createTexture1D<ag::RGBA8>(kShadingCurveSamplesSize);
@@ -43,7 +58,7 @@ struct Canvas {
     texBlurParametersUV =
         device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
 
-    ag::clear(device, texBaseColorUV, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+    ag::clear(device, texBaseColorUV, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     ag::clear(device, texHSVOffsetUV, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     ag::clear(device, texBlurParametersUV,
               ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
@@ -54,10 +69,17 @@ struct Canvas {
 
   // mask
   Texture2D<ag::R8> texStrokeMask;
-  // normals texture
+
+  // rendered from geometry
+  Texture2D<ag::Depth32> texDepth;
   Texture2D<ag::RGBA8> texNormals;
-  // shading
-  Texture2D<float> texShadingTerm;
+  Texture2D<ag::R8> texStencil;
+
+  // 
+  Texture1D<ag::R32UI> texHistH;
+  Texture1D<ag::R32UI> texHistS;
+  Texture1D<ag::R32UI> texHistV;
+  Texture1D<ag::R32UI> texHistAccum;
 
   // L dot N space
   Texture1D<ag::RGBA8> texShadingProfileLN;

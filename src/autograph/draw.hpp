@@ -143,6 +143,16 @@ void clearDepth(Device<D>& device, Surface<D, Depth, Pixels...>& surface,
   device.backend.clearDepth(surface.handle.get(), depth);
 }
 
+////////////////////////// ag::clearDepth(Texture2D)
+/// TODO special overload for depth pixel types
+template <typename D, typename Depth>
+void clearDepth(Device<D>& device, Texture2D<Depth, D>& tex,
+                float depth,
+                std::experimental::optional<const ag::Box2D&> region =
+                    std::experimental::nullopt) {
+  device.backend.clearTexture2DDepth(tex.handle.get(), Box2D{}, depth);
+}
+
 ////////////////////////// ag::clear(Texture1D)
 template <typename D, typename Pixel>
 void clear(Device<D>& device, Texture1D<Pixel, D>& tex, const ClearColor& color,

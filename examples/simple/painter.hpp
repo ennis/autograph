@@ -27,6 +27,7 @@
 #include "canvas.hpp"
 #include "pipelines.hpp"
 #include "ui.hpp"
+#include "camera.hpp"
 
 #include <boost/filesystem.hpp>
 
@@ -66,6 +67,7 @@ public:
       : GLSample(width, height, "Painter") {
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
+    mesh = loadMesh("common/meshes/skull.obj");
     canvas = std::make_unique<Canvas>(*device, 1000, 1000);
     texEvalCanvas = device->createTexture2D<ag::RGBA8>(glm::uvec2{1000, 1000});
     input = std::make_unique<input::Input>();
@@ -87,9 +89,9 @@ public:
   }
 
   template <typename... Resources>
-  void previewCanvas(Canvas &canvas, Texture2D<ag::RGBA8> &out,
-                     ComputePipeline &pipeline, RawBufferSlice &canvasData,
-                     Resources &&... resources) {
+  void previewCanvas(Canvas& canvas, Texture2D<ag::RGBA8>& out,
+                     ComputePipeline& pipeline, RawBufferSlice& canvasData,
+                     Resources&&... resources) {
     ag::compute(
         *device, pipeline,
         ag::ThreadGroupCount{
@@ -122,7 +124,7 @@ public:
         loadBrushTip((*it).path());
   }
 
-  void loadBrushTip(const fs::path &path) {
+  void loadBrushTip(const fs::path& path) {
     // filter by extension...
     if (path.extension() != ".png")
       return;
@@ -132,7 +134,7 @@ public:
 
   void makeSceneData() {
     const auto aspectRatio = (float)canvas->width / (float)canvas->height;
-    const auto eyePos = glm::vec3(0, 2, -3);
+    const auto eyePos = glm::vec3(0, 0, 3);
     const auto lookAt =
         glm::lookAt(eyePos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
     const auto proj = glm::perspective(45.0f, aspectRatio, 0.01f, 100.0f);
@@ -156,16 +158,22 @@ public:
 
   void render() {
     using namespace glm;
+      makeSceneData();
+      makeCanvasData();
+    ag::clear(*device, surfOut, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
     ag::clearDepth(*device, surfOut, 1.0f);
+    ag::clearDepth(*device, canvas->texDepth, 1.0f);
+    ag::clear(*device, canvas->texNormals, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+    ag::clear(*device, canvas->texStencil, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+    renderMesh(*canvas);
     input->poll();
-    makeSceneData();
-    makeCanvasData();
     renderCanvas();
+    computeHistograms(*canvas);
     ui->render(*device);
   }
 
   void renderCanvas() {
-    ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+    ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     if (isMakingStroke) {
       auto brushProps = this->brushPropsFromUi();
       // preview canvas
@@ -177,10 +185,11 @@ public:
     } else
       previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
                     canvas->texStrokeMask);
+    copyTex(canvas->texNormals, surfOut, 1000, 1000, glm::vec2{0.0f, 0.0f}, 1.0f);
     copyTex(texEvalCanvas, surfOut, 1000, 1000, glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
-  void onBrushPointerEvent(const BrushProperties &props, unsigned x,
+  void onBrushPointerEvent(const BrushProperties& props, unsigned x,
                            unsigned y) {
     brushPath.addPointerEvent(PointerEvent{x, y, 1.0f}, props,
                               [this, props](auto splat) {
@@ -245,8 +254,8 @@ public:
     return props;
   }
 
-  void drawBrushSplat(Canvas &canvas, const BrushProperties &brushProps,
-                      const SplatProperties &splat) {
+  void drawBrushSplat(Canvas& canvas, const BrushProperties& brushProps,
+                      const SplatProperties& splat) {
     /*fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x,
                splat.center.y, splat.width, splat.rotation);*/
     uniforms::Splat uSplat;
@@ -281,7 +290,7 @@ public:
                canvasData, uSplat);
   }
 
-  void applyStroke(Canvas &canvas, const BrushProperties &brushProps) {
+  void applyStroke(Canvas& canvas, const BrushProperties& brushProps) {
     ag::compute(
         *device, pipelines->ppFlattenStroke,
         ag::ThreadGroupCount{
@@ -290,6 +299,55 @@ public:
         canvasData, glm::vec4{brushProps.color[0], brushProps.color[1],
                               brushProps.color[2], brushProps.opacity},
         canvas.texStrokeMask, ag::RWTextureUnit(0, canvas.texBaseColorUV));
+  }
+
+  auto getCamera() {
+      const auto aspect_ratio = (float)canvas->width / (float)canvas->height;
+    const auto eyePos = glm::vec3(0, 2, -3);
+    auto lookAt = glm::lookAt(eyePos, glm::vec3(0, 0, 0), CamUp);
+    auto proj = glm::perspective(45.0f, aspect_ratio, 0.01f, 100.0f);
+    Camera cam;
+    cam.projMat = proj;
+    cam.viewMat = lookAt;
+    cam.wEye = eyePos;
+    cam.mode = Camera::Mode::Perspective;
+    return cam;
+  }
+
+  void renderMesh(Canvas& canvas) {
+    drawMesh(mesh, *device, ag::SurfaceRT(canvas.texDepth, canvas.texNormals,
+                                           canvas.texStencil),
+             pipelines->ppRenderGbuffers, sceneData, glm::scale(glm::mat4{1.0f}, glm::vec3{0.3f}));
+  }
+
+  // compute histograms
+  void computeHistograms(Canvas& canvas) {
+    ag::compute(*device, pipelines->ppComputeShadingCurveHSV,
+       ag::ThreadGroupCount{
+            (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
+            (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
+            canvasData, glm::vec3{0.0f},
+                canvas.texNormals,
+                canvas.texStencil,
+                canvas.texBaseColorUV,
+            RWTextureUnit(0, canvas.texHistH),
+                RWTextureUnit(0, canvas.texHistS),
+                RWTextureUnit(0, canvas.texHistV),
+                RWTextureUnit(0, canvas.texHistAccum));
+
+    // read back histograms
+    std::vector<uint32_t> histH(kShadingCurveSamplesSize), histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize), histAccum(kShadingCurveSamplesSize);
+    ag::copySync(*device, canvas.texHistH, gsl::as_span(histH));
+    ag::copySync(*device, canvas.texHistS, gsl::as_span(histS));
+    ag::copySync(*device, canvas.texHistV, gsl::as_span(histV));
+    ag::copySync(*device, canvas.texHistAccum, gsl::as_span(histAccum));
+
+    for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i) {
+        ui->histH[i] = float(histH[i]) / float(histAccum[i]);
+        ui->histS[i] = float(histS[i]) / float(histAccum[i]);
+        ui->histV[i] = float(histV[i]) / float(histAccum[i]);
+    }
+
   }
 
   // create textures
@@ -305,7 +363,7 @@ private:
   // canvas
   std::unique_ptr<Canvas> canvas;
   // mesh
-  std::unique_ptr<Mesh> mesh;
+  Mesh mesh;
   // UI
   std::unique_ptr<Ui> ui;
   // input

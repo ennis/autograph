@@ -25,7 +25,7 @@ void main() {
 /////////////// PS
 #ifdef _PIXEL_
 in vec2 fTexcoord;
-out vec4 color;
+layout(location = 0) out vec4 color;
 in vec4 gl_FragCoord;
 void main() {
   vec2 pos = gl_FragCoord.xy;

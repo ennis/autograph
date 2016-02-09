@@ -155,7 +155,7 @@ template <typename D, typename TDepth, typename... TPixels> struct SurfaceRT_ {
   void bind(Device<D> &device, BindContext &context) {
     device.backend.bindDepthRenderTarget(depth_target.handle.get());
     call(bindRTImpl,
-         std::tuple_cat(std::make_tuple(device, context), color_targets));
+         std::tuple_cat(std::forward_as_tuple(device, context), color_targets));
   }
 };
 
@@ -166,7 +166,7 @@ struct SurfaceRT_<D, void, TPixels...> {
 
   void bind(Device<D> &device, BindContext &context) {
     call(bindRTImpl,
-         std::tuple_cat(std::make_tuple(device, context), color_targets));
+         std::tuple_cat(std::forward_as_tuple(device, context), color_targets));
   }
 };
 
@@ -175,7 +175,7 @@ SurfaceRT_<D, TDepth, TPixels...>
 SurfaceRT(Texture2D<TDepth, D> &tex_depth,
           Texture2D<TPixels, D> &... tex_color) {
   return SurfaceRT_<D, TDepth, TPixels...>{tex_depth,
-                                           std::make_tuple(tex_color...)};
+                                           std::forward_as_tuple(tex_color...)};
 }
 
 template <typename D, typename... TPixels>
@@ -331,6 +331,44 @@ void bindRenderTarget(Device<D> &device, BindContext &context,
                       Surface<D, Depth, Colors...> &surface) {
   device.backend.bindSurface(surface.handle.get());
 }
+
+// http://stackoverflow.com/questions/16387354/template-tuple-calling-a-function-on-each-element
+namespace detail
+{
+    template<int... Is>
+    struct seq { };
+
+    template<int N, int... Is>
+    struct gen_seq : gen_seq<N - 1, N - 1, Is...> { };
+
+    template<int... Is>
+    struct gen_seq<0, Is...> : seq<Is...> { };
+}
+
+namespace detail
+{
+    template<typename T, typename F, int... Is>
+    void for_each(T&& t, F f, seq<Is...>)
+    {
+        auto l = { (f(std::get<Is>(t)), 0)... };
+    }
+}
+
+template<typename... Ts, typename F>
+void for_each_in_tuple(std::tuple<Ts...> const& t, F f)
+{
+    detail::for_each(t, f, detail::gen_seq<sizeof...(Ts)>());
+}
+
+////////////////////////// BindRT<SurfaceRT>
+template <typename D, typename Depth, typename... Colors>
+void bindRenderTarget(Device<D> &device, BindContext &context,
+                      const SurfaceRT_<D, Depth, Colors...> &surfaceRT)
+{
+    for_each_in_tuple(surfaceRT.color_targets, [&](auto&& v) { device.backend.bindRenderTexture(context.renderTargetBindingIndex++, v.handle.get()); });
+    device.backend.bindDepthRenderTexture(surfaceRT.depth_target.handle.get());
+}
+
 }
 
 #endif // !BIND_HPP

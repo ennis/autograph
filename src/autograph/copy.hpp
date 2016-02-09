@@ -27,8 +27,7 @@ namespace ag {
 template <typename D, typename Pixel,
           typename Storage = typename PixelTypeTraits<Pixel>::storage_type>
 void copy(Device<D>& device, gsl::span<const Storage> pixels,
-          Texture1D<Pixel, D>& texture, unsigned mipLevel = 0) 
-{
+          Texture1D<Pixel, D>& texture, unsigned mipLevel = 0) {
   device.backend.updateTexture1D(texture.handle.get(), texture.info, mipLevel,
                                  Box1D{0, texture.info.dimensions},
                                  gsl::as_bytes(pixels));
@@ -38,8 +37,7 @@ void copy(Device<D>& device, gsl::span<const Storage> pixels,
 template <typename D, typename Pixel,
           typename Storage = typename PixelTypeTraits<Pixel>::storage_type>
 void copy(Device<D>& device, gsl::span<const Storage> pixels,
-          Texture2D<Pixel, D>& texture, unsigned mipLevel = 0) 
-{
+          Texture2D<Pixel, D>& texture, unsigned mipLevel = 0) {
   device.backend.updateTexture2D(
       texture.handle.get(), texture.info, mipLevel,
       Box2D{0, 0, texture.info.dimensions.x, texture.info.dimensions.y},
@@ -50,8 +48,7 @@ void copy(Device<D>& device, gsl::span<const Storage> pixels,
 template <typename D, typename Pixel,
           typename Storage = typename PixelTypeTraits<Pixel>::storage_type>
 void copy(Device<D>& device, gsl::span<const Storage> pixels,
-          Texture3D<Pixel, D>& texture, unsigned mipLevel = 0) 
-{
+          Texture3D<Pixel, D>& texture, unsigned mipLevel = 0) {
   device.backend.updateTexture3D(texture.handle.get(), texture.info, mipLevel,
                                  Box3D{0, 0, 0, texture.info.dimensions.x,
                                        texture.info.dimensions.y,
@@ -66,8 +63,28 @@ void copy(Device<D>& device, gsl::span<const Storage> pixels,
 ///////////////////// Texture -> CPU sync readback operations
 // force a CPU/GPU sync
 // void syncCopy(device, texture, out_pixels, box)
-// backend impl: run async copy op to unpack buffer, fence, wait for fence, copy to CPU main memory, return 
+// backend impl: run async copy op to unpack buffer, fence, wait for fence, copy
+// to CPU main memory, return
+template <typename D, typename Pixel,
+          typename Storage = typename PixelTypeTraits<Pixel>::storage_type>
+void copySync(Device<D>& device, Texture1D<Pixel, D>& texture,
+              gsl::span<Storage> outPixels, unsigned mipLevel = 0) {
+  // TODO remove this, replace with a shared async transfer API
+  device.backend.readTexture1D(texture.handle.get(), texture.info, mipLevel,
+                               Box1D{0, texture.info.dimensions},
+                               gsl::as_writeable_bytes(outPixels));
+}
 
+template <typename D, typename Pixel,
+          typename Storage = typename PixelTypeTraits<Pixel>::storage_type>
+void copySync(Device<D>& device, Texture2D<Pixel, D>& texture,
+              gsl::span<Storage> outPixels, unsigned mipLevel = 0) {
+  // TODO remove this, replace with a shared async transfer API
+  device.backend.readTexture2D(
+      texture.handle.get(), texture.info, mipLevel,
+      Box2D{0, 0, texture.info.dimensions.x, texture.info.dimensions.y},
+      gsl::as_writeable_bytes(outPixels));
+}
 }
 
 #endif

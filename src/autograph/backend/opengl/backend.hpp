@@ -300,6 +300,9 @@ struct OpenGLBackend {
                            const ag::ClearColor& color);
   void clearTexture3DFloat(Texture3DHandle::pointer handle, ag::Box3D region,
                            const ag::ClearColor& color);
+  void clearTexture2DDepth(Texture2DHandle::pointer handle,
+                                          ag::Box2D region,
+                                          float depth);
 
   ///////////////////// Texture upload
 
@@ -313,6 +316,15 @@ struct OpenGLBackend {
   void updateTexture3D(Texture3DHandle::pointer handle,
                        const Texture3DInfo& info, unsigned mipLevel,
                        Box3D region, gsl::span<const gsl::byte> data);
+  void readTexture1D(Texture1DHandle::pointer handle, const Texture1DInfo& info,
+                     unsigned mipLevel, Box1D region,
+                     gsl::span<gsl::byte> outData);
+  void readTexture2D(Texture2DHandle::pointer handle, const Texture2DInfo& info,
+                     unsigned mipLevel, Box2D region,
+                     gsl::span<gsl::byte> outData);
+  void readTexture3D(Texture3DHandle::pointer handle, const Texture3DInfo& info,
+                     unsigned mipLevel, Box3D region,
+                     gsl::span<gsl::byte> outData);
 
   // staged texture upload: copy buffer data to texture
   /*void copyTextureRegion1D(Texture1DHandle::pointer src_handle, Box1D

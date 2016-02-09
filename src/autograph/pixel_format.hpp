@@ -69,6 +69,7 @@ enum class PixelFormat {
   // TODO
   Depth32,
   Depth24,
+  Depth24_Stencil8,
   Depth16,
   Float16,
   Float,
@@ -115,6 +116,11 @@ template <>
 struct PixelTypeTraits<uint8_t[4]>
     : public PixelTypeTraitsImpl<PixelFormat::Uint8x4, uint8_t[4]> {};
 
+
+template <>
+struct PixelTypeTraits<uint32_t>
+    : public PixelTypeTraitsImpl<PixelFormat::Uint32, uint32_t> {};
+
 // wrapper type for normalized pixel formats
 template <typename T> struct Normalized { T value; };
 
@@ -134,11 +140,28 @@ struct PixelTypeTraits<Normalized<uint8_t>[4]>
     : public PixelTypeTraitsImpl<PixelFormat::Unorm8x4,
                                  Normalized<uint8_t>[4]> {};
 
+
+
+// depth and depth-stencil format type
+struct Depth32 { uint32_t v;};
+struct Depth24_Stencil8 { uint32_t v; };
+
+template <>
+struct PixelTypeTraits<Depth32>
+    : public PixelTypeTraitsImpl<PixelFormat::Depth32, Depth32> {};
+    
+// sampling a combined depth-stencil type does not make much sense
+template <>
+struct PixelTypeTraits<Depth24_Stencil8>
+    : public PixelTypeTraitsImpl<PixelFormat::Depth24_Stencil8, Depth24_Stencil8> {};
+
 using RGBA8 = Normalized<uint8_t>[4];
 using RGB8 = Normalized<uint8_t>[3];
 using RG8 = Normalized<uint8_t>[2];
 using R32F = float;
 using R8 = Normalized<uint8_t>;
+using R32UI = uint32_t;
+
 }
 
 #endif
