@@ -129,7 +129,7 @@ public:
     if (path.extension() != ".png")
       return;
     ui->brushTipTextures.emplace_back(BrushTipTexture{
-        path.stem().string(), image_io::loadTexture2D(*device, path.c_str())});
+        path.stem().string(), image_io::loadTexture2D(*device, path.string().c_str())});
   }
 
   void makeSceneData() {
