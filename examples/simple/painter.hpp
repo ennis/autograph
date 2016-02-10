@@ -322,6 +322,13 @@ public:
 
   // compute histograms
   void computeHistograms(Canvas& canvas) {
+      // workaround
+      ag::ClearColorInt clear = {{0,0,0,0}};
+      ag::clearInteger(*device, canvas.texHistH, clear);
+      ag::clearInteger(*device, canvas.texHistS, clear);
+      ag::clearInteger(*device, canvas.texHistV, clear);
+      ag::clearInteger(*device, canvas.texHistAccum, clear);
+
     ag::compute(*device, pipelines->ppComputeShadingCurveHSV,
        ag::ThreadGroupCount{
             (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
@@ -331,9 +338,9 @@ public:
                 canvas.texStencil,
                 canvas.texBaseColorUV,
             RWTextureUnit(0, canvas.texHistH),
-                RWTextureUnit(0, canvas.texHistS),
-                RWTextureUnit(0, canvas.texHistV),
-                RWTextureUnit(0, canvas.texHistAccum));
+                RWTextureUnit(1, canvas.texHistS),
+                RWTextureUnit(2, canvas.texHistV),
+                RWTextureUnit(3, canvas.texHistAccum));
 
     // read back histograms
     std::vector<uint32_t> histH(kShadingCurveSamplesSize), histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize), histAccum(kShadingCurveSamplesSize);
@@ -343,9 +350,9 @@ public:
     ag::copySync(*device, canvas.texHistAccum, gsl::as_span(histAccum));
 
     for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i) {
-        ui->histH[i] = float(histH[i]) / float(histAccum[i]);
-        ui->histS[i] = float(histS[i]) / float(histAccum[i]);
-        ui->histV[i] = float(histV[i]) / float(histAccum[i]);
+        ui->histH[i] = float(histH[i]) / (255.0f*float(histAccum[i]));
+        ui->histS[i] = float(histS[i]) / (255.0f*float(histAccum[i]));
+        ui->histV[i] = float(histV[i]) / (255.0f*float(histAccum[i]));
     }
 
   }

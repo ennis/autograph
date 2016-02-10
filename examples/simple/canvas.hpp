@@ -34,12 +34,12 @@ struct Canvas {
     texHistV = device.createTexture1D<ag::R32UI>(kShadingCurveSamplesSize);
     texHistAccum = device.createTexture1D<ag::R32UI>(kShadingCurveSamplesSize);
 
-    ag::clear(device, texHistH, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+    /*ag::clear(device, texHistH, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     ag::clear(device, texHistS, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     ag::clear(device, texHistV,
               ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     ag::clear(device, texHistAccum,
-              ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+              ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});*/
 
     texDepth = device.createTexture2D<ag::Depth32>(glm::uvec2{width, height});
     texNormals = device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});

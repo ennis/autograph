@@ -61,7 +61,6 @@ struct GLPixelFormat {
 // TODO move this in a shared header
 struct GLuintHandle {
   GLuint id;
-
   GLuintHandle(GLuint obj_id) : id(obj_id) {}
   // default and nullptr constructors folded together
   GLuintHandle(std::nullptr_t = nullptr) : id(0) {}
@@ -85,11 +84,11 @@ struct VertexAttribute {
 };
 
 struct GraphicsPipelineInfo {
-  const char* VSSource = nullptr;
-  const char* GSSource = nullptr;
-  const char* PSSource = nullptr;
-  const char* DSSource = nullptr;
-  const char* HSSource = nullptr;
+  const char *VSSource = nullptr;
+  const char *GSSource = nullptr;
+  const char *PSSource = nullptr;
+  const char *DSSource = nullptr;
+  const char *HSSource = nullptr;
   gsl::span<const VertexAttribute> vertexAttribs;
   GLRasterizerState rasterizerState;
   GLDepthStencilState depthStencilState;
@@ -97,11 +96,16 @@ struct GraphicsPipelineInfo {
 };
 
 struct ComputePipelineInfo {
-  const char* CSSource = nullptr;
+  const char *CSSource = nullptr;
 };
 
 // Graphics context (OpenGL)
 struct OpenGLBackend {
+private:
+  // shortcut
+  using D = OpenGLBackend;
+
+public:
   ///////////////////// Timeout values for fence wait operations
   static constexpr unsigned kFenceWaitTimeout = 2000000000; // in nanoseconds
 
@@ -158,7 +162,7 @@ struct OpenGLBackend {
   };
 
   struct BufferDeleter {
-    using pointer = GLbuffer*;
+    using pointer = GLbuffer *;
     void operator()(pointer buffer) {
       gl::DeleteBuffers(1, &buffer->buf_obj);
       delete buffer;
@@ -166,7 +170,7 @@ struct OpenGLBackend {
   };
 
   struct GraphicsPipelineDeleter {
-    using pointer = GraphicsPipeline*;
+    using pointer = GraphicsPipeline *;
     void operator()(pointer pp) {
       if (pp->vao)
         gl::DeleteVertexArrays(1, &pp->vao);
@@ -177,7 +181,7 @@ struct OpenGLBackend {
   };
 
   struct ComputePipelineDeleter {
-    using pointer = ComputePipeline*;
+    using pointer = ComputePipeline *;
     void operator()(pointer pp) {
       if (pp->program)
         gl::DeleteProgram(pp->program);
@@ -186,7 +190,7 @@ struct OpenGLBackend {
   };
 
   struct FenceDeleter {
-    using pointer = GLFence*;
+    using pointer = GLFence *;
     void operator()(pointer fence) {
       for (auto s : fence->syncPoints)
         gl::DeleteSync(s.sync);
@@ -215,23 +219,16 @@ struct OpenGLBackend {
   OpenGLBackend();
 
   // create a swap chain to draw into (color buffer + depth buffer)
-  void createWindow(const DeviceOptions& options);
+  void createWindow(const DeviceOptions &options);
   bool processWindowEvents();
-  GLFWwindow* getWindow() { return window; }
-
-  // textures
-
-  // binds!
-
-  // texturenD::getView() -> GPUAsync<TextureView>
-  // buffer<T>::getView() -> GPUAsync<...>
+  GLFWwindow *getWindow() { return window; }
 
   SurfaceHandle initOutputSurface();
 
   ///////////////////// Resources: Textures
-  Texture1DHandle createTexture1D(const Texture1DInfo& info);
-  Texture2DHandle createTexture2D(const Texture2DInfo& info);
-  Texture3DHandle createTexture3D(const Texture3DInfo& info);
+  Texture1DHandle createTexture1D(const Texture1DInfo &info);
+  Texture2DHandle createTexture2D(const Texture2DInfo &info);
+  Texture3DHandle createTexture3D(const Texture3DInfo &info);
 
   // used internally
   /*void destroyTexture1D(Texture1DHandle detail, const Texture1DInfo& info);
@@ -240,22 +237,22 @@ struct OpenGLBackend {
   void destroyTexture3D(Texture3DHandle detail, const Texture3DInfo& info);*/
 
   ///////////////////// Resources: Buffers
-  BufferHandle createBuffer(std::size_t size, const void* data,
+  BufferHandle createBuffer(std::size_t size, const void *data,
                             BufferUsage usage);
   // used internally
   // void destroyBuffer(BufferHandle handle);
   // Map buffer data into the CPU virtual address space
-  void* mapBuffer(BufferHandle::pointer handle, size_t offset, size_t size);
+  void *mapBuffer(BufferHandle::pointer handle, size_t offset, size_t size);
 
   ///////////////////// Resources: Samplers
-  SamplerHandle createSampler(const SamplerInfo& info);
+  SamplerHandle createSampler(const SamplerInfo &info);
   // used internally
   // void destroySampler(SamplerHandle::pointer detail);
 
   ///////////////////// Resources: Pipelines
   GraphicsPipelineHandle
-  createGraphicsPipeline(const GraphicsPipelineInfo& info);
-  ComputePipelineHandle createComputePipeline(const ComputePipelineInfo& info);
+  createGraphicsPipeline(const GraphicsPipelineInfo &info);
+  ComputePipelineHandle createComputePipeline(const ComputePipelineInfo &info);
   // used internally
   // void destroyGraphicsPipeline(GraphicsPipelineHandle handle);
 
@@ -292,37 +289,80 @@ struct OpenGLBackend {
 
   ///////////////////// Clear command
   void clearColor(SurfaceHandle::pointer framebuffer_obj,
-                  const ag::ClearColor& color);
+                  const ag::ClearColor &color);
   void clearDepth(SurfaceHandle::pointer framebuffer_obj, float depth);
-  void clearTexture1DFloat(Texture1DHandle::pointer handle, ag::Box1D region,
-                           const ag::ClearColor& color);
-  void clearTexture2DFloat(Texture2DHandle::pointer handle, ag::Box2D region,
-                           const ag::ClearColor& color);
-  void clearTexture3DFloat(Texture3DHandle::pointer handle, ag::Box3D region,
-                           const ag::ClearColor& color);
-  void clearTexture2DDepth(Texture2DHandle::pointer handle,
-                                          ag::Box2D region,
-                                          float depth);
+
+  ///////////////////// Clear texture when Pixel is a floating point pixel type
+  template <typename Pixel>
+  void clearTexture1DFloat(Texture1D<Pixel, D> &tex, const ag::Box1D &region,
+                           const ag::ClearColor &color) {
+    gl::ClearTexImage(tex.handle.get().id, 0, gl::RGBA, gl::FLOAT, color.rgba);
+  }
+
+  template <typename Pixel>
+  void clearTexture2DFloat(Texture2D<Pixel, D> &tex, const ag::Box2D &region,
+                           const ag::ClearColor &color) {
+    gl::ClearTexImage(tex.handle.get().id, 0, gl::RGBA, gl::FLOAT, color.rgba);
+  }
+
+  template <typename Pixel>
+  void clearTexture3DFloat(Texture3D<Pixel, D> &tex, const ag::Box3D &region,
+                           const ag::ClearColor &color) {
+    gl::ClearTexImage(tex.handle.get().id, 0, gl::RGBA_INTEGER, gl::FLOAT, color.rgba);
+  }
+
+  ///////////////////// Clear texture when Pixel is an integer pixel type
+  template <typename IPixel>
+  void clearTexture1DInteger(Texture1D<IPixel, D> &tex, const ag::Box1D &region,
+                             const ag::ClearColorInt &color) {
+
+    gl::ClearTexImage(tex.handle.get().id, 0, gl::RGBA_INTEGER, gl::UNSIGNED_INT,
+                      color.rgba);
+  }
+
+  template <typename IPixel>
+  void clearTexture2DInteger(Texture2D<IPixel, D> &tex, const ag::Box2D &region,
+                             const ag::ClearColorInt &color) {
+
+    gl::ClearTexImage(tex.handle.get().id, 0, gl::RGBA_INTEGER, gl::UNSIGNED_INT,
+                      color.rgba);
+  }
+
+  template <typename IPixel>
+  void clearTexture3DInteger(Texture3D<IPixel, D> &tex, const ag::Box3D &region,
+                             const ag::ClearColorInt &color) {
+    gl::ClearTexImage(tex.handle.get().id, 0, gl::RGBA_INTEGER, gl::UNSIGNED_INT,
+                      color.rgba);
+  }
+
+  ///////////////////// Clear texture when Pixel is a depth pixel type
+  template <typename Depth>
+  void clearTexture2DDepth(Texture2D<Depth, D> &tex, const ag::Box2D& region,
+                           float depth)
+  {
+      gl::ClearTexImage(tex.handle.get().id, 0, gl::DEPTH_COMPONENT, gl::FLOAT, &depth);
+
+  }
 
   ///////////////////// Texture upload
 
   // These are blocking
   void updateTexture1D(Texture1DHandle::pointer handle,
-                       const Texture1DInfo& info, unsigned mipLevel,
+                       const Texture1DInfo &info, unsigned mipLevel,
                        Box1D region, gsl::span<const gsl::byte> data);
   void updateTexture2D(Texture2DHandle::pointer handle,
-                       const Texture2DInfo& info, unsigned mipLevel,
+                       const Texture2DInfo &info, unsigned mipLevel,
                        Box2D region, gsl::span<const gsl::byte> data);
   void updateTexture3D(Texture3DHandle::pointer handle,
-                       const Texture3DInfo& info, unsigned mipLevel,
+                       const Texture3DInfo &info, unsigned mipLevel,
                        Box3D region, gsl::span<const gsl::byte> data);
-  void readTexture1D(Texture1DHandle::pointer handle, const Texture1DInfo& info,
+  void readTexture1D(Texture1DHandle::pointer handle, const Texture1DInfo &info,
                      unsigned mipLevel, Box1D region,
                      gsl::span<gsl::byte> outData);
-  void readTexture2D(Texture2DHandle::pointer handle, const Texture2DInfo& info,
+  void readTexture2D(Texture2DHandle::pointer handle, const Texture2DInfo &info,
                      unsigned mipLevel, Box2D region,
                      gsl::span<gsl::byte> outData);
-  void readTexture3D(Texture3DHandle::pointer handle, const Texture3DInfo& info,
+  void readTexture3D(Texture3DHandle::pointer handle, const Texture3DInfo &info,
                      unsigned mipLevel, Box3D region,
                      gsl::span<gsl::byte> outData);
 
@@ -348,8 +388,8 @@ private:
   void bindFramebufferObject(GLuint framebuffer_obj);
   void bindState();
 
-  GLuint createProgramFromShaderPipeline(const GraphicsPipelineInfo& info);
-  GLuint createComputeProgram(const ComputePipelineInfo& info);
+  GLuint createProgramFromShaderPipeline(const GraphicsPipelineInfo &info);
+  GLuint createComputeProgram(const ComputePipelineInfo &info);
   GLuint createVertexArrayObject(gsl::span<const VertexAttribute> attribs);
 
   struct BindState {
@@ -376,7 +416,7 @@ private:
   // last bound FBO
   GLuint last_framebuffer_obj;
   GLuint render_to_texture_fbo;
-  GLFWwindow* window;
+  GLFWwindow *window;
   // bind state
   BindState bind_state;
 };

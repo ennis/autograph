@@ -36,10 +36,10 @@ void main()
   float S = shadingTerm(texelFetch(texNormals, texelCoords, 0));
   int bin = clamp(int(floor(S * CURVE_SAMPLES)), 0, CURVE_SAMPLES);
 
-  vec3 hsv = rgb2hsv(C.xyz);
-  imageAtomicAdd(imgCurveH, bin, uint(hsv.x));
-  imageAtomicAdd(imgCurveS, bin, uint(hsv.y));
-  imageAtomicAdd(imgCurveV, bin, uint(hsv.z));
+  uvec3 hsv = uvec3(rgb2hsv(C.xyz)*255.0f);
+  imageAtomicAdd(imgCurveH, bin, hsv.x);
+  imageAtomicAdd(imgCurveS, bin, hsv.y);
+  imageAtomicAdd(imgCurveV, bin, hsv.z);
   imageAtomicAdd(imgCurveAccum, bin, 1);
 
   memoryBarrierImage();

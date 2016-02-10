@@ -5,6 +5,8 @@
 
 namespace ag {
 
+// TODO: distinguish "surface format" from "interpretation format"
+
 enum class PixelFormat {
   // 32x4
   Uint32x4,

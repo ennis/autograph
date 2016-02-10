@@ -180,11 +180,11 @@ public:
     ImGui::InputText("Path", saveFileName, 100);
 
     ImGui::PlotHistogram("H curve", histH.data(), kShadingCurveSamplesSize, 0,
-                         "", 0.0, 1.0, ImVec2(300, 100));
+                         "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
     ImGui::PlotHistogram("S curve", histS.data(), kShadingCurveSamplesSize, 0,
-                         "", 0.0, 1.0, ImVec2(300, 100));
+                         "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
     ImGui::PlotHistogram("V curve", histV.data(), kShadingCurveSamplesSize, 0,
-                         "", 0.0, 1.0, ImVec2(300, 100));
+                         "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
 
     ImGui::Render();
   }

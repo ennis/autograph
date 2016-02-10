@@ -460,6 +460,13 @@ Facts about texture data:
 		- storage_type: type of elements in a texture 
 			can be different from storage_type for compressed formats
 
+        Additionnally, one format can be interpreted differently:
+                - surface_format: number of channels and bits per channel (RGBA8, RGB8, RGB10A2)
+                - channel_format: interpretation of channel data (float, int, normalized int)
+        => textures can be fully-typed (as it is the case now) or typeless (special typeless formats)
+            => specify full format at bind time?
+        => use case: write to a texture as integer, bind and sample as unorm
+
 Texture transfers:
 glTexSubImage may copy the provided texture data to gl-managed memory and keep
 it until the texture is ready to be copied over.
