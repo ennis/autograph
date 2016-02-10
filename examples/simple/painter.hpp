@@ -350,11 +350,18 @@ public:
     ag::copySync(*device, canvas.texHistAccum, gsl::as_span(histAccum));
 
     for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i) {
+        if (histAccum[i]) {
         ui->histH[i] = float(histH[i]) / (255.0f*float(histAccum[i]));
         ui->histS[i] = float(histS[i]) / (255.0f*float(histAccum[i]));
         ui->histV[i] = float(histV[i]) / (255.0f*float(histAccum[i]));
-    }
+        }
+        else {
 
+            ui->histH[i] = 0.0f;
+            ui->histS[i] = 0.0f;
+            ui->histV[i] = 0.0f;
+        }
+    }
   }
 
   // create textures

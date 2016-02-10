@@ -142,7 +142,24 @@ struct PixelTypeTraits<Normalized<uint8_t>[4]>
     : public PixelTypeTraitsImpl<PixelFormat::Unorm8x4,
                                  Normalized<uint8_t>[4]> {};
 
+// Packed formats
+struct Snorm10x3_1x2
+{
+    uint32_t v;
+};
 
+template <>
+struct PixelTypeTraits<Snorm10x3_1x2>
+    : public PixelTypeTraitsImpl<PixelFormat::Snorm10x3_1x2, Snorm10x3_1x2> {};
+
+struct Unorm10x3_1x2
+{
+    uint32_t v;
+};
+
+template <>
+struct PixelTypeTraits<Unorm10x3_1x2>
+    : public PixelTypeTraitsImpl<PixelFormat::Unorm10x3_1x2, Unorm10x3_1x2> {};
 
 // depth and depth-stencil format type
 struct Depth32 { uint32_t v;};

@@ -124,9 +124,13 @@ GLPixelFormat pixelFormatToGL(PixelFormat format) {
   case PixelFormat::Uint32:
     return GLPixelFormat{gl::R32UI, gl::RED_INTEGER, gl::UNSIGNED_INT, 1};
   case PixelFormat::Depth32:
-    return GLPixelFormat{gl::DEPTH_COMPONENT32F, 0, 0, 1};  // TODO
+    return GLPixelFormat{gl::DEPTH_COMPONENT32F, 0, 0, 1}; // TODO
   case PixelFormat::Depth24_Stencil8:
     return GLPixelFormat{gl::DEPTH24_STENCIL8, 0, 0, 1};
+  case PixelFormat::Snorm10x3_1x2:  // Oops, does not exist in OpenGL
+    return GLPixelFormat{gl::RGB10_A2, gl::RGBA, gl::UNSIGNED_INT_10_10_10_2, 4};
+  case PixelFormat::Unorm10x3_1x2:
+    return GLPixelFormat{gl::RGB10_A2, gl::RGBA, gl::UNSIGNED_INT_10_10_10_2, 4};
   default:
     failWith("TODO");
   }
@@ -580,7 +584,7 @@ void OpenGLBackend::bindRenderTexture(unsigned slot,
       gl::COLOR_ATTACHMENT0 + 4, gl::COLOR_ATTACHMENT0 + 5,
       gl::COLOR_ATTACHMENT0 + 6, gl::COLOR_ATTACHMENT0 + 7};
 
-  gl::DrawBuffers(slot+1, drawBuffers);
+  gl::DrawBuffers(slot + 1, drawBuffers);
 }
 
 void OpenGLBackend::bindDepthRenderTexture(Texture2DHandle::pointer handle) {
