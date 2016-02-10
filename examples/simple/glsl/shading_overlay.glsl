@@ -14,7 +14,7 @@ layout(location = 0) out vec4 color;
 void main() {
 	ivec2 texelCoords = ivec2(gl_FragCoord.xy);
 	texelCoords.y = int(canvas.size.y) - texelCoords.y;
-  color = vec4(vec3(shadingTerm(texNormals, texelCoords, lightPos)), 0.5f); 
+  color = vec4(vec3(shadingTerm(texNormals, texelCoords, lightPos)), 1.0f); 
 }
 
 #endif

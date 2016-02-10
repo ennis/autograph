@@ -342,7 +342,7 @@ public:
         ag::ThreadGroupCount{
             (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
             (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
-        canvasData, glm::normalize(glm::vec3{1.0f}), canvas.texNormals,
+        canvasData, glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f}), canvas.texNormals,
         canvas.texStencil, canvas.texBaseColorUV,
         RWTextureUnit(0, canvas.texHistH), RWTextureUnit(1, canvas.texHistS),
         RWTextureUnit(2, canvas.texHistV),
