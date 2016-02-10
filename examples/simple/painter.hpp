@@ -67,9 +67,10 @@ public:
       : GLSample(width, height, "Painter") {
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
-    mesh = loadMesh("common/meshes/skull.obj");
+    mesh = loadMesh("common/meshes/lucy.fbx");
     canvas = std::make_unique<Canvas>(*device, width, height);
-    texEvalCanvas = device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
+    texEvalCanvas =
+        device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
     input = std::make_unique<input::Input>();
     input->registerEventSource(
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
@@ -89,9 +90,9 @@ public:
   }
 
   template <typename... Resources>
-  void previewCanvas(Canvas& canvas, Texture2D<ag::RGBA8>& out,
-                     ComputePipeline& pipeline, RawBufferSlice& canvasData,
-                     Resources&&... resources) {
+  void previewCanvas(Canvas &canvas, Texture2D<ag::RGBA8> &out,
+                     ComputePipeline &pipeline, RawBufferSlice &canvasData,
+                     Resources &&... resources) {
     ag::compute(
         *device, pipeline,
         ag::ThreadGroupCount{
@@ -124,19 +125,20 @@ public:
         loadBrushTip((*it).path());
   }
 
-  void loadBrushTip(const fs::path& path) {
+  void loadBrushTip(const fs::path &path) {
     // filter by extension...
     if (path.extension() != ".png")
       return;
     ui->brushTipTextures.emplace_back(BrushTipTexture{
-        path.stem().string(), image_io::loadTexture2D(*device, path.string().c_str())});
+        path.stem().string(),
+        image_io::loadTexture2D(*device, path.string().c_str())});
   }
 
   void makeSceneData() {
     const auto aspectRatio = (float)canvas->width / (float)canvas->height;
-    const auto eyePos = glm::vec3(0, 0, 3);
+    const auto eyePos = glm::vec3(0, 10, 10);
     const auto lookAt =
-        glm::lookAt(eyePos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+        glm::lookAt(eyePos, glm::vec3(0, 10, 0), glm::vec3(0, 1, 0));
     const auto proj = glm::perspective(45.0f, aspectRatio, 0.01f, 100.0f);
     uniforms::Scene scene;
     scene.viewMatrix = lookAt;
@@ -158,17 +160,21 @@ public:
 
   void render() {
     using namespace glm;
-      makeSceneData();
-      makeCanvasData();
+    makeSceneData();
+    makeCanvasData();
     ag::clear(*device, surfOut, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
     ag::clearDepth(*device, surfOut, 1.0f);
     ag::clearDepth(*device, canvas->texDepth, 1.0f);
-    ag::clear(*device, canvas->texNormals, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
-    ag::clear(*device, canvas->texStencil, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+    ag::clear(*device, canvas->texNormals,
+              ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+    ag::clear(*device, canvas->texStencil,
+              ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     renderMesh(*canvas);
     input->poll();
     renderCanvas();
     computeHistograms(*canvas);
+    if (ui->showReferenceShading)
+      drawShadingOverlay(*canvas);
     ui->render(*device);
   }
 
@@ -185,23 +191,24 @@ public:
     } else
       previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
                     canvas->texStrokeMask);
-    copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
+    copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f},
+            1.0f);
     copyTex(texEvalCanvas, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
-  void onBrushPointerEvent(const BrushProperties& props, unsigned x,
+  void onBrushPointerEvent(const BrushProperties &props, unsigned x,
                            unsigned y) {
     brushPath.addPointerEvent(PointerEvent{x, y, 1.0f}, props,
                               [this, props](auto splat) {
-                                this->drawBrushSplat(*canvas, props, splat);
-                              });
+      this->drawBrushSplat(*canvas, props, splat);
+    });
   }
 
   void setupInput() {
     // on key presses
     input->keys().subscribe(
         [this](auto ev) { fmt::print("Key event: {}\n", (int)ev.code); });
-    // on mouse button clicks
+    // on mouse button clicksrende
     ui->canvasMouseButtons.subscribe([this](auto ev) {
       if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
           ev.state == input::MouseButtonState::Pressed) {
@@ -254,8 +261,8 @@ public:
     return props;
   }
 
-  void drawBrushSplat(Canvas& canvas, const BrushProperties& brushProps,
-                      const SplatProperties& splat) {
+  void drawBrushSplat(Canvas &canvas, const BrushProperties &brushProps,
+                      const SplatProperties &splat) {
     /*fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x,
                splat.center.y, splat.width, splat.rotation);*/
     uniforms::Splat uSplat;
@@ -290,7 +297,7 @@ public:
                canvasData, uSplat);
   }
 
-  void applyStroke(Canvas& canvas, const BrushProperties& brushProps) {
+  void applyStroke(Canvas &canvas, const BrushProperties &brushProps) {
     ag::compute(
         *device, pipelines->ppFlattenStroke,
         ag::ThreadGroupCount{
@@ -301,10 +308,10 @@ public:
         canvas.texStrokeMask, ag::RWTextureUnit(0, canvas.texBaseColorUV));
   }
 
-  auto getCamera() {
+  /*auto getCamera() {
       const auto aspect_ratio = (float)canvas->width / (float)canvas->height;
-    const auto eyePos = glm::vec3(0, 2, -3);
-    auto lookAt = glm::lookAt(eyePos, glm::vec3(0, 0, 0), CamUp);
+    const auto eyePos = glm::vec3(0, 10, -3);
+    auto lookAt = glm::lookAt(eyePos, glm::vec3(0, 10, 0), CamUp);
     auto proj = glm::perspective(45.0f, aspect_ratio, 0.01f, 100.0f);
     Camera cam;
     cam.projMat = proj;
@@ -312,56 +319,64 @@ public:
     cam.wEye = eyePos;
     cam.mode = Camera::Mode::Perspective;
     return cam;
-  }
+  }*/
 
-  void renderMesh(Canvas& canvas) {
+  void renderMesh(Canvas &canvas) {
     drawMesh(mesh, *device, ag::SurfaceRT(canvas.texDepth, canvas.texNormals,
-                                           canvas.texStencil),
-             pipelines->ppRenderGbuffers, sceneData, glm::scale(glm::mat4{1.0f}, glm::vec3{0.3f}));
+                                          canvas.texStencil),
+             pipelines->ppRenderGbuffers, sceneData,
+             glm::scale(glm::mat4{1.0f}, glm::vec3{0.1f}));
   }
 
   // compute histograms
-  void computeHistograms(Canvas& canvas) {
-      // workaround
-      ag::ClearColorInt clear = {{0,0,0,0}};
-      ag::clearInteger(*device, canvas.texHistH, clear);
-      ag::clearInteger(*device, canvas.texHistS, clear);
-      ag::clearInteger(*device, canvas.texHistV, clear);
-      ag::clearInteger(*device, canvas.texHistAccum, clear);
+  void computeHistograms(Canvas &canvas) {
+    // workaround
+    ag::ClearColorInt clear = {{0, 0, 0, 0}};
+    ag::clearInteger(*device, canvas.texHistH, clear);
+    ag::clearInteger(*device, canvas.texHistS, clear);
+    ag::clearInteger(*device, canvas.texHistV, clear);
+    ag::clearInteger(*device, canvas.texHistAccum, clear);
 
-    ag::compute(*device, pipelines->ppComputeShadingCurveHSV,
-       ag::ThreadGroupCount{
+    ag::compute(
+        *device, pipelines->ppComputeShadingCurveHSV,
+        ag::ThreadGroupCount{
             (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
             (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
-            canvasData, glm::normalize(glm::vec3{1.0f}),
-                canvas.texNormals,
-                canvas.texStencil,
-                canvas.texBaseColorUV,
-            RWTextureUnit(0, canvas.texHistH),
-                RWTextureUnit(1, canvas.texHistS),
-                RWTextureUnit(2, canvas.texHistV),
-                RWTextureUnit(3, canvas.texHistAccum));
+        canvasData, glm::normalize(glm::vec3{1.0f}), canvas.texNormals,
+        canvas.texStencil, canvas.texBaseColorUV,
+        RWTextureUnit(0, canvas.texHistH), RWTextureUnit(1, canvas.texHistS),
+        RWTextureUnit(2, canvas.texHistV),
+        RWTextureUnit(3, canvas.texHistAccum));
 
     // read back histograms
-    std::vector<uint32_t> histH(kShadingCurveSamplesSize), histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize), histAccum(kShadingCurveSamplesSize);
+    std::vector<uint32_t> histH(kShadingCurveSamplesSize),
+        histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize),
+        histAccum(kShadingCurveSamplesSize);
     ag::copySync(*device, canvas.texHistH, gsl::as_span(histH));
     ag::copySync(*device, canvas.texHistS, gsl::as_span(histS));
     ag::copySync(*device, canvas.texHistV, gsl::as_span(histV));
     ag::copySync(*device, canvas.texHistAccum, gsl::as_span(histAccum));
 
     for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i) {
-        if (histAccum[i]) {
-        ui->histH[i] = float(histH[i]) / (255.0f*float(histAccum[i]));
-        ui->histS[i] = float(histS[i]) / (255.0f*float(histAccum[i]));
-        ui->histV[i] = float(histV[i]) / (255.0f*float(histAccum[i]));
-        }
-        else {
+      if (histAccum[i]) {
+        ui->histH[i] = float(histH[i]) / (255.0f * float(histAccum[i]));
+        ui->histS[i] = float(histS[i]) / (255.0f * float(histAccum[i]));
+        ui->histV[i] = float(histV[i]) / (255.0f * float(histAccum[i]));
+      } else {
 
-            ui->histH[i] = 0.0f;
-            ui->histS[i] = 0.0f;
-            ui->histV[i] = 0.0f;
-        }
+        ui->histH[i] = 0.0f;
+        ui->histS[i] = 0.0f;
+        ui->histV[i] = 0.0f;
+      }
     }
+  }
+
+  void drawShadingOverlay(Canvas &canvas) {
+    ag::draw(
+        *device, surfOut, pipelines->ppShadingOverlay,
+        ag::DrawArrays(ag::PrimitiveType::Triangles, 0, 3), canvas.texNormals,
+        canvasData,
+        glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f}));
   }
 
   // create textures

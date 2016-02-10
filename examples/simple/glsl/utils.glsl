@@ -15,3 +15,17 @@ float sq(float x)
 {
 	return x*x;
 }
+
+
+vec3 evalNormalMap(vec4 v)
+{
+	return v.xyz * 2.0 - vec3(1.0); 
+}
+
+float shadingTerm(in sampler2D normalMap, ivec2 texelCoords, vec3 lightPos)
+{
+	vec4 c = texelFetch(normalMap, texelCoords, 0);
+	vec3 N = evalNormalMap(c);
+	return dot(N, -lightPos);
+}
+

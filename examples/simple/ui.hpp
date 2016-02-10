@@ -76,7 +76,7 @@ public:
   void render(Device &device) {
     ImGui_ImplGlfwGL3_NewFrame();
     ImGui::ColorEdit3("Stroke color", strokeColor.data());
-    ImGui::SliderFloat2("Light pos", lightPosXY.data(), -0.5, 0.5);
+    ImGui::SliderFloat2("Light pos", lightPosXY.data(), -1.5, 1.5);
     ImGui::SliderFloat("Stroke opacity", &strokeOpacity, 0.0, 1.0);
     ImGui::SliderFloat("Stroke width", &strokeWidth, 1.0, 300.0);
     /*ImGui::PlotHistogram("Illum curve", illumHist,

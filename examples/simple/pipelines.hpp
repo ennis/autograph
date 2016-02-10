@@ -42,13 +42,15 @@ struct Pipelines {
         loadShaderSource(samplesRoot / "simple/glsl/evaluate.glsl");
     ShaderSource curves =
         loadShaderSource(samplesRoot / "simple/glsl/shading_curve.glsl");
+    ShaderSource shading_overlay =
+        loadShaderSource(samplesRoot / "simple/glsl/shading_overlay.glsl");
 
     {
       GraphicsPipelineInfo g;
       g.blendState.enabled = true;
       g.blendState.modeAlpha = gl::FUNC_ADD;
       g.blendState.modeRGB = gl::FUNC_ADD;
-      g.blendState.funcSrcAlpha = gl::SRC_ALPHA;
+      g.blendState.funcSrcAlpha = gl::ONE;
       g.blendState.funcDstAlpha = gl::ONE_MINUS_SRC_ALPHA;
       g.blendState.funcSrcRGB = gl::ONE;
       g.blendState.funcDstRGB = gl::ONE_MINUS_SRC_ALPHA;
@@ -83,6 +85,25 @@ struct Pipelines {
       g.VSSource = VSSource.c_str();
       g.PSSource = PSSource.c_str();
       ppRenderGbuffers = device.createGraphicsPipeline(g);
+    }
+
+    {
+      GraphicsPipelineInfo g;
+      g.depthStencilState.depthTestEnable = false;
+      g.blendState.enabled = true;
+      g.blendState.modeAlpha = gl::FUNC_ADD;
+      g.blendState.modeRGB = gl::FUNC_ADD;
+      g.blendState.funcSrcAlpha = gl::SRC_ALPHA;
+      g.blendState.funcDstAlpha = gl::ONE_MINUS_SRC_ALPHA;
+      g.blendState.funcSrcRGB = gl::SRC_ALPHA;
+      g.blendState.funcDstRGB = gl::ONE_MINUS_SRC_ALPHA;
+      auto VSSource =
+          shading_overlay.preprocess(PipelineStage::Vertex, nullptr, nullptr);
+      auto PSSource =
+          shading_overlay.preprocess(PipelineStage::Pixel, nullptr, nullptr);
+      g.VSSource = VSSource.c_str();
+      g.PSSource = PSSource.c_str();
+      ppShadingOverlay = device.createGraphicsPipeline(g);
     }
 
     {
@@ -131,6 +152,9 @@ struct Pipelines {
   // [draw_stroke_mask.glsl]
   GraphicsPipeline ppDrawRoundSplatToStrokeMask;
   GraphicsPipeline ppDrawTexturedSplatToStrokeMask;
+
+  // Shading overlay
+  GraphicsPipeline ppShadingOverlay;
 
   // Compose stroke mask onto target
   ComputePipeline ppFlattenStroke;

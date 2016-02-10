@@ -2,6 +2,7 @@
 #version 450
 #include "canvas.glsl"
 #include "rgb_hsv.glsl"
+#include "utils.glsl"
 
 layout(std140, binding = 0) uniform U0 { Canvas canvas; };
 layout(std140, binding = 1) uniform U1 { vec3 lightPos; };
@@ -18,22 +19,12 @@ layout(binding = 1, r32ui) coherent uniform uimage1D imgCurveS;
 layout(binding = 2, r32ui) coherent uniform uimage1D imgCurveV;
 layout(binding = 3, r32ui) coherent uniform uimage1D imgCurveAccum;
 
-vec3 evalNormalMap(vec4 v)
-{
-	return v.xyz * 2.0 - vec3(1.0); 
-}
-
-float shadingTerm(vec4 n)
-{
-	vec3 N = evalNormalMap(n);
-	return dot(N, -lightPos);
-}
 
 void main()
 {
   ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);
   vec4 C = texelFetch(texBaseColor, texelCoords, 0);
-  float S = shadingTerm(texelFetch(texNormals, texelCoords, 0));
+  float S = shadingTerm(texNormals, texelCoords, lightPos);
   int bin = clamp(int(floor(S * CURVE_SAMPLES)), 0, CURVE_SAMPLES);
 
   uvec3 hsv = uvec3(rgb2hsv(C.xyz)*255.0f);

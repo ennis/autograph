@@ -1,7 +1,7 @@
 
 #ifdef _VERTEX_
 out vec2 tex;
-void fullscreenVS()
+void main()
 {
 	float x = -1.0 + float((gl_VertexID & 1) << 2);
 	float y = -1.0 + float((gl_VertexID & 2) << 1);
