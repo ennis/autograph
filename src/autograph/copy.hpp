@@ -12,8 +12,8 @@
 #include "buffer.hpp"
 #include "device.hpp"
 #include "pixel_format.hpp"
-#include "texture.hpp"
 #include "rect.hpp"
+#include "texture.hpp"
 
 namespace ag {
 
@@ -85,6 +85,47 @@ void copySync(Device<D>& device, Texture2D<Pixel, D>& texture,
       Box2D{0, 0, texture.info.dimensions.x, texture.info.dimensions.y},
       gsl::as_writeable_bytes(outPixels));
 }
+
+///////////////////// Texture -> buffer copy operations
+template <typename D, typename Pixel,
+          typename Storage = typename PixelTypeTraits<Pixel>::storage_type>
+void copy(Device<D>& device, Texture1D<Pixel, D>& texture,
+          RawBufferSlice<D>& buffer, const ag::Box1D& region,
+          unsigned mipLevel = 0) {
+  // TODO should check that the Storage and Buffer types are compatible
+  device.backend.copyTextureRegion1D(texture, buffer, region, mipLevel);
+}
+
+template <typename D, typename Pixel,
+          typename Storage = typename PixelTypeTraits<Pixel>::storage_type>
+void copy(Device<D>& device, Texture2D<Pixel, D>& texture,
+          RawBufferSlice<D>& buffer, const ag::Box2D& region,
+          unsigned mipLevel = 0) {
+  // TODO should check that the Storage and Buffer types are compatible
+  device.backend.copyTextureRegion2D(texture, buffer, region, mipLevel);
+}
+
+// copy operation:
+// Texture1D -> Texture1D
+// Texture2D -> Texture2D
+// Texture3D -> Texture3D
+// Texture1D -> Buffer
+// Texture2D -> Buffer
+// Texture3D -> Buffer
+// Buffer -> Texture1D
+// Buffer -> Texture2D
+// Buffer -> Texture3D
+// Buffer -> CPU
+// Buffer -> CPU
+// Buffer -> CPU
+// CPU -> Buffer
+// CPU -> Buffer
+// CPU -> Buffer
+
+// TODO: copy a mip layer to a texture2D? copy a face of a cube map to a
+// texture2D?
+// Copy a texture1D to a scanline of a texture2D?
+// -> need a more generic method
 }
 
 #endif

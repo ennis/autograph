@@ -56,6 +56,43 @@ struct GLPixelFormat {
   int numComponents;
 };
 
+inline GLPixelFormat pixelFormatToGL(PixelFormat format) {
+  switch (format) {
+  case PixelFormat::Uint8:
+    return GLPixelFormat{gl::R8UI, gl::RED_INTEGER, gl::UNSIGNED_BYTE, 1};
+  case PixelFormat::Uint8x2:
+    return GLPixelFormat{gl::RG8UI, gl::RG_INTEGER, gl::UNSIGNED_BYTE, 2};
+  case PixelFormat::Uint8x3:
+    return GLPixelFormat{gl::RGB8UI, gl::RGB_INTEGER, gl::UNSIGNED_BYTE, 3};
+  case PixelFormat::Uint8x4:
+    return GLPixelFormat{gl::RGBA8UI, gl::RGBA_INTEGER, gl::UNSIGNED_BYTE, 4};
+  case PixelFormat::Unorm8:
+    return GLPixelFormat{gl::R8, gl::RED, gl::UNSIGNED_BYTE, 1};
+  case PixelFormat::Unorm8x2:
+    return GLPixelFormat{gl::RG8, gl::RG, gl::UNSIGNED_BYTE, 2};
+  case PixelFormat::Unorm8x3:
+    return GLPixelFormat{gl::RGB8, gl::RGB, gl::UNSIGNED_BYTE, 3};
+  case PixelFormat::Unorm8x4:
+    return GLPixelFormat{gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE, 4};
+  case PixelFormat::Float:
+    return GLPixelFormat{gl::R32F, gl::RED, gl::FLOAT, 1};
+  case PixelFormat::Uint32:
+    return GLPixelFormat{gl::R32UI, gl::RED_INTEGER, gl::UNSIGNED_INT, 1};
+  case PixelFormat::Depth32:
+    return GLPixelFormat{gl::DEPTH_COMPONENT32F, 0, 0, 1}; // TODO
+  case PixelFormat::Depth24_Stencil8:
+    return GLPixelFormat{gl::DEPTH24_STENCIL8, 0, 0, 1};
+  case PixelFormat::Snorm10x3_1x2: // Oops, does not exist in OpenGL
+    return GLPixelFormat{gl::RGB10_A2, gl::RGBA, gl::UNSIGNED_INT_10_10_10_2,
+                         4};
+  case PixelFormat::Unorm10x3_1x2:
+    return GLPixelFormat{gl::RGB10_A2, gl::RGBA, gl::UNSIGNED_INT_10_10_10_2,
+                         4};
+  default:
+    failWith("TODO");
+  }
+}
+
 // Wrapper to use GLuint as a unique_ptr handle type
 // http://stackoverflow.com/questions/6265288/unique-ptr-custom-storage-type-example/6272139#6272139
 // TODO move this in a shared header
@@ -342,6 +379,28 @@ public:
                            float depth) {
     gl::ClearTexImage(tex.handle.get().id, 0, gl::DEPTH_COMPONENT, gl::FLOAT,
                       &depth);
+  }
+
+  ///////////////////// Copy tex region to buffer
+  template <typename Pixel>
+  void copyTextureRegion1D(Texture1D<Pixel, D>& src, RawBufferSlice<D>& dest,
+                           const ag::Box1D& region, unsigned mipLevel) {
+    const auto& gl_fmt = pixelFormatToGL(src.info.format);
+    gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, dest.handle->buf_obj);
+    gl::GetTextureSubImage(src.handle.get().id, mipLevel, region.xmin, 0, 0,
+                           region.width(), 1, 1, gl_fmt.externalFormat,
+                           gl_fmt.type, dest.byteSize, (void*)dest.offset);
+  }
+
+  template <typename Pixel>
+  void copyTextureRegion2D(Texture2D<Pixel, D>& src, RawBufferSlice<D>& dest,
+                           const ag::Box2D& region, unsigned mipLevel) {
+    const auto& gl_fmt = pixelFormatToGL(src.info.format);
+    gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, dest.handle->buf_obj);
+    gl::GetTextureSubImage(src.handle.get().id, mipLevel, region.xmin,
+                           region.ymin, 0, region.width(), region.height(), 1,
+                           gl_fmt.externalFormat, gl_fmt.type, dest.byteSize,
+                           (void*)dest.offset);
   }
 
   ///////////////////// Texture upload

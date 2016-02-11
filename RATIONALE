@@ -723,6 +723,14 @@ Painter:
 
 Brush(draw_pipeline, compose_pipeline, parameters)
 
+Zoom
+struct CanvasView:
+	- getTransform
+	- zoomLevel
+	- position on screen
+	- ref to canvas?
+	- transform input position
+
 
 
 Feature: primitive types encoded in the vertex buffer type 

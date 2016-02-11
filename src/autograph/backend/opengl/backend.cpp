@@ -101,40 +101,6 @@ GLenum primitiveTypeToGLenum(PrimitiveType primitiveType) {
   }
 }
 
-GLPixelFormat pixelFormatToGL(PixelFormat format) {
-  switch (format) {
-  case PixelFormat::Uint8:
-    return GLPixelFormat{gl::R8UI, gl::RED_INTEGER, gl::UNSIGNED_BYTE, 1};
-  case PixelFormat::Uint8x2:
-    return GLPixelFormat{gl::RG8UI, gl::RG_INTEGER, gl::UNSIGNED_BYTE, 2};
-  case PixelFormat::Uint8x3:
-    return GLPixelFormat{gl::RGB8UI, gl::RGB_INTEGER, gl::UNSIGNED_BYTE, 3};
-  case PixelFormat::Uint8x4:
-    return GLPixelFormat{gl::RGBA8UI, gl::RGBA_INTEGER, gl::UNSIGNED_BYTE, 4};
-  case PixelFormat::Unorm8:
-    return GLPixelFormat{gl::R8, gl::RED, gl::UNSIGNED_BYTE, 1};
-  case PixelFormat::Unorm8x2:
-    return GLPixelFormat{gl::RG8, gl::RG, gl::UNSIGNED_BYTE, 2};
-  case PixelFormat::Unorm8x3:
-    return GLPixelFormat{gl::RGB8, gl::RGB, gl::UNSIGNED_BYTE, 3};
-  case PixelFormat::Unorm8x4:
-    return GLPixelFormat{gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE, 4};
-  case PixelFormat::Float:
-    return GLPixelFormat{gl::R32F, gl::RED, gl::FLOAT, 1};
-  case PixelFormat::Uint32:
-    return GLPixelFormat{gl::R32UI, gl::RED_INTEGER, gl::UNSIGNED_INT, 1};
-  case PixelFormat::Depth32:
-    return GLPixelFormat{gl::DEPTH_COMPONENT32F, 0, 0, 1}; // TODO
-  case PixelFormat::Depth24_Stencil8:
-    return GLPixelFormat{gl::DEPTH24_STENCIL8, 0, 0, 1};
-  case PixelFormat::Snorm10x3_1x2:  // Oops, does not exist in OpenGL
-    return GLPixelFormat{gl::RGB10_A2, gl::RGBA, gl::UNSIGNED_INT_10_10_10_2, 4};
-  case PixelFormat::Unorm10x3_1x2:
-    return GLPixelFormat{gl::RGB10_A2, gl::RGBA, gl::UNSIGNED_INT_10_10_10_2, 4};
-  default:
-    failWith("TODO");
-  }
-}
 
 GLuint compileShader(GLenum stage, const char* source, std::ostream& infoLog) {
   GLuint obj = gl::CreateShader(stage);
