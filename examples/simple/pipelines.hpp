@@ -44,6 +44,8 @@ struct Pipelines {
         loadShaderSource(samplesRoot / "simple/glsl/shading_curve.glsl");
     ShaderSource shading_overlay =
         loadShaderSource(samplesRoot / "simple/glsl/shading_overlay.glsl");
+	ShaderSource smudge =
+		loadShaderSource(samplesRoot / "simple/glsl/smudge.glsl");
 
     {
       GraphicsPipelineInfo g;
@@ -115,6 +117,15 @@ struct Pipelines {
       ppFlattenStroke = device.createComputePipeline(c);
     }
 
+	{
+		ComputePipelineInfo c;
+		const char *defines[] = { "TOOL_BASE_COLOR_UV" };
+		auto CSSource =
+			smudge.preprocess(PipelineStage::Compute, defines, nullptr);
+		c.CSSource = CSSource.c_str();
+		ppSmudge = device.createComputePipeline(c);
+	}
+
     {
       ComputePipelineInfo c;
       auto CSSource =
@@ -158,6 +169,7 @@ struct Pipelines {
 
   // Compose stroke mask onto target
   ComputePipeline ppFlattenStroke;
+  ComputePipeline ppSmudge;
 
   // Evaluate final image
   ComputePipeline ppEvaluate;

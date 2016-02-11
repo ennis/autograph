@@ -773,3 +773,5 @@ _____________________________
 Some variables make sense only when drawing a stroke
 Ideally, they should have coroutine scope.
 Instead: create object that holds all this temporary state.
+
+A paint tool is a coroutine that waits on input and draw events
