@@ -43,26 +43,6 @@ int divRoundUp(int numToRound, int multiple) {
   return (numToRound + multiple - 1) / multiple;
 }
 
-// Stroke task
-// start on canvas touch event
-// wait for canvas event
-
-/*[[coroutine]]
-void strokeTask(Device& device, Painter& painter, Canvas& canvas,
-Texture2D<RGBA8>& texStrokeMask, uvec2 position)
-{
-        BrushPath path;
-
-        while (last_event is not mouse released)
-        {
-                auto ev = await(...);	// if there is input available, process it, otherwise, yield
-                ag::draw(*device, ...);
-				//...
-        }
-
-		// last event:
-}*/
-
 namespace fs = boost::filesystem;
 
 class Painter : public samples::GLSample<Painter> {
@@ -122,8 +102,7 @@ public:
                     (unsigned)divRoundUp(rect.width(), kCSThreadGroupSizeX),
                     (unsigned)divRoundUp(rect.height(), kCSThreadGroupSizeY),
                     1u},
-                canvasData,
-                std::forward<Resources>(resources)...);
+                canvasData, std::forward<Resources>(resources)...);
   }
 
   // load brush tips from img directories
@@ -223,11 +202,10 @@ public:
   }
 
   void onSmudgePointerEvent(const BrushProperties& props, unsigned x,
-	  unsigned y) {
-	  brushPath.addPointerEvent(PointerEvent{ x, y, 1.0f }, props,
-		  [this, props](auto splat) {
-		  this->smudge(*canvas, props, splat);
-	  });
+                            unsigned y) {
+    brushPath.addPointerEvent(
+        PointerEvent{x, y, 1.0f}, props,
+        [this, props](auto splat) { this->smudge(*canvas, props, splat); });
   }
 
   void setupInput() {
@@ -236,50 +214,47 @@ public:
         [this](auto ev) { fmt::print("Key event: {}\n", (int)ev.code); });
     // on mouse button clicks
     ui->canvasMouseButtons.subscribe([this](auto ev) {
-		if (ui->activeTool == Tool::Brush) {
-			if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-				ev.state == input::MouseButtonState::Pressed) {
-				isMakingStroke = true;   // go into stroke mode
-				brushPath = BrushPath(); // reset brush path
-				ag::clear(*device, canvas->texStrokeMask,
-					ag::ClearColor{ 0.0f, 0.0f, 0.0f, 1.0f });
-				unsigned x, y;
-				ui->getPointerPosition(x, y);
-				this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
-				// beginStroke();
-			}
-			else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-				ev.state == input::MouseButtonState::Released &&
-				isMakingStroke) {
-				unsigned x, y;
-				ui->getPointerPosition(x, y);
-				auto brushProps = this->brushPropsFromUi();
-				this->onBrushPointerEvent(brushProps, x, y);
-				this->applyStroke(*canvas, brushProps);
-				isMakingStroke = false; // end stroke mode
-			}
-		}
-		else if (ui->activeTool == Tool::Smudge) {
-			if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-				ev.state == input::MouseButtonState::Pressed) {
-				isMakingStroke = true;   // go into stroke mode
-				brushPath = BrushPath(); // reset brush path
-				ag::clear(*device, texSmudgeFootprint,
-					ag::ClearColor{ 0.0f, 0.0f, 0.0f, 0.0f });
-				unsigned x, y;
-				ui->getPointerPosition(x, y);
-				this->onSmudgePointerEvent(this->brushPropsFromUi(), x, y);
-			}
-			else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-				ev.state == input::MouseButtonState::Released &&
-				isMakingStroke) {
-				unsigned x, y;
-				ui->getPointerPosition(x, y);
-				auto brushProps = this->brushPropsFromUi();
-				this->onSmudgePointerEvent(brushProps, x, y);
-				isMakingStroke = false; // end stroke mode
-			}
-		}
+      if (ui->activeTool == Tool::Brush) {
+        if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+            ev.state == input::MouseButtonState::Pressed) {
+          isMakingStroke = true;   // go into stroke mode
+          brushPath = BrushPath(); // reset brush path
+          ag::clear(*device, canvas->texStrokeMask,
+                    ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
+          // beginStroke();
+        } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+                   ev.state == input::MouseButtonState::Released &&
+                   isMakingStroke) {
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          auto brushProps = this->brushPropsFromUi();
+          this->onBrushPointerEvent(brushProps, x, y);
+          this->applyStroke(*canvas, brushProps);
+          isMakingStroke = false; // end stroke mode
+        }
+      } else if (ui->activeTool == Tool::Smudge) {
+        if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+            ev.state == input::MouseButtonState::Pressed) {
+          isMakingStroke = true;   // go into stroke mode
+          brushPath = BrushPath(); // reset brush path
+          ag::clear(*device, texSmudgeFootprint,
+                    ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          this->onSmudgePointerEvent(this->brushPropsFromUi(), x, y);
+        } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+                   ev.state == input::MouseButtonState::Released &&
+                   isMakingStroke) {
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          auto brushProps = this->brushPropsFromUi();
+          this->onSmudgePointerEvent(brushProps, x, y);
+          isMakingStroke = false; // end stroke mode
+        }
+      }
     });
 
     // on mouse move
@@ -290,8 +265,8 @@ public:
         this->onBrushPointerEvent(this->brushPropsFromUi(), ev.positionX,
                                   ev.positionY);
       } else if (isMakingStroke == true && ui->activeTool == Tool::Smudge) {
-		  this->onSmudgePointerEvent(this->brushPropsFromUi(), ev.positionX,
-			  ev.positionY);
+        this->onSmudgePointerEvent(this->brushPropsFromUi(), ev.positionX,
+                                   ev.positionY);
       }
     });
   }
@@ -333,8 +308,8 @@ public:
     auto transform = getSplatTransform(tipWidth, tipHeight, splat);
     auto topleft = transform * glm::vec3{0.0f, 0.0f, 1.0f};
     auto bottomright = transform * glm::vec3{1.0f, 1.0f, 1.0f};
-    return ag::Box2D{(unsigned)topleft.x, (unsigned)topleft.y, (unsigned)bottomright.x,
-                     (unsigned)bottomright.y};
+    return ag::Box2D{(unsigned)topleft.x, (unsigned)topleft.y,
+                     (unsigned)bottomright.x, (unsigned)bottomright.y};
   }
 
   // smudge tool operation:
@@ -351,18 +326,21 @@ public:
       footprintBox = getSplatFootprint(splat.width, splat.width, splat);
 
     struct SmudgeUniforms {
-        glm::uvec2 origin;
-        glm::uvec2 size;
-        float opacity;
+      glm::uvec2 origin;
+      glm::uvec2 size;
+      float opacity;
     };
 
-    SmudgeUniforms u { {footprintBox.xmin, footprintBox.ymin}, {footprintBox.width(), footprintBox.height()}, ui->strokeOpacity};
+    SmudgeUniforms u{{footprintBox.xmin, footprintBox.ymin},
+                     {footprintBox.width(), footprintBox.height()},
+                     ui->strokeOpacity};
 
     if (ui->brushTip == BrushTip::Textured)
-    applyComputeShaderOverRect(canvas, footprintBox, pipelines->ppSmudge,
-                               canvasData, RWTextureUnit(0, canvas.texBaseColorUV),
-                        RWTextureUnit(1, texSmudgeFootprint), u,
-                               ui->brushTipTextures[ui->selectedBrushTip].tex);
+      applyComputeShaderOverRect(
+          canvas, footprintBox, pipelines->ppSmudge, canvasData,
+          RWTextureUnit(0, canvas.texBaseColorUV),
+          RWTextureUnit(1, texSmudgeFootprint), u,
+          ui->brushTipTextures[ui->selectedBrushTip].tex);
   }
 
   void drawBrushSplat(Canvas& canvas, const BrushProperties& brushProps,
