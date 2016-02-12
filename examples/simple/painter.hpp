@@ -122,7 +122,7 @@ public:
                     (unsigned)divRoundUp(rect.width(), kCSThreadGroupSizeX),
                     (unsigned)divRoundUp(rect.height(), kCSThreadGroupSizeY),
                     1u},
-                canvasData, glm::uvec2{rect.width(), rect.height()},
+                canvasData,
                 std::forward<Resources>(resources)...);
   }
 
@@ -333,8 +333,8 @@ public:
     auto transform = getSplatTransform(tipWidth, tipHeight, splat);
     auto topleft = transform * glm::vec3{0.0f, 0.0f, 1.0f};
     auto bottomright = transform * glm::vec3{1.0f, 1.0f, 1.0f};
-    return ag::Box2D{(unsigned)topleft.x, (unsigned)bottomright.x,
-                     (unsigned)topleft.y, (unsigned)bottomright.y};
+    return ag::Box2D{(unsigned)topleft.x, (unsigned)topleft.y, (unsigned)bottomright.x,
+                     (unsigned)bottomright.y};
   }
 
   // smudge tool operation:
@@ -350,10 +350,19 @@ public:
     } else
       footprintBox = getSplatFootprint(splat.width, splat.width, splat);
 
+    struct SmudgeUniforms {
+        glm::uvec2 origin;
+        glm::uvec2 size;
+        float opacity;
+    };
+
+    SmudgeUniforms u { {footprintBox.xmin, footprintBox.ymin}, {footprintBox.width(), footprintBox.height()}, ui->strokeOpacity};
+
+    if (ui->brushTip == BrushTip::Textured)
     applyComputeShaderOverRect(canvas, footprintBox, pipelines->ppSmudge,
-                               canvasData, RWTextureUnit(0, canvas.texBaseColorUV), 
-								RWTextureUnit(1, texSmudgeFootprint),
-                               ui->strokeOpacity);
+                               canvasData, RWTextureUnit(0, canvas.texBaseColorUV),
+                        RWTextureUnit(1, texSmudgeFootprint), u,
+                               ui->brushTipTextures[ui->selectedBrushTip].tex);
   }
 
   void drawBrushSplat(Canvas& canvas, const BrushProperties& brushProps,
