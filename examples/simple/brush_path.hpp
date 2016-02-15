@@ -43,7 +43,7 @@ template <typename T> T evalJitter(T ref, T jitter) {
   return ref + glm::linearRand(-jitter, jitter);
 }
 
-SplatProperties evalSplat(const BrushProperties &props, glm::vec2 center) {
+SplatProperties evalSplat(const BrushProperties& props, glm::vec2 center) {
   SplatProperties ret;
   ret.center = center;
   ret.color[0] = props.color[0];
@@ -62,7 +62,7 @@ SplatProperties evalSplat(const BrushProperties &props, glm::vec2 center) {
 struct BrushPath {
   // Call this when the mouse has moved
   template <typename F>
-  void addPointerEvent(const PointerEvent &ev, const BrushProperties &props,
+  void addPointerEvent(const PointerEvent& ev, const BrushProperties& props,
                        F f) {
     // eval spacing
     auto spacing = evalJitter(props.spacing, props.spacingJitter);

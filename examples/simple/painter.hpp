@@ -62,9 +62,12 @@ public:
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
     ui = std::make_unique<Ui>(gl.getWindow(), *input);
     samples::Vertex2D vboQuadData[] = {
-        {-1.0f, -1.0f, 0.0f, 0.0f}, {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, -1.0f, 1.0f, 0.0f},  {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, 1.0f, 1.0f, 1.0f},   {1.0f, -1.0f, 1.0f, 0.0f},
+        {-1.0f, -1.0f, 0.0f, 0.0f},
+        {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, -1.0f, 1.0f, 0.0f},
+        {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, 1.0f, 1.0f, 1.0f},
+        {1.0f, -1.0f, 1.0f, 0.0f},
     };
     vboQuad = device->createBuffer(vboQuadData);
     surfOut = device->getOutputSurface();
@@ -88,8 +91,8 @@ public:
         ag::TextureUnit(3, canvas.texBaseColorUV, samLinearClamp),
         ag::TextureUnit(4, canvas.texHSVOffsetUV, samLinearClamp),
         ag::TextureUnit(5, canvas.texBlurParametersUV, samLinearClamp),
-                ag::TextureUnit(6, canvas.texNormals, samLinearClamp),
-                ag::TextureUnit(7, canvas.texStencil, samLinearClamp),
+        ag::TextureUnit(6, canvas.texNormals, samLinearClamp),
+        ag::TextureUnit(7, canvas.texStencil, samLinearClamp),
         ag::RWTextureUnit(0, out), std::forward<Resources>(resources)...);
   }
 
@@ -157,17 +160,17 @@ public:
         uCanvasData, GL::kUniformBufferOffsetAlignment);
   }
 
-  void baseColorToShadingOffset(Canvas& canvas)
-  {
-      auto lightPos = glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
-      ag::compute(
-          *device, pipelines->ppBaseColorToOffset,
-          ag::ThreadGroupCount{
-              (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-              (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
-          canvasData, lightPos,
-          canvas.texShadingProfileLN,
-                  canvas.texBaseColorUV , canvas.texNormals, canvas.texStencil, ag::RWTextureUnit(0, canvas.texHSVOffsetUV));
+  void baseColorToShadingOffset(Canvas& canvas) {
+    auto lightPos =
+        glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
+    ag::compute(*device, pipelines->ppBaseColorToOffset,
+                ag::ThreadGroupCount{
+                    (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
+                    (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY),
+                    1u},
+                canvasData, lightPos, canvas.texShadingProfileLN,
+                canvas.texBaseColorUV, canvas.texNormals, canvas.texStencil,
+                ag::RWTextureUnit(0, canvas.texHSVOffsetUV));
   }
 
   void render() {
@@ -187,26 +190,29 @@ public:
     if (ui->showReferenceShading)
       drawShadingOverlay(*canvas);
     if (ui->showHSVOffset)
-        copyTex(canvas->texHSVOffsetUV, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
+      copyTex(canvas->texHSVOffsetUV, surfOut, width, height,
+              glm::vec2{0.0f, 0.0f}, 1.0f);
     if (ui->showBaseColor)
-        copyTex(canvas->texBaseColorUV, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
+      copyTex(canvas->texBaseColorUV, surfOut, width, height,
+              glm::vec2{0.0f, 0.0f}, 1.0f);
     ui->render(*device);
   }
 
   void renderCanvas() {
-      auto lightPos = glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
+    auto lightPos =
+        glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
     ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     if (isMakingStroke && ui->activeTool == Tool::Brush) {
       auto brushProps = this->brushPropsFromUi();
       // preview canvas
       previewCanvas(*canvas, texEvalCanvas,
-                    pipelines->ppEvaluatePreviewBaseColorUV, canvasData, lightPos,
-                    canvas->texStrokeMask,
+                    pipelines->ppEvaluatePreviewBaseColorUV, canvasData,
+                    lightPos, canvas->texStrokeMask,
                     glm::vec4{brushProps.color[0], brushProps.color[1],
                               brushProps.color[2], brushProps.opacity});
     } else
-      previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData, lightPos,
-                    canvas->texStrokeMask);
+      previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
+                    lightPos, canvas->texStrokeMask);
     copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f},
             1.0f);
     copyTex(texEvalCanvas, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
@@ -221,11 +227,11 @@ public:
   }
 
   void onSmudgePointerEvent(const BrushProperties& props, unsigned x,
-          unsigned y, bool first) {
-	  brushPath.addPointerEvent(PointerEvent{ x, y, 1.0f }, props,
-                  [this, props, first](auto splat) {
-                  this->smudge(*canvas, props, splat, first);
-	  });
+                            unsigned y, bool first) {
+    brushPath.addPointerEvent(PointerEvent{x, y, 1.0f}, props,
+                              [this, props, first](auto splat) {
+                                this->smudge(*canvas, props, splat, first);
+                              });
   }
 
   void setupInput() {
@@ -234,54 +240,51 @@ public:
         [this](auto ev) { fmt::print("Key event: {}\n", (int)ev.code); });
     // on mouse button clicks
     ui->canvasMouseButtons.subscribe([this](auto ev) {
-		if (ui->activeTool == Tool::Brush) {
-			if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-				ev.state == input::MouseButtonState::Pressed) {
-				isMakingStroke = true;   // go into stroke mode
-				brushPath = BrushPath(); // reset brush path
-				ag::clear(*device, canvas->texStrokeMask,
-					ag::ClearColor{ 0.0f, 0.0f, 0.0f, 1.0f });
-				unsigned x, y;
-				ui->getPointerPosition(x, y);
-				this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
-				// beginStroke();
-			}
-			else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-				ev.state == input::MouseButtonState::Released &&
-				isMakingStroke) {
-				unsigned x, y;
-				ui->getPointerPosition(x, y);
-				auto brushProps = this->brushPropsFromUi();
-				this->onBrushPointerEvent(brushProps, x, y);
-				this->applyStroke(*canvas, brushProps);
-				isMakingStroke = false; // end stroke mode
-                                this->computeHistograms(*canvas);
-                                this->baseColorToShadingOffset(*canvas);
-			}
-		}
-		else if (ui->activeTool == Tool::Smudge) {
-			if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-				ev.state == input::MouseButtonState::Pressed) {
-				isMakingStroke = true;   // go into stroke mode
-				brushPath = BrushPath(); // reset brush path
-				ag::clear(*device, texSmudgeFootprint,
-					ag::ClearColor{ 0.0f, 0.0f, 0.0f, 0.0f });
-				unsigned x, y;
-				ui->getPointerPosition(x, y);
-                                this->onSmudgePointerEvent(this->brushPropsFromUi(), x, y, true);
-			}
-			else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-				ev.state == input::MouseButtonState::Released &&
-				isMakingStroke) {
-				unsigned x, y;
-				ui->getPointerPosition(x, y);
-				auto brushProps = this->brushPropsFromUi();
-                                this->onSmudgePointerEvent(brushProps, x, y, false);
-				isMakingStroke = false; // end stroke mode
-                                this->computeHistograms(*canvas);
-                                this->baseColorToShadingOffset(*canvas);
-			}
-		}
+      if (ui->activeTool == Tool::Brush) {
+        if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+            ev.state == input::MouseButtonState::Pressed) {
+          isMakingStroke = true;   // go into stroke mode
+          brushPath = BrushPath(); // reset brush path
+          ag::clear(*device, canvas->texStrokeMask,
+                    ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
+          // beginStroke();
+        } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+                   ev.state == input::MouseButtonState::Released &&
+                   isMakingStroke) {
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          auto brushProps = this->brushPropsFromUi();
+          this->onBrushPointerEvent(brushProps, x, y);
+          this->applyStroke(*canvas, brushProps);
+          isMakingStroke = false; // end stroke mode
+          this->computeHistograms(*canvas);
+          this->baseColorToShadingOffset(*canvas);
+        }
+      } else if (ui->activeTool == Tool::Smudge) {
+        if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+            ev.state == input::MouseButtonState::Pressed) {
+          isMakingStroke = true;   // go into stroke mode
+          brushPath = BrushPath(); // reset brush path
+          ag::clear(*device, texSmudgeFootprint,
+                    ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          this->onSmudgePointerEvent(this->brushPropsFromUi(), x, y, true);
+        } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+                   ev.state == input::MouseButtonState::Released &&
+                   isMakingStroke) {
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          auto brushProps = this->brushPropsFromUi();
+          this->onSmudgePointerEvent(brushProps, x, y, false);
+          isMakingStroke = false; // end stroke mode
+          this->computeHistograms(*canvas);
+          this->baseColorToShadingOffset(*canvas);
+        }
+      }
     });
 
     // on mouse move
@@ -292,8 +295,8 @@ public:
         this->onBrushPointerEvent(this->brushPropsFromUi(), ev.positionX,
                                   ev.positionY);
       } else if (isMakingStroke == true && ui->activeTool == Tool::Smudge) {
-		  this->onSmudgePointerEvent(this->brushPropsFromUi(), ev.positionX,
-                          ev.positionY, false);
+        this->onSmudgePointerEvent(this->brushPropsFromUi(), ev.positionX,
+                                   ev.positionY, false);
       }
     });
   }
@@ -358,7 +361,9 @@ public:
       float opacity;
     };
 
-    SmudgeUniforms u { {footprintBox.xmin, footprintBox.ymin}, {footprintBox.width(), footprintBox.height()}, first ? 0.0f : ui->strokeOpacity};
+    SmudgeUniforms u{{footprintBox.xmin, footprintBox.ymin},
+                     {footprintBox.width(), footprintBox.height()},
+                     first ? 0.0f : ui->strokeOpacity};
 
     if (ui->brushTip == BrushTip::Textured)
       applyComputeShaderOverRect(
@@ -479,8 +484,9 @@ public:
     }
 
     // write back
-    ag::copy(*device, gsl::span<const ag::RGBA8>((const ag::RGBA8*)HSVCurve.data(), HSVCurve.size()), canvas.texShadingProfileLN);
-
+    ag::copy(*device, gsl::span<const ag::RGBA8>(
+                          (const ag::RGBA8*)HSVCurve.data(), HSVCurve.size()),
+             canvas.texShadingProfileLN);
   }
 
   void drawShadingOverlay(Canvas& canvas) {

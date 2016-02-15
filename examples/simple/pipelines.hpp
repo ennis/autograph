@@ -28,7 +28,7 @@ struct Splat {
 
 struct Pipelines {
 
-  Pipelines(Device &device, const filesystem::path &samplesRoot) {
+  Pipelines(Device& device, const filesystem::path& samplesRoot) {
     using namespace ag::opengl;
     using namespace shaderpp;
 
@@ -44,10 +44,10 @@ struct Pipelines {
         loadShaderSource(samplesRoot / "simple/glsl/shading_curve.glsl");
     ShaderSource shading_overlay =
         loadShaderSource(samplesRoot / "simple/glsl/shading_overlay.glsl");
-	ShaderSource smudge =
-		loadShaderSource(samplesRoot / "simple/glsl/smudge.glsl");
-        ShaderSource base_color_to_offset =
-                loadShaderSource(samplesRoot / "simple/glsl/base_color_to_offset.glsl");
+    ShaderSource smudge =
+        loadShaderSource(samplesRoot / "simple/glsl/smudge.glsl");
+    ShaderSource base_color_to_offset =
+        loadShaderSource(samplesRoot / "simple/glsl/base_color_to_offset.glsl");
 
     {
       GraphicsPipelineInfo g;
@@ -67,7 +67,7 @@ struct Pipelines {
       g.PSSource = PSSource.c_str();
       ppDrawRoundSplatToStrokeMask = device.createGraphicsPipeline(g);
 
-      const char *defines[] = {"TEXTURED"};
+      const char* defines[] = {"TEXTURED"};
       VSSource =
           draw_stroke_mask.preprocess(PipelineStage::Vertex, defines, nullptr);
       PSSource =
@@ -112,21 +112,21 @@ struct Pipelines {
 
     {
       ComputePipelineInfo c;
-      const char *defines[] = {"TOOL_BASE_COLOR_UV"};
+      const char* defines[] = {"TOOL_BASE_COLOR_UV"};
       auto CSSource =
           flatten_stroke.preprocess(PipelineStage::Compute, defines, nullptr);
       c.CSSource = CSSource.c_str();
       ppFlattenStroke = device.createComputePipeline(c);
     }
 
-	{
-		ComputePipelineInfo c;
-		const char *defines[] = { "TOOL_BASE_COLOR_UV" };
-		auto CSSource =
-			smudge.preprocess(PipelineStage::Compute, defines, nullptr);
-		c.CSSource = CSSource.c_str();
-		ppSmudge = device.createComputePipeline(c);
-	}
+    {
+      ComputePipelineInfo c;
+      const char* defines[] = {"TOOL_BASE_COLOR_UV"};
+      auto CSSource =
+          smudge.preprocess(PipelineStage::Compute, defines, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppSmudge = device.createComputePipeline(c);
+    }
 
     {
       ComputePipelineInfo c;
@@ -135,7 +135,7 @@ struct Pipelines {
       c.CSSource = CSSource.c_str();
       ppEvaluate = device.createComputePipeline(c);
 
-      const char *defines[] = {"PREVIEW_BASE_COLOR_UV"};
+      const char* defines[] = {"PREVIEW_BASE_COLOR_UV"};
       CSSource = evaluate.preprocess(PipelineStage::Compute, defines, nullptr);
       c.CSSource = CSSource.c_str();
       ppEvaluatePreviewBaseColorUV = device.createComputePipeline(c);
@@ -149,25 +149,25 @@ struct Pipelines {
       ppComputeShadingCurveHSV = device.createComputePipeline(c);
     }
 
-        {
-            ComputePipelineInfo c;
-            auto CSSource =
-                base_color_to_offset.preprocess(PipelineStage::Compute, nullptr, nullptr);
-            c.CSSource = CSSource.c_str();
-            ppBaseColorToOffset = device.createComputePipeline(c);
-          }
+    {
+      ComputePipelineInfo c;
+      auto CSSource = base_color_to_offset.preprocess(PipelineStage::Compute,
+                                                      nullptr, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppBaseColorToOffset = device.createComputePipeline(c);
+    }
   }
 
-  // Render the normal map 
+  // Render the normal map
   // [normal_map.glsl]
   GraphicsPipeline ppRenderGbuffers;
 
   // Compute the average shading curve
   // [shading_curve.glsl]
-  ComputePipeline ppComputeShadingCurveHSV;  
+  ComputePipeline ppComputeShadingCurveHSV;
 
   // Compute the lit-sphere
-  //ComputePipeline ppComputeLitSphere;
+  // ComputePipeline ppComputeLitSphere;
 
   // Draw stroke mask
   // [draw_stroke_mask.glsl]
@@ -191,7 +191,7 @@ struct Pipelines {
   GraphicsPipeline ppCopyTexWithMask;
 
 private:
-  shaderpp::ShaderSource loadShaderSource(const filesystem::path &path) {
+  shaderpp::ShaderSource loadShaderSource(const filesystem::path& path) {
     return shaderpp::ShaderSource(path.str().c_str());
   }
 };

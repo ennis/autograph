@@ -101,7 +101,6 @@ GLenum primitiveTypeToGLenum(PrimitiveType primitiveType) {
   }
 }
 
-
 GLuint compileShader(GLenum stage, const char* source, std::ostream& infoLog) {
   GLuint obj = gl::CreateShader(stage);
   const char* shaderSources[1] = {source};

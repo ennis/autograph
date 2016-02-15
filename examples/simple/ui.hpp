@@ -22,12 +22,12 @@ namespace rxsub = rxcpp::rxsub;
 // dummy event type
 struct event_t {};
 template <typename T> struct binding {
-  binding(const T &initial_value)
+  binding(const T& initial_value)
       : behavior(initial_value), subscriber(behavior.get_subscriber()) {}
 
   auto observable() const { return behavior.get_observable(); }
 
-  void set(const T &value) { subscriber.on_next(value); }
+  void set(const T& value) { subscriber.on_next(value); }
 
   T value() const { return behavior.get_value(); }
 
@@ -50,11 +50,13 @@ struct BrushTipTexture {
 // ImGui-based user interface
 class Ui {
 public:
-  Ui(GLFWwindow *window, input::Input &input_) : input(input_), histH(kShadingCurveSamplesSize), histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize) {
+  Ui(GLFWwindow* window, input::Input& input_)
+      : input(input_), histH(kShadingCurveSamplesSize),
+        histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize) {
 
-      std::fill(begin(histH), end(histH), 0.0f);
-      std::fill(begin(histS), end(histS), 0.0f);
-      std::fill(begin(histV), end(histV), 0.0f);
+    std::fill(begin(histH), end(histH), 0.0f);
+    std::fill(begin(histS), end(histS), 0.0f);
+    std::fill(begin(histV), end(histV), 0.0f);
     // do not register callbacks
     ImGui_ImplGlfwGL3_Init(window, false);
 
@@ -73,7 +75,7 @@ public:
     });
   }
 
-  void render(Device &device) {
+  void render(Device& device) {
     ImGui_ImplGlfwGL3_NewFrame();
     ImGui::ColorEdit3("Stroke color", strokeColor.data());
     ImGui::SliderFloat2("Light pos", lightPosXY.data(), -1.5, 1.5);
@@ -104,7 +106,7 @@ public:
       break;
     }
 
-    const char *toolNames[] = {"None", "Brush", "Blur", "Smudge", "Select"};
+    const char* toolNames[] = {"None", "Brush", "Blur", "Smudge", "Select"};
     ImGui::Combo("Tool", &nActiveTool, toolNames, 5);
 
     switch (nActiveTool) {
@@ -135,7 +137,7 @@ public:
       break;
     }
 
-    const char *tipNames[] = {"Round", "Textured"};
+    const char* tipNames[] = {"Round", "Textured"};
     ImGui::Combo("Brush tip", &nBrushTip, tipNames, 2);
 
     switch (nBrushTip) {
@@ -148,9 +150,9 @@ public:
     }
 
     if (!brushTipTextures.empty()) {
-      std::vector<const char *> tipTexNames;
+      std::vector<const char*> tipTexNames;
       tipTexNames.reserve(brushTipTextures.size());
-      for (const auto &tip : brushTipTextures)
+      for (const auto& tip : brushTipTextures)
         tipTexNames.push_back(tip.name.c_str());
       ImGui::Combo("Tip texture", &selectedBrushTip, tipTexNames.data(),
                    tipTexNames.size());
@@ -242,13 +244,13 @@ public:
   rxcpp::observable<input::MousePointerEvent> canvasMousePointer;
   //
 
-  void getPointerPosition(unsigned &x, unsigned &y) const {
+  void getPointerPosition(unsigned& x, unsigned& y) const {
     x = mouseX;
     y = mouseY;
   }
 
 private:
-  input::Input &input;
+  input::Input& input;
   bool lastMouseButtonOnGUI;
   unsigned mouseX;
   unsigned mouseY;

@@ -24,7 +24,7 @@ constexpr unsigned kShadingCurveSamplesSize = 256;
 
 struct Canvas {
 
-  Canvas(Device &device, unsigned width_, unsigned height_)
+  Canvas(Device& device, unsigned width_, unsigned height_)
       : width(width_), height(height_) {
 
     texStrokeMask = device.createTexture2D<ag::R8>(glm::uvec2{width, height});
@@ -42,7 +42,8 @@ struct Canvas {
               ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});*/
 
     texDepth = device.createTexture2D<ag::Depth32>(glm::uvec2{width, height});
-    texNormals = device.createTexture2D<ag::Unorm10x3_1x2>(glm::uvec2{width, height});
+    texNormals =
+        device.createTexture2D<ag::Unorm10x3_1x2>(glm::uvec2{width, height});
     texStencil = device.createTexture2D<ag::R8>(glm::uvec2{width, height});
 
     texShadingProfileLN =
@@ -75,7 +76,7 @@ struct Canvas {
   Texture2D<ag::Unorm10x3_1x2> texNormals;
   Texture2D<ag::R8> texStencil;
 
-  // 
+  //
   Texture1D<ag::R32UI> texHistH;
   Texture1D<ag::R32UI> texHistS;
   Texture1D<ag::R32UI> texHistV;
