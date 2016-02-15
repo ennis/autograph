@@ -374,7 +374,7 @@ TOP PRIORITY ITEMS
 * Force debug breakpoint
 * Break on shader compilation error
 * CRTP for the backend
-* Bikeshedding: rename Backend to Driver
+* Bikeshedding: rename Backend to Driver?
 * Bikeshedding: snake_case names?
 * Simplify the passing of handles to backend functions
 * pushDataToUploadBuffer is very poorly named
@@ -383,6 +383,7 @@ TOP PRIORITY ITEMS
 * Binders: scissor rectangle
 * replace associated consts with static constexpr **functions**
 *?? Simpler pipeline creation (for OpenGL)
+* move blur in imageproc extra
 
 
 DONE Rename source files in backend
@@ -741,6 +742,7 @@ like, if the mesh should be used with index data, or as a vertex array, etc.
 => mesh type?
 Low priority
 
+
 Feature: event and input 
 _____________________________
 
@@ -773,5 +775,12 @@ _____________________________
 Some variables make sense only when drawing a stroke
 Ideally, they should have coroutine scope.
 Instead: create object that holds all this temporary state.
-
 A paint tool is a coroutine that waits on input and draw events
+
+
+
+Rationale: on gsl::span
+_____________________________
+
+Complex and impractical => replace?
+

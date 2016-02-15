@@ -18,7 +18,6 @@
 namespace ag {
 
 ///////////////////// CPU -> Texture copy operations
-
 // These operations do not stall if the texture is created with the 'Dynamic'
 // usage flag: the texture data is first copied to a staging
 // buffer and is copied to the final texture when the GPU is ready

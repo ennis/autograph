@@ -48,6 +48,8 @@ struct Pipelines {
         loadShaderSource(samplesRoot / "simple/glsl/smudge.glsl");
     ShaderSource base_color_to_offset =
         loadShaderSource(samplesRoot / "simple/glsl/base_color_to_offset.glsl");
+    ShaderSource blur =
+        loadShaderSource(samplesRoot / "simple/glsl/blur.glsl");
 
     {
       GraphicsPipelineInfo g;
@@ -156,6 +158,22 @@ struct Pipelines {
       c.CSSource = CSSource.c_str();
       ppBaseColorToOffset = device.createComputePipeline(c);
     }
+
+    {
+      ComputePipelineInfo c;
+
+      const char* defines_h[] = {"BLUR_H"};
+      auto CSSource = blur.preprocess(PipelineStage::Compute,
+                                                      defines_h, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppBlurH = device.createComputePipeline(c);
+
+      const char* defines_v[] = {"BLUR_V"};
+      CSSource = blur.preprocess(PipelineStage::Compute,
+                                                      defines_v, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppBlurV = device.createComputePipeline(c);
+    }
   }
 
   // Render the normal map
@@ -186,6 +204,10 @@ struct Pipelines {
   // Evaluate preview: brush stroke mask to base color
   ComputePipeline ppEvaluatePreviewBaseColorUV;
   ComputePipeline ppBaseColorToOffset;
+
+  // [blur.glsl]
+  ComputePipeline ppBlurH;
+  ComputePipeline ppBlurV;
 
   // Copy a texture with a mask
   GraphicsPipeline ppCopyTexWithMask;

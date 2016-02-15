@@ -59,6 +59,13 @@ struct Canvas {
     texBlurParametersUV =
         device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
 
+    texShadingTerm =
+        device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
+    texShadingTermSmooth =
+        device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
+    texShadingTermSmooth0 =
+        device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
+
     ag::clear(device, texBaseColorUV, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     ag::clear(device, texHSVOffsetUV, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     ag::clear(device, texBlurParametersUV,
@@ -75,6 +82,10 @@ struct Canvas {
   Texture2D<ag::Depth32> texDepth;
   Texture2D<ag::Unorm10x3_1x2> texNormals;
   Texture2D<ag::R8> texStencil;
+
+  Texture2D<ag::RGBA8> texShadingTerm;
+  Texture2D<ag::RGBA8> texShadingTermSmooth;
+  Texture2D<ag::RGBA8> texShadingTermSmooth0;
 
   //
   Texture1D<ag::R32UI> texHistH;

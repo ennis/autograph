@@ -31,7 +31,7 @@ layout(binding = 5) uniform sampler2D mapBlurParametersXY;
 // HSV warp map
 
 /////////////// Canvas normal map & stencil
-layout(binding = 6) uniform sampler2D texNormals;
+layout(binding = 6) uniform sampler2D texShadingTermSmooth;
 layout(binding = 7) uniform sampler2D texMask;
 
 ///////////////
@@ -68,7 +68,7 @@ void main() {
 
   /////////////////////////////////////////////
   // shading term
-  float ldotn = shadingTerm(texNormals, texelCoords, lightPos);
+  float ldotn = texelFetch(texShadingTermSmooth, texelCoords, 0).r;
 
   /////////////////////////////////////////////
   // shading curve contrib
