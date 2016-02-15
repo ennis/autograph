@@ -43,26 +43,6 @@ int divRoundUp(int numToRound, int multiple) {
   return (numToRound + multiple - 1) / multiple;
 }
 
-// Stroke task
-// start on canvas touch event
-// wait for canvas event
-
-/*[[coroutine]]
-void strokeTask(Device& device, Painter& painter, Canvas& canvas,
-Texture2D<RGBA8>& texStrokeMask, uvec2 position)
-{
-        BrushPath path;
-
-        while (last_event is not mouse released)
-        {
-                auto ev = await(...);	// if there is input available, process it, otherwise, yield
-                ag::draw(*device, ...);
-				//...
-        }
-
-		// last event:
-}*/
-
 namespace fs = boost::filesystem;
 
 class Painter : public samples::GLSample<Painter> {
@@ -71,7 +51,7 @@ public:
       : GLSample(width, height, "Painter") {
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
-    mesh = loadMesh("common/meshes/lucy.fbx");
+    mesh = loadMesh("common/meshes/skull.obj");
     canvas = std::make_unique<Canvas>(*device, width, height);
     texEvalCanvas =
         device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
@@ -108,6 +88,8 @@ public:
         ag::TextureUnit(3, canvas.texBaseColorUV, samLinearClamp),
         ag::TextureUnit(4, canvas.texHSVOffsetUV, samLinearClamp),
         ag::TextureUnit(5, canvas.texBlurParametersUV, samLinearClamp),
+                ag::TextureUnit(6, canvas.texNormals, samLinearClamp),
+                ag::TextureUnit(7, canvas.texStencil, samLinearClamp),
         ag::RWTextureUnit(0, out), std::forward<Resources>(resources)...);
   }
 
@@ -154,9 +136,9 @@ public:
 
   void makeSceneData() {
     const auto aspectRatio = (float)canvas->width / (float)canvas->height;
-    const auto eyePos = glm::vec3(0, 10, 10);
+    const auto eyePos = glm::vec3(0, 1, 1);
     const auto lookAt =
-        glm::lookAt(eyePos, glm::vec3(0, 10, 0), glm::vec3(0, 1, 0));
+        glm::lookAt(eyePos, glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
     const auto proj = glm::perspective(45.0f, aspectRatio, 0.01f, 100.0f);
     uniforms::Scene scene;
     scene.viewMatrix = lookAt;
@@ -176,6 +158,19 @@ public:
         uCanvasData, GL::kUniformBufferOffsetAlignment);
   }
 
+  void baseColorToShadingOffset(Canvas& canvas)
+  {
+      auto lightPos = glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
+      ag::compute(
+          *device, pipelines->ppBaseColorToOffset,
+          ag::ThreadGroupCount{
+              (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
+              (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
+          canvasData, lightPos,
+          canvas.texShadingProfileLN,
+                  canvas.texBaseColorUV , canvas.texNormals, canvas.texStencil, ag::RWTextureUnit(0, canvas.texHSVOffsetUV));
+  }
+
   void render() {
     using namespace glm;
     makeSceneData();
@@ -190,24 +185,28 @@ public:
     renderMesh(*canvas);
     input->poll();
     renderCanvas();
-    computeHistograms(*canvas);
     if (ui->showReferenceShading)
       drawShadingOverlay(*canvas);
+    if (ui->showHSVOffset)
+        copyTex(canvas->texHSVOffsetUV, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
+    if (ui->showBaseColor)
+        copyTex(canvas->texBaseColorUV, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
     ui->render(*device);
   }
 
   void renderCanvas() {
+      auto lightPos = glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
     ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-    if (isMakingStroke) {
+    if (isMakingStroke && ui->activeTool == Tool::Brush) {
       auto brushProps = this->brushPropsFromUi();
       // preview canvas
       previewCanvas(*canvas, texEvalCanvas,
-                    pipelines->ppEvaluatePreviewBaseColorUV, canvasData,
+                    pipelines->ppEvaluatePreviewBaseColorUV, canvasData, lightPos,
                     canvas->texStrokeMask,
                     glm::vec4{brushProps.color[0], brushProps.color[1],
                               brushProps.color[2], brushProps.opacity});
     } else
-      previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
+      previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData, lightPos,
                     canvas->texStrokeMask);
     copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f},
             1.0f);
@@ -223,10 +222,10 @@ public:
   }
 
   void onSmudgePointerEvent(const BrushProperties& props, unsigned x,
-	  unsigned y) {
+          unsigned y, bool first) {
 	  brushPath.addPointerEvent(PointerEvent{ x, y, 1.0f }, props,
-		  [this, props](auto splat) {
-		  this->smudge(*canvas, props, splat);
+                  [this, props, first](auto splat) {
+                  this->smudge(*canvas, props, splat, first);
 	  });
   }
 
@@ -257,6 +256,8 @@ public:
 				this->onBrushPointerEvent(brushProps, x, y);
 				this->applyStroke(*canvas, brushProps);
 				isMakingStroke = false; // end stroke mode
+                                this->computeHistograms(*canvas);
+                                this->baseColorToShadingOffset(*canvas);
 			}
 		}
 		else if (ui->activeTool == Tool::Smudge) {
@@ -268,7 +269,7 @@ public:
 					ag::ClearColor{ 0.0f, 0.0f, 0.0f, 0.0f });
 				unsigned x, y;
 				ui->getPointerPosition(x, y);
-				this->onSmudgePointerEvent(this->brushPropsFromUi(), x, y);
+                                this->onSmudgePointerEvent(this->brushPropsFromUi(), x, y, true);
 			}
 			else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
 				ev.state == input::MouseButtonState::Released &&
@@ -276,8 +277,10 @@ public:
 				unsigned x, y;
 				ui->getPointerPosition(x, y);
 				auto brushProps = this->brushPropsFromUi();
-				this->onSmudgePointerEvent(brushProps, x, y);
+                                this->onSmudgePointerEvent(brushProps, x, y, false);
 				isMakingStroke = false; // end stroke mode
+                                this->computeHistograms(*canvas);
+                                this->baseColorToShadingOffset(*canvas);
 			}
 		}
     });
@@ -291,7 +294,7 @@ public:
                                   ev.positionY);
       } else if (isMakingStroke == true && ui->activeTool == Tool::Smudge) {
 		  this->onSmudgePointerEvent(this->brushPropsFromUi(), ev.positionX,
-			  ev.positionY);
+                          ev.positionY, false);
       }
     });
   }
@@ -331,7 +334,7 @@ public:
   ag::Box2D getSplatFootprint(unsigned tipWidth, unsigned tipHeight,
                               const SplatProperties& splat) {
     auto transform = getSplatTransform(tipWidth, tipHeight, splat);
-    auto topleft = transform * glm::vec3{0.0f, 0.0f, 1.0f};
+    auto topleft = transform * glm::vec3{-1.0f, -1.0f, 1.0f};
     auto bottomright = transform * glm::vec3{1.0f, 1.0f, 1.0f};
     return ag::Box2D{(unsigned)topleft.x, (unsigned)topleft.y, (unsigned)bottomright.x,
                      (unsigned)bottomright.y};
@@ -342,7 +345,7 @@ public:
   // when the mouse move, apply snapshot with opacity, repeat
   // no need for a stroke mask
   void smudge(Canvas& canvas, const BrushProperties& brushProps,
-              const SplatProperties& splat) {
+              const SplatProperties& splat, bool first) {
     ag::Box2D footprintBox;
     if (ui->brushTip == BrushTip::Round) {
       auto dim = ui->brushTipTextures[ui->selectedBrushTip].tex.info.dimensions;
@@ -356,7 +359,7 @@ public:
         float opacity;
     };
 
-    SmudgeUniforms u { {footprintBox.xmin, footprintBox.ymin}, {footprintBox.width(), footprintBox.height()}, ui->strokeOpacity};
+    SmudgeUniforms u { {footprintBox.xmin, footprintBox.ymin}, {footprintBox.width(), footprintBox.height()}, first ? 0.0f : ui->strokeOpacity};
 
     if (ui->brushTip == BrushTip::Textured)
     applyComputeShaderOverRect(canvas, footprintBox, pipelines->ppSmudge,
@@ -421,7 +424,7 @@ public:
     drawMesh(mesh, *device, ag::SurfaceRT(canvas.texDepth, canvas.texNormals,
                                           canvas.texStencil),
              pipelines->ppRenderGbuffers, sceneData,
-             glm::scale(glm::mat4{1.0f}, glm::vec3{0.1f}));
+             glm::scale(glm::mat4{1.0f}, glm::vec3{0.2f}));
   }
 
   // compute histograms
@@ -449,6 +452,7 @@ public:
     std::vector<uint32_t> histH(kShadingCurveSamplesSize),
         histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize),
         histAccum(kShadingCurveSamplesSize);
+    std::vector<ag::RGBA8> HSVCurve(kShadingCurveSamplesSize);
     ag::copySync(*device, canvas.texHistH, gsl::as_span(histH));
     ag::copySync(*device, canvas.texHistS, gsl::as_span(histS));
     ag::copySync(*device, canvas.texHistV, gsl::as_span(histV));
@@ -459,13 +463,24 @@ public:
         ui->histH[i] = float(histH[i]) / (255.0f * float(histAccum[i]));
         ui->histS[i] = float(histS[i]) / (255.0f * float(histAccum[i]));
         ui->histV[i] = float(histV[i]) / (255.0f * float(histAccum[i]));
+        HSVCurve[i][0].value = float(histH[i]) / float(histAccum[i]);
+        HSVCurve[i][1].value = float(histS[i]) / float(histAccum[i]);
+        HSVCurve[i][2].value = float(histV[i]) / float(histAccum[i]);
+        HSVCurve[i][3].value = 1;
       } else {
-
         ui->histH[i] = 0.0f;
         ui->histS[i] = 0.0f;
         ui->histV[i] = 0.0f;
+        HSVCurve[i][0].value = 0;
+        HSVCurve[i][1].value = 0;
+        HSVCurve[i][2].value = 0;
+        HSVCurve[i][3].value = 1;
       }
     }
+
+    // write back
+    ag::copy(*device, gsl::span<const ag::RGBA8>((const ag::RGBA8*)HSVCurve.data(), HSVCurve.size()), canvas.texShadingProfileLN);
+
   }
 
   void drawShadingOverlay(Canvas& canvas) {

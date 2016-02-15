@@ -170,6 +170,8 @@ public:
     ImGui::Checkbox("Use textured brush", &useTexturedBrush);
     ImGui::Checkbox("Show reference shading", &showReferenceShading);
     ImGui::Checkbox("Show isolines", &showIsolines);
+    ImGui::Checkbox("DEBUG - Show base color", &showBaseColor);
+    ImGui::Checkbox("DEBUG - Show shading offsets", &showHSVOffset);
 
     if (ImGui::Button("Save"))
       saveCanvas.signal();
@@ -210,6 +212,10 @@ public:
   bool useTexturedBrush = false;
   bool showReferenceShading = true;
   bool showIsolines = true;
+
+  // debug
+  bool showHSVOffset = false;
+  bool showBaseColor = false;
 
   char saveFileName[100] = "output.paint";
   std::vector<BrushTipTexture> brushTipTextures;

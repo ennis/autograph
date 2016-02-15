@@ -152,7 +152,7 @@ public:
       256; // TODO do not hardcode this
 
   ///////////////////// arbitrary binding limits
-  static constexpr unsigned kMaxTextureUnits = 8;
+  static constexpr unsigned kMaxTextureUnits = 16;
   static constexpr unsigned kMaxImageUnits = 8;
   static constexpr unsigned kMaxVertexBufferSlots = 8;
   static constexpr unsigned kMaxUniformBufferSlots = 8;

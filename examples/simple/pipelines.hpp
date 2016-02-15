@@ -46,6 +46,8 @@ struct Pipelines {
         loadShaderSource(samplesRoot / "simple/glsl/shading_overlay.glsl");
 	ShaderSource smudge =
 		loadShaderSource(samplesRoot / "simple/glsl/smudge.glsl");
+        ShaderSource base_color_to_offset =
+                loadShaderSource(samplesRoot / "simple/glsl/base_color_to_offset.glsl");
 
     {
       GraphicsPipelineInfo g;
@@ -146,6 +148,14 @@ struct Pipelines {
       c.CSSource = CSSource.c_str();
       ppComputeShadingCurveHSV = device.createComputePipeline(c);
     }
+
+        {
+            ComputePipelineInfo c;
+            auto CSSource =
+                base_color_to_offset.preprocess(PipelineStage::Compute, nullptr, nullptr);
+            c.CSSource = CSSource.c_str();
+            ppBaseColorToOffset = device.createComputePipeline(c);
+          }
   }
 
   // Render the normal map 
@@ -175,6 +185,7 @@ struct Pipelines {
   ComputePipeline ppEvaluate;
   // Evaluate preview: brush stroke mask to base color
   ComputePipeline ppEvaluatePreviewBaseColorUV;
+  ComputePipeline ppBaseColorToOffset;
 
   // Copy a texture with a mask
   GraphicsPipeline ppCopyTexWithMask;

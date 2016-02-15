@@ -3,11 +3,13 @@
 #include "brush.glsl"
 #include "canvas.glsl"
 #include "utils.glsl"
+#include "rgb_hsv.glsl"
 
 /////////////// Uniforms
 layout(binding = 0) uniform U0 { Canvas canvas; };
+layout(binding = 1) uniform U1 { vec3 lightPos; };
 #ifdef PREVIEW_BASE_COLOR_UV
-layout(binding = 1) uniform U1 { vec4 brushColor; };
+layout(binding = 2) uniform U2 { vec4 brushColor; };
 #endif
 
 /////////////// 1D parameter maps
@@ -28,9 +30,13 @@ layout(binding = 5) uniform sampler2D mapBlurParametersXY;
 // other ideas
 // HSV warp map
 
+/////////////// Canvas normal map & stencil
+layout(binding = 6) uniform sampler2D texNormals;
+layout(binding = 7) uniform sampler2D texMask;
+
 ///////////////
 #ifdef PREVIEW_BASE_COLOR_UV
-layout(binding = 6) uniform sampler2D texStrokeMask;
+layout(binding = 8) uniform sampler2D texStrokeMask;
 #endif
 
 /////////////// Target image (RW because time effects?)
@@ -50,8 +56,7 @@ layout(local_size_x = 16, local_size_y = 16) in;
 // Color in shading space, keep local brush details -> update shading profile,
 // then update offset
 
-// SHADER OF DOOM
-// ABANDON ALL HOPE
+/////////////////////////////////////////////
 void main() {
   ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);
   texelCoords = clamp(texelCoords, ivec2(0,0), ivec2(canvas.size)-ivec2(1,1));
@@ -59,15 +64,33 @@ void main() {
 
   //vec4 D = imageLoad(imgTarget, texelCoords);
   vec4 S = vec4(0.0f);
-  S = blend(S, texture(mapBaseColorXY, uv));
+  //S = blend(S, texture(mapBaseColorXY, uv));
 
-// blend over preview of current stroke
+  /////////////////////////////////////////////
+  // shading term
+  float ldotn = shadingTerm(texNormals, texelCoords, lightPos);
+
+  /////////////////////////////////////////////
+  // shading curve contrib
+  vec3 hsvcurve = texture(mapShadingProfileLN, ldotn).rgb;
+  vec3 rgbcurve = hsv2rgb(hsvcurve);
+
+  /////////////////////////////////////////////
+  // shading offset
+  vec4 hsvoffset = texelFetch(mapHSVOffsetXY, texelCoords, 0);
+  vec3 tmp = hsvcurve + (hsvoffset.rgb * 2.0f - 1.0f);
+  S = blend(S, vec4(hsv2rgb(tmp), hsvoffset.a));
+
+  /////////////////////////////////////////////
+  // blend over preview of current stroke
 #ifdef PREVIEW_BASE_COLOR_UV
   vec4 baseColor = brushColor;
   baseColor.a *= texture(texStrokeMask, uv).r;
   S = blend(baseColor, S);
 #endif
 
+  /////////////////////////////////////////////
+  // done
   imageStore(imgTarget, texelCoords, S);
 
   // TODO other layers
