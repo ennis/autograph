@@ -104,8 +104,7 @@ public:
                     (unsigned)divRoundUp(rect.width(), kCSThreadGroupSizeX),
                     (unsigned)divRoundUp(rect.height(), kCSThreadGroupSizeY),
                     1u},
-                canvasData,
-                std::forward<Resources>(resources)...);
+                canvasData, std::forward<Resources>(resources)...);
   }
 
   // load brush tips from img directories
@@ -336,8 +335,8 @@ public:
     auto transform = getSplatTransform(tipWidth, tipHeight, splat);
     auto topleft = transform * glm::vec3{-1.0f, -1.0f, 1.0f};
     auto bottomright = transform * glm::vec3{1.0f, 1.0f, 1.0f};
-    return ag::Box2D{(unsigned)topleft.x, (unsigned)topleft.y, (unsigned)bottomright.x,
-                     (unsigned)bottomright.y};
+    return ag::Box2D{(unsigned)topleft.x, (unsigned)topleft.y,
+                     (unsigned)bottomright.x, (unsigned)bottomright.y};
   }
 
   // smudge tool operation:
@@ -354,18 +353,19 @@ public:
       footprintBox = getSplatFootprint(splat.width, splat.width, splat);
 
     struct SmudgeUniforms {
-        glm::uvec2 origin;
-        glm::uvec2 size;
-        float opacity;
+      glm::uvec2 origin;
+      glm::uvec2 size;
+      float opacity;
     };
 
     SmudgeUniforms u { {footprintBox.xmin, footprintBox.ymin}, {footprintBox.width(), footprintBox.height()}, first ? 0.0f : ui->strokeOpacity};
 
     if (ui->brushTip == BrushTip::Textured)
-    applyComputeShaderOverRect(canvas, footprintBox, pipelines->ppSmudge,
-                               canvasData, RWTextureUnit(0, canvas.texBaseColorUV),
-                        RWTextureUnit(1, texSmudgeFootprint), u,
-                               ui->brushTipTextures[ui->selectedBrushTip].tex);
+      applyComputeShaderOverRect(
+          canvas, footprintBox, pipelines->ppSmudge, canvasData,
+          RWTextureUnit(0, canvas.texBaseColorUV),
+          RWTextureUnit(1, texSmudgeFootprint), u,
+          ui->brushTipTextures[ui->selectedBrushTip].tex);
   }
 
   void drawBrushSplat(Canvas& canvas, const BrushProperties& brushProps,
