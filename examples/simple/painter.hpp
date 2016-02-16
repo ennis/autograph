@@ -62,12 +62,9 @@ public:
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
     ui = std::make_unique<Ui>(gl.getWindow(), *input);
     samples::Vertex2D vboQuadData[] = {
-        {-1.0f, -1.0f, 0.0f, 0.0f},
-        {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, -1.0f, 1.0f, 0.0f},
-        {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, 1.0f, 1.0f, 1.0f},
-        {1.0f, -1.0f, 1.0f, 0.0f},
+        {-1.0f, -1.0f, 0.0f, 0.0f}, {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, -1.0f, 1.0f, 0.0f},  {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, 1.0f, 1.0f, 1.0f},   {1.0f, -1.0f, 1.0f, 0.0f},
     };
     vboQuad = device->createBuffer(vboQuadData);
     surfOut = device->getOutputSurface();
@@ -169,29 +166,39 @@ public:
                     (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY),
                     1u},
                 canvasData, lightPos, canvas.texShadingProfileLN,
-                canvas.texBaseColorUV, canvas.texShadingTermSmooth, canvas.texStencil,
-                ag::RWTextureUnit(0, canvas.texHSVOffsetUV));
+                canvas.texBaseColorUV, canvas.texShadingTermSmooth,
+                canvas.texStencil, ag::RWTextureUnit(0, canvas.texHSVOffsetUV));
   }
 
-  void renderShading(Canvas& canvas)
-  {
-      struct BlurParams { glm::vec2 size; int blurSize; float sigma; };
-      auto params = BlurParams { {(float)canvas.width, (float)canvas.height}, 121, 26.0f };
-      auto lightPos =
-          glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
-      ag::draw(
-          *device, canvas.texShadingTerm, pipelines->ppShadingOverlay,
-          ag::DrawArrays(ag::PrimitiveType::Triangles, 0, 3), canvas.texNormals,
-          canvasData,
-          glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f}));
-      ag::compute(*device, pipelines->ppBlurH, ag::ThreadGroupCount{
-                      (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-                      (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY),
-                      1u}, params, RWTextureUnit(0, canvas.texShadingTerm), RWTextureUnit(1, canvas.texShadingTermSmooth0));
-      ag::compute(*device, pipelines->ppBlurV, ag::ThreadGroupCount{
-                      (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-                      (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY),
-                      1u}, params, RWTextureUnit(0, canvas.texShadingTermSmooth0), RWTextureUnit(1, canvas.texShadingTermSmooth));
+  void renderShading(Canvas& canvas) {
+    struct BlurParams {
+      glm::vec2 size;
+      int blurSize;
+      float sigma;
+    };
+    auto params =
+        BlurParams{{(float)canvas.width, (float)canvas.height}, 121, 26.0f};
+    auto lightPos =
+        glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
+    ag::draw(
+        *device, canvas.texShadingTerm, pipelines->ppShadingOverlay,
+        ag::DrawArrays(ag::PrimitiveType::Triangles, 0, 3), canvas.texNormals,
+        canvasData,
+        glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f}));
+    ag::compute(*device, pipelines->ppBlurH,
+                ag::ThreadGroupCount{
+                    (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
+                    (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY),
+                    1u},
+                params, RWTextureUnit(0, canvas.texShadingTerm),
+                RWTextureUnit(1, canvas.texShadingTermSmooth0));
+    ag::compute(*device, pipelines->ppBlurV,
+                ag::ThreadGroupCount{
+                    (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
+                    (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY),
+                    1u},
+                params, RWTextureUnit(0, canvas.texShadingTermSmooth0),
+                RWTextureUnit(1, canvas.texShadingTermSmooth));
   }
 
   void render() {
@@ -497,31 +504,32 @@ public:
       }
     }
 
-    static constexpr float gaussK[] = {0.000027,0.00006,0.000125,0.000251,0.000484,0.000898,
-                                       0.001601,0.002743,0.004515,0.007141,0.010853,0.01585,0.022243,
-                                       0.029995,0.038867,0.048396,0.057906,0.066577,0.073554,0.078087,
-                                       0.079659,0.078087,0.073554,0.066577,0.057906,0.048396,0.038867,
-                                       0.029995,0.022243,0.01585,0.010853,0.007141,0.004515,0.002743,
-                                       0.001601,0.000898,0.000484,0.000251,0.000125,0.00006,0.000027};
+    static constexpr float gaussK[] = {
+        0.000027, 0.00006,  0.000125, 0.000251, 0.000484, 0.000898, 0.001601,
+        0.002743, 0.004515, 0.007141, 0.010853, 0.01585,  0.022243, 0.029995,
+        0.038867, 0.048396, 0.057906, 0.066577, 0.073554, 0.078087, 0.079659,
+        0.078087, 0.073554, 0.066577, 0.057906, 0.048396, 0.038867, 0.029995,
+        0.022243, 0.01585,  0.010853, 0.007141, 0.004515, 0.002743, 0.001601,
+        0.000898, 0.000484, 0.000251, 0.000125, 0.00006,  0.000027};
 
     // smooth them (a lot)
     for (int i = 0; i < kShadingCurveSamplesSize; ++i) {
-        float ah = 0.0f;
-        float as = 0.0f;
-        float av = 0.0f;
-        for (int w = -20; w < +20; w++) {
-            int x = glm::clamp(i + w, 0, (int)kShadingCurveSamplesSize);
-            ah += ui->histH[x] * gaussK[w+20];
-            as += ui->histS[x] * gaussK[w+20];
-            av += ui->histV[x] * gaussK[w+20];
-        }
-        ui->histH[i] = ah;
-        ui->histS[i] = as;
-        ui->histV[i] = av;
-        HSVCurve[i][0].value = (uint8_t)(ah*255.0f);
-        HSVCurve[i][1].value = (uint8_t)(as*255.0f);
-        HSVCurve[i][2].value = (uint8_t)(av*255.0f);
-        HSVCurve[i][3].value = 1.0f;
+      float ah = 0.0f;
+      float as = 0.0f;
+      float av = 0.0f;
+      for (int w = -20; w < +20; w++) {
+        int x = glm::clamp(i + w, 0, (int)kShadingCurveSamplesSize);
+        ah += ui->histH[x] * gaussK[w + 20];
+        as += ui->histS[x] * gaussK[w + 20];
+        av += ui->histV[x] * gaussK[w + 20];
+      }
+      ui->histH[i] = ah;
+      ui->histS[i] = as;
+      ui->histV[i] = av;
+      HSVCurve[i][0].value = (uint8_t)(ah * 255.0f);
+      HSVCurve[i][1].value = (uint8_t)(as * 255.0f);
+      HSVCurve[i][2].value = (uint8_t)(av * 255.0f);
+      HSVCurve[i][3].value = 1.0f;
     }
 
     // write back
@@ -531,7 +539,8 @@ public:
   }
 
   void drawShadingOverlay(Canvas& canvas) {
-      copyTex(canvas.texShadingTermSmooth, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
+    copyTex(canvas.texShadingTermSmooth, surfOut, width, height,
+            glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
   // create textures
