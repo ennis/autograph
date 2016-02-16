@@ -239,9 +239,7 @@ public:
   // buffer handles
   using BufferHandle = std::unique_ptr<void, BufferDeleter>;
   // texture handles
-  using Texture1DHandle = std::unique_ptr<void, TextureDeleter>;
-  using Texture2DHandle = std::unique_ptr<void, TextureDeleter>;
-  using Texture3DHandle = std::unique_ptr<void, TextureDeleter>;
+  using TextureHandle = std::unique_ptr<void, TextureDeleter>;
   // sampler handles
   using SamplerHandle = std::unique_ptr<void, SamplerDeleter>;
   // surface handles
@@ -263,9 +261,9 @@ public:
   SurfaceHandle initOutputSurface();
 
   ///////////////////// Resources: Textures
-  Texture1DHandle createTexture1D(const Texture1DInfo& info);
-  Texture2DHandle createTexture2D(const Texture2DInfo& info);
-  Texture3DHandle createTexture3D(const Texture3DInfo& info);
+  TextureHandle createTexture1D(const Texture1DInfo& info);
+  TextureHandle createTexture2D(const Texture2DInfo& info);
+  TextureHandle createTexture3D(const Texture3DInfo& info);
 
   // used internally
   /*void destroyTexture1D(Texture1DHandle detail, const Texture1DInfo& info);
@@ -303,12 +301,12 @@ public:
   void waitForFence(FenceHandle::pointer handle, uint64_t value);
 
   ///////////////////// Bind
-  void bindTexture1D(unsigned slot, Texture1DHandle::pointer handle);
-  void bindTexture2D(unsigned slot, Texture2DHandle::pointer handle);
-  void bindTexture3D(unsigned slot, Texture3DHandle::pointer handle);
-  void bindRWTexture1D(unsigned slot, Texture1DHandle::pointer handle);
-  void bindRWTexture2D(unsigned slot, Texture2DHandle::pointer handle);
-  void bindRWTexture3D(unsigned slot, Texture3DHandle::pointer handle);
+  void bindTexture1D(unsigned slot, TextureHandle::pointer handle);
+  void bindTexture2D(unsigned slot, TextureHandle::pointer handle);
+  void bindTexture3D(unsigned slot, TextureHandle::pointer handle);
+  void bindRWTexture1D(unsigned slot, TextureHandle::pointer handle);
+  void bindRWTexture2D(unsigned slot, TextureHandle::pointer handle);
+  void bindRWTexture3D(unsigned slot, TextureHandle::pointer handle);
   void bindSampler(unsigned slot, SamplerHandle::pointer handle);
   void bindVertexBuffer(unsigned slot, BufferHandle::pointer handle,
                         size_t offset, size_t size, unsigned stride);
@@ -321,8 +319,8 @@ public:
 
   ///////////////////// Render targets
   void bindSurface(SurfaceHandle::pointer handle);
-  void bindRenderTexture(unsigned slot, Texture2DHandle::pointer handle);
-  void bindDepthRenderTexture(Texture2DHandle::pointer handle);
+  void bindRenderTexture(unsigned slot, TextureHandle::pointer handle);
+  void bindDepthRenderTexture(TextureHandle::pointer handle);
 
   ///////////////////// Clear command
   void clearColor(SurfaceHandle::pointer framebuffer_obj,
@@ -406,22 +404,22 @@ public:
   ///////////////////// Texture upload
 
   // These are blocking
-  void updateTexture1D(Texture1DHandle::pointer handle,
+  void updateTexture1D(TextureHandle::pointer handle,
                        const Texture1DInfo& info, unsigned mipLevel,
                        Box1D region, gsl::span<const gsl::byte> data);
-  void updateTexture2D(Texture2DHandle::pointer handle,
+  void updateTexture2D(TextureHandle::pointer handle,
                        const Texture2DInfo& info, unsigned mipLevel,
                        Box2D region, gsl::span<const gsl::byte> data);
-  void updateTexture3D(Texture3DHandle::pointer handle,
+  void updateTexture3D(TextureHandle::pointer handle,
                        const Texture3DInfo& info, unsigned mipLevel,
                        Box3D region, gsl::span<const gsl::byte> data);
-  void readTexture1D(Texture1DHandle::pointer handle, const Texture1DInfo& info,
+  void readTexture1D(TextureHandle::pointer handle, const Texture1DInfo& info,
                      unsigned mipLevel, Box1D region,
                      gsl::span<gsl::byte> outData);
-  void readTexture2D(Texture2DHandle::pointer handle, const Texture2DInfo& info,
+  void readTexture2D(TextureHandle::pointer handle, const Texture2DInfo& info,
                      unsigned mipLevel, Box2D region,
                      gsl::span<gsl::byte> outData);
-  void readTexture3D(Texture3DHandle::pointer handle, const Texture3DInfo& info,
+  void readTexture3D(TextureHandle::pointer handle, const Texture3DInfo& info,
                      unsigned mipLevel, Box3D region,
                      gsl::span<gsl::byte> outData);
 

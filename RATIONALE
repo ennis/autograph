@@ -483,6 +483,37 @@ ImageData<T>, which is a view of an ImageBuffer<T>, with special methods
 to write a pixel / a scanline / a block.
 
 
+
+Rationale: Texture types (shared by APIs)
+_____________________________
+
+Texture1D, 2D, 3D
+TextureCubeMap
+Texture1DArray
+Texture2DArray
+TextureCubeMapArray
+
+subresources: mipmaps + array layers
+
+group all types into a shared handle type?
+TextureHandle
+BufferHandle
+cannot enforce polymorphism/inheritance to the handle types
+
+Arguments for having different handle types for texture types:
+- type safety? 
+	but the backend API is not exposed
+- consistency
+
+Arguments against:
+- Mismatch with APIs (OpenGL, Direct3D 12)
+- Need union types for some APIs (ex: copyTextureRegion(union src, union dest))
+- More API variants for resource binding 
+
+=> It doesn't really matter to the library user
+=> choose what's more convenient to code with (only one texture handle type)
+
+
 Feature: Command lists
 _____________________________
 
@@ -668,6 +699,7 @@ input: library to handle various input devices
 	and translate them into input events
       (note: merge with ag::interactive)
 
+camera: camera control from input events
 
 mesh: generic mesh library
 	use assimp for loading

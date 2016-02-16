@@ -210,7 +210,7 @@ void* OpenGLBackend::mapBuffer(BufferHandle::pointer handle, size_t offset,
 }
 
 void OpenGLBackend::bindTexture1D(unsigned slot,
-                                  Texture1DHandle::pointer handle) {
+                                  TextureHandle::pointer handle) {
   assert(slot < kMaxTextureUnits);
   if (bind_state.textures[slot] != handle.id) {
     bind_state.textures[slot] = handle.id;
@@ -219,7 +219,7 @@ void OpenGLBackend::bindTexture1D(unsigned slot,
 }
 
 void OpenGLBackend::bindTexture2D(unsigned slot,
-                                  Texture2DHandle::pointer handle) {
+                                  TextureHandle::pointer handle) {
   assert(slot < kMaxTextureUnits);
   if (bind_state.textures[slot] != handle.id) {
     bind_state.textures[slot] = handle.id;
@@ -228,7 +228,7 @@ void OpenGLBackend::bindTexture2D(unsigned slot,
 }
 
 void OpenGLBackend::bindTexture3D(unsigned slot,
-                                  Texture3DHandle::pointer handle) {
+                                  TextureHandle::pointer handle) {
   assert(slot < kMaxTextureUnits);
   if (bind_state.textures[slot] != handle.id) {
     bind_state.textures[slot] = handle.id;
@@ -509,7 +509,7 @@ void OpenGLBackend::bindSurface(SurfaceHandle::pointer handle) {
 }
 
 void OpenGLBackend::bindRWTexture1D(unsigned slot,
-                                    Texture1DHandle::pointer handle) {
+                                    TextureHandle::pointer handle) {
   assert(slot < kMaxTextureUnits);
   if (bind_state.images[slot] != handle.id) {
     bind_state.images[slot] = handle.id;
@@ -518,7 +518,7 @@ void OpenGLBackend::bindRWTexture1D(unsigned slot,
 }
 
 void OpenGLBackend::bindRWTexture2D(unsigned slot,
-                                    Texture2DHandle::pointer handle) {
+                                    TextureHandle::pointer handle) {
 
   assert(slot < kMaxTextureUnits);
   if (bind_state.images[slot] != handle.id) {
@@ -528,7 +528,7 @@ void OpenGLBackend::bindRWTexture2D(unsigned slot,
 }
 
 void OpenGLBackend::bindRWTexture3D(unsigned slot,
-                                    Texture3DHandle::pointer handle) {
+                                    TextureHandle::pointer handle) {
 
   assert(slot < kMaxTextureUnits);
   if (bind_state.images[slot] != handle.id) {
@@ -538,7 +538,7 @@ void OpenGLBackend::bindRWTexture3D(unsigned slot,
 }
 
 void OpenGLBackend::bindRenderTexture(unsigned slot,
-                                      Texture2DHandle::pointer handle) {
+                                      TextureHandle::pointer handle) {
   bindFramebufferObject(render_to_texture_fbo);
   gl::NamedFramebufferTexture(render_to_texture_fbo,
                               gl::COLOR_ATTACHMENT0 + slot, handle.id, 0);
@@ -552,7 +552,7 @@ void OpenGLBackend::bindRenderTexture(unsigned slot,
   gl::DrawBuffers(slot + 1, drawBuffers);
 }
 
-void OpenGLBackend::bindDepthRenderTexture(Texture2DHandle::pointer handle) {
+void OpenGLBackend::bindDepthRenderTexture(TextureHandle::pointer handle) {
   bindFramebufferObject(render_to_texture_fbo);
   gl::NamedFramebufferTexture(render_to_texture_fbo, gl::DEPTH_ATTACHMENT,
                               handle.id, 0);
@@ -605,7 +605,7 @@ void OpenGLBackend::clearDepth(SurfaceHandle::pointer framebuffer_obj,
   gl::ClearNamedFramebufferfv(framebuffer_obj.id, gl::DEPTH, 0, &depth);
 }
 
-void OpenGLBackend::updateTexture1D(Texture1DHandle::pointer handle,
+void OpenGLBackend::updateTexture1D(TextureHandle::pointer handle,
                                     const Texture1DInfo& info,
                                     unsigned mipLevel, ag::Box1D region,
                                     gsl::span<const gsl::byte> data) {
@@ -614,7 +614,7 @@ void OpenGLBackend::updateTexture1D(Texture1DHandle::pointer handle,
                         gl_fmt.externalFormat, gl_fmt.type, data.data());
 }
 
-void OpenGLBackend::updateTexture2D(Texture2DHandle::pointer handle,
+void OpenGLBackend::updateTexture2D(TextureHandle::pointer handle,
                                     const Texture2DInfo& info,
                                     unsigned mipLevel, ag::Box2D region,
                                     gsl::span<const gsl::byte> data) {
@@ -624,7 +624,7 @@ void OpenGLBackend::updateTexture2D(Texture2DHandle::pointer handle,
                         gl_fmt.type, data.data());
 }
 
-void OpenGLBackend::updateTexture3D(Texture3DHandle::pointer handle,
+void OpenGLBackend::updateTexture3D(TextureHandle::pointer handle,
                                     const Texture3DInfo& info,
                                     unsigned mipLevel, ag::Box3D region,
                                     gsl::span<const gsl::byte> data) {
@@ -635,7 +635,7 @@ void OpenGLBackend::updateTexture3D(Texture3DHandle::pointer handle,
                         data.data());
 }
 
-void OpenGLBackend::readTexture1D(Texture1DHandle::pointer handle,
+void OpenGLBackend::readTexture1D(TextureHandle::pointer handle,
                                   const Texture1DInfo& info, unsigned mipLevel,
                                   Box1D region, gsl::span<gsl::byte> outData) {
   auto gl_fmt = pixelFormatToGL(info.format);
@@ -643,7 +643,7 @@ void OpenGLBackend::readTexture1D(Texture1DHandle::pointer handle,
                       outData.size(), outData.data());
 }
 
-void OpenGLBackend::readTexture2D(Texture2DHandle::pointer handle,
+void OpenGLBackend::readTexture2D(TextureHandle::pointer handle,
                                   const Texture2DInfo& info, unsigned mipLevel,
                                   Box2D region, gsl::span<gsl::byte> outData) {
   auto gl_fmt = pixelFormatToGL(info.format);
@@ -651,7 +651,7 @@ void OpenGLBackend::readTexture2D(Texture2DHandle::pointer handle,
                       outData.size(), outData.data());
 }
 
-void OpenGLBackend::readTexture3D(Texture3DHandle::pointer handle,
+void OpenGLBackend::readTexture3D(TextureHandle::pointer handle,
                                   const Texture3DInfo& info, unsigned mipLevel,
                                   Box3D region, gsl::span<gsl::byte> outData) {
   auto gl_fmt = pixelFormatToGL(info.format);
@@ -731,33 +731,33 @@ void OpenGLBackend::bindState() {
     gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, bind_state.indexBuffer);
 }
 
-OpenGLBackend::Texture1DHandle
+OpenGLBackend::TextureHandle
 OpenGLBackend::createTexture1D(const Texture1DInfo& info) {
   GLuint tex_obj;
   auto glfmt = pixelFormatToGL(info.format);
   gl::CreateTextures(gl::TEXTURE_1D, 1, &tex_obj);
   gl::TextureStorage1D(tex_obj, 1, glfmt.internalFormat, info.dimensions);
-  return Texture1DHandle(GLuintHandle(tex_obj), TextureDeleter());
+  return TextureHandle(GLuintHandle(tex_obj), TextureDeleter());
 }
 
-OpenGLBackend::Texture2DHandle
+OpenGLBackend::TextureHandle
 OpenGLBackend::createTexture2D(const Texture2DInfo& info) {
   GLuint tex_obj;
   auto glfmt = pixelFormatToGL(info.format);
   gl::CreateTextures(gl::TEXTURE_2D, 1, &tex_obj);
   gl::TextureStorage2D(tex_obj, 1, glfmt.internalFormat, info.dimensions.x,
                        info.dimensions.y);
-  return Texture2DHandle(GLuintHandle(tex_obj), TextureDeleter());
+  return TextureHandle(GLuintHandle(tex_obj), TextureDeleter());
 }
 
-OpenGLBackend::Texture3DHandle
+OpenGLBackend::TextureHandle
 OpenGLBackend::createTexture3D(const Texture3DInfo& info) {
   GLuint tex_obj;
   auto glfmt = pixelFormatToGL(info.format);
   gl::CreateTextures(gl::TEXTURE_3D, 1, &tex_obj);
   gl::TextureStorage3D(tex_obj, 1, glfmt.internalFormat, info.dimensions.x,
                        info.dimensions.y, info.dimensions.z);
-  return Texture3DHandle(GLuintHandle(tex_obj), TextureDeleter());
+  return TextureHandle(GLuintHandle(tex_obj), TextureDeleter());
 }
 }
 }

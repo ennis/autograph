@@ -32,7 +32,7 @@ struct Texture1DInfo {
 
 template <typename T, typename D> struct Texture1D {
   Texture1DInfo info;
-  typename D::Texture1DHandle handle;
+  typename D::TextureHandle handle;
 };
 
 ////////////////////////// Texture2D
@@ -43,7 +43,7 @@ struct Texture2DInfo {
 
 template <typename T, typename D> struct Texture2D {
   Texture2DInfo info;
-  typename D::Texture2DHandle handle;
+  typename D::TextureHandle handle;
 };
 
 ////////////////////////// Texture3D
@@ -54,8 +54,32 @@ struct Texture3DInfo {
 
 template <typename T, typename D> struct Texture3D {
   Texture3DInfo info;
-  typename D::Texture3DHandle handle;
+  typename D::TextureHandle handle;
 };
+
+////////////////////////// TextureDataRaw
+/*template <typename D>
+struct TextureDataRaw 
+{
+  enum class Type { Texture1D, Texture2D, Texture3D};
+  union {
+    struct {
+
+    } texture1D;
+    struct {
+
+    } texture2D;
+    struct {
+
+    } texture3D;
+    struct {
+      typename D::BufferHandle handle;
+    } buffer;
+
+  } u;
+
+};*/
+
 }
 
 #endif // !TEXTURE_HPP

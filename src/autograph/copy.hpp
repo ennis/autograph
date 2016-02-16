@@ -124,7 +124,27 @@ void copy(Device<D>& device, Texture2D<Pixel, D>& texture,
 // TODO: copy a mip layer to a texture2D? copy a face of a cube map to a
 // texture2D?
 // Copy a texture1D to a scanline of a texture2D?
+// Texture data may be in a buffer
 // -> need a more generic method
+
+//
+// backend: 
+// copyTextureRegion(src, srcBox, dest, destX, destY, destZ)
+//    untyped transfer (memcpy for texture data)
+// copyBuffer(src, src slice, dest)
+// 
+// src: TextureCopyLocationRaw { type: (Texture|Buffer), (width, height, depth, pitch) | (mipLevel, subresourceIndex)  }
+//
+// 
+// Frontend:
+//  copy(src, srcBox, dest, destPos)
+//  copy<SrcPixel,DstPixel>(...)
+// src: TextureData<Pixel>
+//    TextureData(TexturenD<Pixel>)
+//    TextureData(TexturenD<Pixel>, boxnd)
+//    TextureData(Buffer<Pixel::storage>, width, height, depth, pitch)
+//    => TextureDataRaw
+
 }
 
 #endif
