@@ -518,7 +518,7 @@ public:
       float as = 0.0f;
       float av = 0.0f;
       for (int w = -20; w < +20; w++) {
-        int x = glm::clamp(i + w, 0, (int)kShadingCurveSamplesSize);
+        int x = glm::clamp(i + w, 0, (int)kShadingCurveSamplesSize-1);
         ah += ui->histH[x] * gaussK[w + 20];
         as += ui->histS[x] * gaussK[w + 20];
         av += ui->histV[x] * gaussK[w + 20];
