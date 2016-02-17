@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.2)
 
+project(autograph CXX)
+# For some reason the module path must be absolute.
+# This does not seem to be documented (although I didn't search very hard).
+# Anyway, f**k you cmake
+set(CMAKE_MODULE_PATH "${autograph_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-project(autograph CXX)
 
 ############## Hack no1 ##############
 if(UNIX AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
@@ -15,6 +19,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # TODO if boost is not found, download it and compile it as an external project
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS date_time chrono wave thread filesystem system REQUIRED)
+find_package(Vulkan)
 link_directories(${Boost_LIBRARY_DIR})
 
 add_subdirectory(ext/)

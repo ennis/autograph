@@ -34,3 +34,6 @@
 [submodule "ext/RxCpp"]
 	path = ext/RxCpp
 	url = https://github.com/Reactive-Extensions/RxCpp
+[submodule "ext/vkcpp"]
+	path = ext/vkcpp
+	url = https://github.com/nvpro-pipeline/vkcpp

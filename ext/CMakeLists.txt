@@ -51,6 +51,16 @@ target_include_directories(stb INTERFACE stb)
 add_library(rxcpp INTERFACE)
 target_include_directories(rxcpp INTERFACE RxCpp/Rx/v2/src)
 
+# vulkan
+if (VULKAN_FOUND)
+add_library(vulkan INTERFACE)
+target_include_directories(vulkan INTERFACE ${VULKAN_INCLUDE_DIR})
+target_link_libraries(vulkan INTERFACE ${VULKAN_LIBRARY})
+endif()
+
+# vkcpp
+add_library(vkcpp INTERFACE)
+target_include_directories(vkcpp INTERFACE vkcpp)
 
 # glslang
 
