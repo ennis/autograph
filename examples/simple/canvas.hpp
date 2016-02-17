@@ -70,6 +70,8 @@ struct Canvas {
     ag::clear(device, texHSVOffsetUV, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     ag::clear(device, texBlurParametersUV,
               ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
+    ag::clear(device, texBlurParametersLN,
+              ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
   }
 
   unsigned width;

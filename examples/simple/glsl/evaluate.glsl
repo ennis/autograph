@@ -42,20 +42,15 @@ layout(binding = 8) uniform sampler2D texStrokeMask;
 /////////////// Target image (RW because time effects?)
 layout(binding = 0, rgba8) writeonly uniform image2D imgTarget;
 
+#ifdef EVAL_BLUR
+layout(binding = 1, rgba8) readonly uniform image2D imgSource;
+#endif
+
 // CS block layout (arbitrarily chosen)
 layout(local_size_x = 16, local_size_y = 16) in;
 
-// PREVIEW_BLUR_UV
-// PREVIEW_BASE_COLOR_UV
-// PREVIEW_DETAIL_UV
 
-// Blur in shading space, follows L.N
-// Blur in UV space
-// Color in shading space (toon shading?) -> write to shading profile
-// Color in UV space -> write (modify) color offset
-// Color in shading space, keep local brush details -> update shading profile,
-// then update offset
-
+#ifdef EVAL_MAIN
 /////////////////////////////////////////////
 void main() {
   ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);
@@ -78,8 +73,8 @@ void main() {
   /////////////////////////////////////////////
   // shading offset
   vec4 hsvoffset = texelFetch(mapHSVOffsetXY, texelCoords, 0);
-  vec3 tmp = hsvcurve + (hsvoffset.rgb * 2.0f - 1.0f);
-  S = blend(S, vec4(hsv2rgb(tmp), hsvoffset.a));
+  vec3 tmp = hsvcurve /* + (hsvoffset.rgb * 2.0f - 1.0f)*/;
+  S = blend(S, vec4(hsv2rgb(tmp), 1.0));
 
   /////////////////////////////////////////////
   // blend over preview of current stroke
@@ -96,5 +91,46 @@ void main() {
   // TODO other layers
   memoryBarrierImage();
 }
+#endif  // EVAL_MAIN
 
-// BLUR EVALUATOR
+
+/////////////////////////////////////////////
+#ifdef EVAL_BLUR
+// blur kernel
+float G(float x2y2, float sigma2)
+{
+  // degenerate case
+  if (sigma2 < 0.01f) return x2y2 < 0.01f ? 1.0f : 0.0f;
+  return 1.0f/(sigma2*TWOPI)*exp(-0.5*x2y2/(2.0f*sigma2));
+}
+
+void main()
+{
+  // 
+  ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);
+  vec2 uv = vec2(texelCoords) / canvas.size;
+
+  /////////////////////////////////////////////
+  // shading term
+  float ldotn = texelFetch(texShadingTermSmooth, texelCoords, 0).r;
+
+  /////////////////////////////////////////////
+  // fetch blur sigma
+  float sigma = texture(mapBlurParametersLN, ldotn).r;
+  int windowSize = 3*int(ceil(sigma));
+
+  /////////////////////////////////////////////
+  //
+  vec4 S = vec4(0.0f);
+  vec2 center = vec2(texelCoords);
+  for (int y = -windowSize; y < windowSize; ++y) {
+    for (int x = -windowSize; x < windowSize; ++x) {
+      vec2 p = vec2(texelCoords + ivec2(x, y));
+      vec2 d = center - p;
+      S += G(dot(d,d), sq(sigma)) * imageLoad(imgSource, texelCoords);
+    }
+  }
+  
+  imageStore(imgTarget, texelCoords, S);
+}
+#endif

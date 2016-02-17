@@ -55,6 +55,8 @@ public:
     canvas = std::make_unique<Canvas>(*device, width, height);
     texEvalCanvas =
         device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
+    texEvalCanvasBlur =
+        device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
     texSmudgeFootprint =
         device->createTexture2D<ag::RGBA8>(glm::uvec2{512, 512});
     input = std::make_unique<input::Input>();
@@ -177,7 +179,7 @@ public:
       float sigma;
     };
     auto params =
-        BlurParams{{(float)canvas.width, (float)canvas.height}, 121, 26.0f};
+        BlurParams{{(float)canvas.width, (float)canvas.height}, 21, 12.0f};
     auto lightPos =
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
     ag::draw(
@@ -234,14 +236,18 @@ public:
     if (isMakingStroke && ui->activeTool == Tool::Brush) {
       auto brushProps = this->brushPropsFromUi();
       // preview canvas
-      previewCanvas(*canvas, texEvalCanvas,
+      previewCanvas(*canvas, texEvalCanvasBlur,
                     pipelines->ppEvaluatePreviewBaseColorUV, canvasData,
                     lightPos, canvas->texStrokeMask,
                     glm::vec4{brushProps.color[0], brushProps.color[1],
                               brushProps.color[2], brushProps.opacity});
     } else
-      previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
+      previewCanvas(*canvas, texEvalCanvasBlur, pipelines->ppEvaluate, canvasData,
                     lightPos, canvas->texStrokeMask);
+    // blur pass
+    previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
+                  RWTextureUnit(1, texEvalCanvasBlur));
+
     copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f},
             1.0f);
     copyTex(texEvalCanvas, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
@@ -262,6 +268,42 @@ public:
                                 this->smudge(*canvas, props, splat, first);
                               });
   }
+
+  void onBlurPointerEvent(const BrushProperties& props, unsigned x,
+                             unsigned y) {
+     brushPath.addPointerEvent(PointerEvent{x, y, 1.0f}, props,
+                               [this, props](auto splat) {
+                                 this->blur(*canvas, props, splat);
+                               });
+   }
+
+     void blur(Canvas& canvas, const BrushProperties& brushProps,
+                  const SplatProperties& splat)
+      {
+       /* ag::Box2D footprintBox;
+        if (ui->brushTip == BrushTip::Round) {
+          auto dim = ui->brushTipTextures[ui->selectedBrushTip].tex.info.dimensions;
+          footprintBox = getSplatFootprint(dim.x, dim.y, splat);
+        } else
+          footprintBox = getSplatFootprint(splat.width, splat.width, splat);
+
+        struct BlurUniforms {
+          glm::uvec2 origin;
+          glm::uvec2 size;
+        };
+
+        BlurUniforms u{{footprintBox.xmin, footprintBox.ymin},
+                         {footprintBox.width(), footprintBox.height()},
+                         first ? 0.0f : ui->strokeOpacity};
+
+        if (ui->brushTip == BrushTip::Textured)
+          applyComputeShaderOverRect(
+              canvas, footprintBox, pipelines->ppSmudge, canvasData,
+              RWTextureUnit(0, canvas.texBaseColorUV),
+              RWTextureUnit(1, texSmudgeFootprint), u,
+              ui->brushTipTextures[ui->selectedBrushTip].tex);*/
+      }
+
 
   void setupInput() {
     // on key presses
@@ -313,7 +355,25 @@ public:
           this->computeHistograms(*canvas);
           this->baseColorToShadingOffset(*canvas);
         }
-      }
+      } else if (ui->activeTool == Tool::Blur) {
+          if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+              ev.state == input::MouseButtonState::Pressed) {
+            isMakingStroke = true;   // go into stroke mode
+            brushPath = BrushPath(); // reset brush path
+            unsigned x, y;
+            ui->getPointerPosition(x, y);
+            this->onBlurPointerEvent(this->brushPropsFromUi(), x, y);
+          } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+                     ev.state == input::MouseButtonState::Released &&
+                     isMakingStroke) {
+            unsigned x, y;
+            ui->getPointerPosition(x, y);
+            auto brushProps = this->brushPropsFromUi();
+            this->onBlurPointerEvent(brushProps, x, y);
+            isMakingStroke = false; // end stroke mode
+            //this->computeBlurHistogram(*canvas);
+          }
+        }
     });
 
     // on mouse move
@@ -326,6 +386,9 @@ public:
       } else if (isMakingStroke == true && ui->activeTool == Tool::Smudge) {
         this->onSmudgePointerEvent(this->brushPropsFromUi(), ev.positionX,
                                    ev.positionY, false);
+      } else if (isMakingStroke == true && ui->activeTool == Tool::Smudge) {
+          this->onBlurPointerEvent(this->brushPropsFromUi(), ev.positionX,
+                                     ev.positionY);
       }
     });
   }
@@ -567,8 +630,8 @@ private:
   Tool activeTool;
 
   // evaluated canvas
+  Texture2D<ag::RGBA8> texEvalCanvasBlur;
   Texture2D<ag::RGBA8> texEvalCanvas;
-
   // splat footprint (for smudge)
   Texture2D<ag::RGBA8> texSmudgeFootprint;
 

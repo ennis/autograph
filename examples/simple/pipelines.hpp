@@ -132,15 +132,21 @@ struct Pipelines {
 
     {
       ComputePipelineInfo c;
+      const char* defines_main[] = {"EVAL_MAIN"};
       auto CSSource =
-          evaluate.preprocess(PipelineStage::Compute, nullptr, nullptr);
+          evaluate.preprocess(PipelineStage::Compute, defines_main, nullptr);
       c.CSSource = CSSource.c_str();
       ppEvaluate = device.createComputePipeline(c);
 
-      const char* defines[] = {"PREVIEW_BASE_COLOR_UV"};
-      CSSource = evaluate.preprocess(PipelineStage::Compute, defines, nullptr);
+      const char* defines_main_preview_base_color[] = {"PREVIEW_BASE_COLOR_UV", "EVAL_MAIN"};
+      CSSource = evaluate.preprocess(PipelineStage::Compute, defines_main_preview_base_color, nullptr);
       c.CSSource = CSSource.c_str();
       ppEvaluatePreviewBaseColorUV = device.createComputePipeline(c);
+
+      const char* defines_blur[] = {"EVAL_BLUR"};
+      CSSource = evaluate.preprocess(PipelineStage::Compute, defines_blur, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppEvaluateBlurPass = device.createComputePipeline(c);
     }
 
     {
@@ -199,10 +205,15 @@ struct Pipelines {
   ComputePipeline ppFlattenStroke;
   ComputePipeline ppSmudge;
 
-  // Evaluate final image
+  // [evaluate.glsl]
+  // Evaluate final image (main pass)
   ComputePipeline ppEvaluate;
   // Evaluate preview: brush stroke mask to base color
   ComputePipeline ppEvaluatePreviewBaseColorUV;
+  // Evaluate (blur pass)
+  ComputePipeline ppEvaluateBlurPass;
+
+  // [base_color_to_offset.glsl]
   ComputePipeline ppBaseColorToOffset;
 
   // [blur.glsl]

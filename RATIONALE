@@ -38,7 +38,9 @@ Examples of optimizations:
 Proposition: a simpler set of primitives, implemented on top of autograph backends
 => no higher-order nodes (no conditionals)
 => individual pipelines, can temporarily deallocate their resources
-=> more like a memory management technique
+=> more like a memory management and synchronization technique
+	(maps very well to Vulkan's render passes)
+
 
 
 GLSL header gen
@@ -49,6 +51,7 @@ One entry for each shader defined in the FX file
 
 FX file: should it contain Blend/Depth/Rasterizer states?
 VS #include ?
+
 
 
 GPU promises and futures
@@ -816,3 +819,73 @@ _____________________________
 
 Complex and impractical => replace?
 
+
+
+Vulkan notes
+_____________________________
+
+Descriptors? 
+In vulkan: the process is:
+	(pre-render) generate descriptor set layouts
+	(render) create descriptor sets, bind them
+	=> best practices: 
+		create one descriptor set, update between each draw call?
+			=> matches the current draw API, where bindings are dynamic
+		VS
+		create descriptor sets upfront
+			=> matches the RenderPass API
+		VS
+		cache descriptor sets
+			=> complex implementation
+
+Same choices with image/buffer views:
+	create them on-the-fly
+	VS
+	create them once up front
+	VS
+	cache them
+
+
+
+Render pass API
+_____________________________
+
+Suddenly makes sense with vulkan
+Simplify:
+* no conditionals (a render pass is a straight branch)
+* inputs are dynamic
+* draw operations: either pre-recorded command lists or dynamically generated draw call streams
+
+Value nodes:
+* Constant (uniform) buffers
+* RWBuffers
+* textures (sampled images)
+* RWTextures (images)
+=> constant or dynamic
+
+Operation nodes:
+* clear
+* draw
+* copy
+* upload
+* readback
+
+Renderpass dependency graph is a DAG, all branches are scheduled and evaluated.
+Scheduling and execution done by the backend
+
+
+auto renderpass = draw(clear(rendertarget(0)), pipeline, drawcalls(0), texture1D, texture(0))
+
+// => returns a function object?
+renderpass: RenderPass<RenderTargetType, ... DrawCallStream, Texture2D<PixelType>> 
+
+clear<RT>(constant vec4) -> clear<RT, constant>
+clear<RT>(placeholder<vec4>) -> clear<RT, vec4>
+
+draw<N, Resources...>(RT<params>, ) -> auto  
+
+=> a variable number of draw resources
+=> each draw resource can have a variable number of dynamic parameters
+=> Arcane template wizardry
+
+renderpass(rendertarget, mesh, texture) 
