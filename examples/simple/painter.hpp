@@ -64,9 +64,12 @@ public:
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
     ui = std::make_unique<Ui>(gl.getWindow(), *input);
     samples::Vertex2D vboQuadData[] = {
-        {-1.0f, -1.0f, 0.0f, 0.0f}, {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, -1.0f, 1.0f, 0.0f},  {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, 1.0f, 1.0f, 1.0f},   {1.0f, -1.0f, 1.0f, 0.0f},
+        {-1.0f, -1.0f, 0.0f, 0.0f},
+        {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, -1.0f, 1.0f, 0.0f},
+        {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, 1.0f, 1.0f, 1.0f},
+        {1.0f, -1.0f, 1.0f, 0.0f},
     };
     vboQuad = device->createBuffer(vboQuadData);
     surfOut = device->getOutputSurface();
@@ -242,8 +245,8 @@ public:
                     glm::vec4{brushProps.color[0], brushProps.color[1],
                               brushProps.color[2], brushProps.opacity});
     } else
-      previewCanvas(*canvas, texEvalCanvasBlur, pipelines->ppEvaluate, canvasData,
-                    lightPos, canvas->texStrokeMask);
+      previewCanvas(*canvas, texEvalCanvasBlur, pipelines->ppEvaluate,
+                    canvasData, lightPos, canvas->texStrokeMask);
     // blur pass
     previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
                   RWTextureUnit(1, texEvalCanvasBlur));
@@ -270,40 +273,32 @@ public:
   }
 
   void onBlurPointerEvent(const BrushProperties& props, unsigned x,
-                             unsigned y) {
-     brushPath.addPointerEvent(PointerEvent{x, y, 1.0f}, props,
-                               [this, props](auto splat) {
-                                 this->blur(*canvas, props, splat);
-                               });
-   }
+                          unsigned y) {
+    brushPath.addPointerEvent(
+        PointerEvent{x, y, 1.0f}, props,
+        [this, props](auto splat) { this->blur(*canvas, props, splat); });
+  }
 
-     void blur(Canvas& canvas, const BrushProperties& brushProps,
-                  const SplatProperties& splat)
-      {
-       /* ag::Box2D footprintBox;
-        if (ui->brushTip == BrushTip::Round) {
-          auto dim = ui->brushTipTextures[ui->selectedBrushTip].tex.info.dimensions;
-          footprintBox = getSplatFootprint(dim.x, dim.y, splat);
-        } else
-          footprintBox = getSplatFootprint(splat.width, splat.width, splat);
+  void blur(Canvas& canvas, const BrushProperties& brushProps,
+            const SplatProperties& splat) {
+    ag::Box2D footprintBox;
+    footprintBox = getSplatFootprint(splat.width, splat.width, splat);
 
-        struct BlurUniforms {
-          glm::uvec2 origin;
-          glm::uvec2 size;
-        };
+    struct BlurUniforms {
+      glm::uvec2 origin;
+      glm::uvec2 size;
+      float intensity;
+    };
 
-        BlurUniforms u{{footprintBox.xmin, footprintBox.ymin},
-                         {footprintBox.width(), footprintBox.height()},
-                         first ? 0.0f : ui->strokeOpacity};
+    BlurUniforms u{{footprintBox.xmin, footprintBox.ymin},
+                   {footprintBox.width(), footprintBox.height()}};
 
-        if (ui->brushTip == BrushTip::Textured)
-          applyComputeShaderOverRect(
-              canvas, footprintBox, pipelines->ppSmudge, canvasData,
-              RWTextureUnit(0, canvas.texBaseColorUV),
-              RWTextureUnit(1, texSmudgeFootprint), u,
-              ui->brushTipTextures[ui->selectedBrushTip].tex);*/
-      }
-
+    /*applyComputeShaderOverRect(
+        canvas, footprintBox, pipelines->ppBlur, canvasData,
+        RWTextureUnit(0, canvas.texBaseColorUV),
+        RWTextureUnit(1, texSmudgeFootprint), u,
+        ui->brushTipTextures[ui->selectedBrushTip].tex);*/
+  }
 
   void setupInput() {
     // on key presses
@@ -356,24 +351,24 @@ public:
           this->baseColorToShadingOffset(*canvas);
         }
       } else if (ui->activeTool == Tool::Blur) {
-          if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-              ev.state == input::MouseButtonState::Pressed) {
-            isMakingStroke = true;   // go into stroke mode
-            brushPath = BrushPath(); // reset brush path
-            unsigned x, y;
-            ui->getPointerPosition(x, y);
-            this->onBlurPointerEvent(this->brushPropsFromUi(), x, y);
-          } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-                     ev.state == input::MouseButtonState::Released &&
-                     isMakingStroke) {
-            unsigned x, y;
-            ui->getPointerPosition(x, y);
-            auto brushProps = this->brushPropsFromUi();
-            this->onBlurPointerEvent(brushProps, x, y);
-            isMakingStroke = false; // end stroke mode
-            //this->computeBlurHistogram(*canvas);
-          }
+        if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+            ev.state == input::MouseButtonState::Pressed) {
+          isMakingStroke = true;   // go into stroke mode
+          brushPath = BrushPath(); // reset brush path
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          this->onBlurPointerEvent(this->brushPropsFromUi(), x, y);
+        } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+                   ev.state == input::MouseButtonState::Released &&
+                   isMakingStroke) {
+          unsigned x, y;
+          ui->getPointerPosition(x, y);
+          auto brushProps = this->brushPropsFromUi();
+          this->onBlurPointerEvent(brushProps, x, y);
+          isMakingStroke = false; // end stroke mode
+          // this->computeBlurHistogram(*canvas);
         }
+      }
     });
 
     // on mouse move
@@ -387,8 +382,8 @@ public:
         this->onSmudgePointerEvent(this->brushPropsFromUi(), ev.positionX,
                                    ev.positionY, false);
       } else if (isMakingStroke == true && ui->activeTool == Tool::Smudge) {
-          this->onBlurPointerEvent(this->brushPropsFromUi(), ev.positionX,
-                                     ev.positionY);
+        this->onBlurPointerEvent(this->brushPropsFromUi(), ev.positionX,
+                                 ev.positionY);
       }
     });
   }
@@ -409,31 +404,6 @@ public:
     return props;
   }
 
-  glm::mat3x4 getSplatTransform(unsigned tipWidth, unsigned tipHeight,
-                                const SplatProperties& splat) {
-    glm::vec2 scale{1.0f};
-    if (tipWidth < tipHeight)
-      scale = glm::vec2{1.0f, (float)tipHeight / (float)tipWidth};
-    else
-      scale = glm::vec2{(float)tipWidth / (float)tipHeight, 1.0f};
-
-    scale *= splat.width;
-
-    return glm::mat3x4(
-        glm::scale(glm::rotate(glm::translate(glm::mat3x3(1.0f), splat.center),
-                               splat.rotation),
-                   scale));
-  }
-
-  ag::Box2D getSplatFootprint(unsigned tipWidth, unsigned tipHeight,
-                              const SplatProperties& splat) {
-    auto transform = getSplatTransform(tipWidth, tipHeight, splat);
-    auto topleft = transform * glm::vec3{-1.0f, -1.0f, 1.0f};
-    auto bottomright = transform * glm::vec3{1.0f, 1.0f, 1.0f};
-    return ag::Box2D{(unsigned)topleft.x, (unsigned)topleft.y,
-                     (unsigned)bottomright.x, (unsigned)bottomright.y};
-  }
-
   // smudge tool operation:
   // take a snapshot of the canvas under the brush footprint
   // when the mouse move, apply snapshot with opacity, repeat
@@ -441,7 +411,7 @@ public:
   void smudge(Canvas& canvas, const BrushProperties& brushProps,
               const SplatProperties& splat, bool first) {
     ag::Box2D footprintBox;
-    if (ui->brushTip == BrushTip::Round) {
+    if (ui->brushTip == BrushTip::Textured) {
       auto dim = ui->brushTipTextures[ui->selectedBrushTip].tex.info.dimensions;
       footprintBox = getSplatFootprint(dim.x, dim.y, splat);
     } else
@@ -581,7 +551,7 @@ public:
       float as = 0.0f;
       float av = 0.0f;
       for (int w = -20; w < +20; w++) {
-        int x = glm::clamp(i + w, 0, (int)kShadingCurveSamplesSize-1);
+        int x = glm::clamp(i + w, 0, (int)kShadingCurveSamplesSize - 1);
         ah += ui->histH[x] * gaussK[w + 20];
         as += ui->histS[x] * gaussK[w + 20];
         av += ui->histV[x] * gaussK[w + 20];

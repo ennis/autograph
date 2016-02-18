@@ -30,6 +30,22 @@ struct BrushProperties {
   float rotationJitter;
 };
 
+BrushProperties brushPropsFromUi(Ui& ui) {
+  BrushProperties props;
+  props.color[0] = ui.strokeColor[0];
+  props.color[1] = ui.strokeColor[1];
+  props.color[2] = ui.strokeColor[2];
+  props.opacity = ui.strokeOpacity;
+  props.opacityJitter = ui.strokeOpacityJitter;
+  props.width = ui.strokeWidth;
+  props.widthJitter = ui.brushWidthJitter;
+  props.spacing = ui.brushSpacing;
+  props.spacingJitter = ui.brushSpacingJitter;
+  props.rotation = 0.0f;
+  props.rotationJitter = ui.brushRotationJitter;
+  return props;
+}
+
 // Evaluated properties of the splat to draw
 struct SplatProperties {
   glm::vec2 center;
@@ -38,6 +54,31 @@ struct SplatProperties {
   float width; // scale
   float rotation;
 };
+
+glm::mat3x4 getSplatTransform(unsigned tipWidth, unsigned tipHeight,
+                              const SplatProperties& splat) {
+  glm::vec2 scale{1.0f};
+  if (tipWidth < tipHeight)
+    scale = glm::vec2{1.0f, (float)tipHeight / (float)tipWidth};
+  else
+    scale = glm::vec2{(float)tipWidth / (float)tipHeight, 1.0f};
+
+  scale *= splat.width;
+
+  return glm::mat3x4(
+      glm::scale(glm::rotate(glm::translate(glm::mat3x3(1.0f), splat.center),
+                             splat.rotation),
+                 scale));
+}
+
+ag::Box2D getSplatFootprint(unsigned tipWidth, unsigned tipHeight,
+                            const SplatProperties& splat) {
+  auto transform = getSplatTransform(tipWidth, tipHeight, splat);
+  auto topleft = transform * glm::vec3{-1.0f, -1.0f, 1.0f};
+  auto bottomright = transform * glm::vec3{1.0f, 1.0f, 1.0f};
+  return ag::Box2D{(unsigned)topleft.x, (unsigned)topleft.y,
+                   (unsigned)bottomright.x, (unsigned)bottomright.y};
+}
 
 template <typename T> T evalJitter(T ref, T jitter) {
   return ref + glm::linearRand(-jitter, jitter);

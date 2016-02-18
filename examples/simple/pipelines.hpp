@@ -28,7 +28,7 @@ struct Splat {
 
 struct Pipelines {
 
-  Pipelines(Device& device, const filesystem::path& samplesRoot) {
+  Pipelines(Device &device, const filesystem::path &samplesRoot) {
     using namespace ag::opengl;
     using namespace shaderpp;
 
@@ -48,8 +48,7 @@ struct Pipelines {
         loadShaderSource(samplesRoot / "simple/glsl/smudge.glsl");
     ShaderSource base_color_to_offset =
         loadShaderSource(samplesRoot / "simple/glsl/base_color_to_offset.glsl");
-    ShaderSource blur =
-        loadShaderSource(samplesRoot / "simple/glsl/blur.glsl");
+    ShaderSource blur = loadShaderSource(samplesRoot / "simple/glsl/blur.glsl");
 
     {
       GraphicsPipelineInfo g;
@@ -69,7 +68,7 @@ struct Pipelines {
       g.PSSource = PSSource.c_str();
       ppDrawRoundSplatToStrokeMask = device.createGraphicsPipeline(g);
 
-      const char* defines[] = {"TEXTURED"};
+      const char *defines[] = {"TEXTURED"};
       VSSource =
           draw_stroke_mask.preprocess(PipelineStage::Vertex, defines, nullptr);
       PSSource =
@@ -114,7 +113,7 @@ struct Pipelines {
 
     {
       ComputePipelineInfo c;
-      const char* defines[] = {"TOOL_BASE_COLOR_UV"};
+      const char *defines[] = {"TOOL_BASE_COLOR_UV"};
       auto CSSource =
           flatten_stroke.preprocess(PipelineStage::Compute, defines, nullptr);
       c.CSSource = CSSource.c_str();
@@ -123,7 +122,7 @@ struct Pipelines {
 
     {
       ComputePipelineInfo c;
-      const char* defines[] = {"TOOL_BASE_COLOR_UV"};
+      const char *defines[] = {"TOOL_BASE_COLOR_UV"};
       auto CSSource =
           smudge.preprocess(PipelineStage::Compute, defines, nullptr);
       c.CSSource = CSSource.c_str();
@@ -132,19 +131,22 @@ struct Pipelines {
 
     {
       ComputePipelineInfo c;
-      const char* defines_main[] = {"EVAL_MAIN"};
+      const char *defines_main[] = {"EVAL_MAIN"};
       auto CSSource =
           evaluate.preprocess(PipelineStage::Compute, defines_main, nullptr);
       c.CSSource = CSSource.c_str();
       ppEvaluate = device.createComputePipeline(c);
 
-      const char* defines_main_preview_base_color[] = {"PREVIEW_BASE_COLOR_UV", "EVAL_MAIN"};
-      CSSource = evaluate.preprocess(PipelineStage::Compute, defines_main_preview_base_color, nullptr);
+      const char *defines_main_preview_base_color[] = {"PREVIEW_BASE_COLOR_UV",
+                                                       "EVAL_MAIN"};
+      CSSource = evaluate.preprocess(PipelineStage::Compute,
+                                     defines_main_preview_base_color, nullptr);
       c.CSSource = CSSource.c_str();
       ppEvaluatePreviewBaseColorUV = device.createComputePipeline(c);
 
-      const char* defines_blur[] = {"EVAL_BLUR"};
-      CSSource = evaluate.preprocess(PipelineStage::Compute, defines_blur, nullptr);
+      const char *defines_blur[] = {"EVAL_BLUR"};
+      CSSource =
+          evaluate.preprocess(PipelineStage::Compute, defines_blur, nullptr);
       c.CSSource = CSSource.c_str();
       ppEvaluateBlurPass = device.createComputePipeline(c);
     }
@@ -168,15 +170,14 @@ struct Pipelines {
     {
       ComputePipelineInfo c;
 
-      const char* defines_h[] = {"BLUR_H"};
-      auto CSSource = blur.preprocess(PipelineStage::Compute,
-                                                      defines_h, nullptr);
+      const char *defines_h[] = {"BLUR_H"};
+      auto CSSource =
+          blur.preprocess(PipelineStage::Compute, defines_h, nullptr);
       c.CSSource = CSSource.c_str();
       ppBlurH = device.createComputePipeline(c);
 
-      const char* defines_v[] = {"BLUR_V"};
-      CSSource = blur.preprocess(PipelineStage::Compute,
-                                                      defines_v, nullptr);
+      const char *defines_v[] = {"BLUR_V"};
+      CSSource = blur.preprocess(PipelineStage::Compute, defines_v, nullptr);
       c.CSSource = CSSource.c_str();
       ppBlurV = device.createComputePipeline(c);
     }
@@ -216,6 +217,16 @@ struct Pipelines {
   // [base_color_to_offset.glsl]
   ComputePipeline ppBaseColorToOffset;
 
+  // Process passes
+  // [process_dynamic_color.glsl]
+  ComputePipeline ppProcessDynamicColor;
+  ComputePipeline
+      ppProcessDynamicColorPreview; // (preview that takes a stroke mask)
+  // [process_blur.glsl]
+  ComputePipeline ppProcessBlur; // (no preview version)
+  // [process_detail.glsl]
+  // TODO
+
   // [blur.glsl]
   ComputePipeline ppBlurH;
   ComputePipeline ppBlurV;
@@ -224,7 +235,7 @@ struct Pipelines {
   GraphicsPipeline ppCopyTexWithMask;
 
 private:
-  shaderpp::ShaderSource loadShaderSource(const filesystem::path& path) {
+  shaderpp::ShaderSource loadShaderSource(const filesystem::path &path) {
     return shaderpp::ShaderSource(path.str().c_str());
   }
 };

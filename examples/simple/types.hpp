@@ -13,5 +13,6 @@ using ComputePipeline = ag::ComputePipeline<GL>;
 using Mesh = samples::Mesh<GL>;
 template <typename T> using Buffer = ag::Buffer<GL, T>;
 using RawBufferSlice = ag::RawBufferSlice<GL>;
+using Sampler = ag::Sampler<GL>;
 
 #endif
