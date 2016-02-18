@@ -888,3 +888,15 @@ draw<N, Resources...>(RT<params>, ) -> auto
 => Arcane template wizardry
 
 renderpass(rendertarget, mesh, texture) 
+
+command lists => multithreading
+applying renderpasses is cheap, creating command buffers is not
+cannot use stateless ag::draw with renderpasses (ag::draw re-specifies all the state each time)
+	use ag::draw with StatePack? 
+	StatePacks: bundled set of bindings that never change => re-use descriptors
+		=> corresponds to Vulkan's DescriptorSets
+		=> also very good for state-sorting
+		=> type-erased
+		=> with renderpasses: partial application of ag::draw
+			=>  
+    Bikeshedding: StatePack, BindPack, StateSet, BindSet, BindingSet, StateBundle
