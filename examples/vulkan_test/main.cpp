@@ -46,12 +46,14 @@ int main() {
     return -1;
   }
 
+  for (int i = 0; i < count; ++i)
+	  fmt::print("Extension: {}\n", extensions[i]);
   // Create a vulkan instance
   VkInstance instance = nullptr;
 
   {
     VkInstanceCreateInfo ici = {};
-	ici.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    ici.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     ici.enabledExtensionCount = count;
     ici.ppEnabledExtensionNames = extensions;
     vkCreateInstance(&ici, nullptr, &instance);
@@ -75,7 +77,7 @@ int main() {
   for (const auto& physDev : physDevices) {
     VkPhysicalDeviceProperties props;
     vkGetPhysicalDeviceProperties(physDev, &props);
-    fmt::print("- {} (id={}, type={})", props.deviceName, props.deviceID,
+    fmt::print("- {} (id={}, type={})\n", props.deviceName, props.deviceID,
                getVkPhysicalDeviceTypeString(props.deviceType));
     VkPhysicalDeviceFeatures features;
     if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
@@ -96,24 +98,68 @@ int main() {
     }
   }
 
+  uint32_t queueFamilyIndex;
+  {
+    // things
+    uint32_t queueFamilyPropertyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(
+        mainPhysDev, &queueFamilyPropertyCount, nullptr);
+    std::vector<VkQueueFamilyProperties> props(queueFamilyPropertyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(
+        mainPhysDev, &queueFamilyPropertyCount, props.data());
+    queueFamilyIndex = queueFamilyPropertyCount;
+    for (int i = 0; i < queueFamilyPropertyCount; ++i) {
+      const auto& p = props[i];
+      if (p.queueFlags & VK_QUEUE_GRAPHICS_BIT &&
+          p.queueFlags & VK_QUEUE_COMPUTE_BIT &&
+          p.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+        queueFamilyIndex = i;
+        break;
+      }
+    }
+    if (queueFamilyIndex == queueFamilyPropertyCount) {
+      fmt::print(std::cerr, "No universal queue found.\n");
+      glfwTerminate();
+      return -1;
+    }
+  }
+
+  // open window
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+  if (!window) {
+	  glfwTerminate();
+	  return -1;
+  }
+
+  // create surface
+  VkSurfaceKHR surface;
+  VkResult err = glfwCreateWindowSurface(instance, window, NULL, &surface);
+  if (err != VK_SUCCESS) {
+	  fmt::print("Could not create a presentable surface\n");
+	  return -1;
+  }
+
+
   // create a vulkan device
   VkDevice device;
 
   {
-	  VkDeviceCreateInfo dci = {};
-	  dci.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    float queuePriorities[] = {0.0f};
+    VkDeviceQueueCreateInfo qci[] = {
+        {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr, 0,
+         queueFamilyIndex, 1, queuePriorities}};
+    VkDeviceCreateInfo dci = {};
+    dci.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     dci.enabledExtensionCount = count;
     dci.ppEnabledExtensionNames = extensions;
-    vkCreateDevice(mainPhysDev, &dci, nullptr, &device);
+    dci.pQueueCreateInfos = qci;
+    dci.queueCreateInfoCount = 1;
+
+    auto err = vkCreateDevice(mainPhysDev, &dci, nullptr, &device);
+	fmt::print("vkCreateDevice returned {}\n", err);
   }
 
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-  if (!window) {
-    glfwTerminate();
-    return -1;
-  }
-  
 
   /* Loop until the user closes the window */
   while (!glfwWindowShouldClose(window)) {
