@@ -900,3 +900,28 @@ cannot use stateless ag::draw with renderpasses (ag::draw re-specifies all the s
 		=> with renderpasses: partial application of ag::draw
 			=>  
     Bikeshedding: StatePack, BindPack, StateSet, BindSet, BindingSet, StateBundle
+
+
+
+Shaders in C++
+_____________________________
+
+Goal: same as C++ AMP, but targets Vulkan and SPIR-V
+
+* Separate code that must be run on GPU (annotation?)
+* Where to do it: 
+	- C++ level?
+	- LLVM bitcode level?
+	=> propagate C++ attributes to LLVM bitcode
+	=> copy C++ AMP for primitives?
+* Shaders as functions (possibly templates)
+
+* Issue: parameters/bindings shared between VS/GS/PS
+
+[[pipeline]]
+auto renderMesh(meshIn, meshOut, sigma)
+{
+	auto vstream = VS(...)
+	PS(vstream, ...)
+}
+
