@@ -72,6 +72,7 @@ protected:
 };
 
 // color brush tool callbacks
+// noncopyable, nonmovable
 class ColorBrush {
 public:
   ColorBrush(const ToolResources& resources_) : res(resources_) {

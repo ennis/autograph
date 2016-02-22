@@ -49,7 +49,7 @@ int main() {
   /////////////////////////////////
   // query required vulkan extensions
   // for creating a presentable surface
-  int requiredExtensionCount;
+  unsigned requiredExtensionCount;
   const char** requiredExtensionNames =
       glfwGetRequiredInstanceExtensions(&requiredExtensionCount);
 
