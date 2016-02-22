@@ -846,6 +846,7 @@ Same choices with image/buffer views:
 	cache them
 
 
+
 Render pass API
 _____________________________
 
@@ -868,6 +869,10 @@ Operation nodes:
 * copy
 * upload
 * readback
+
+New value nodes:
+Image<Type>
+Buffer<Type>
 
 Renderpass dependency graph is a DAG, all branches are scheduled and evaluated.
 Scheduling and execution done by the backend
@@ -901,6 +906,12 @@ cannot use stateless ag::draw with renderpasses (ag::draw re-specifies all the s
 			=>  
     Bikeshedding: StatePack, BindPack, StateSet, BindSet, BindingSet, StateBundle
 
+a renderpass is a callable; arguments are dynamic state
+static (creation-time state) is set on construction 
+
+Construction of a renderpass:
+- execute the provided code with dummy arguments, extract graph
+
 
 
 Shaders in C++
@@ -917,11 +928,20 @@ Goal: same as C++ AMP, but targets Vulkan and SPIR-V
 * Shaders as functions (possibly templates)
 
 * Issue: parameters/bindings shared between VS/GS/PS
+	-> meta-shaders?
+	-> pipeline descriptions
 
 [[pipeline]]
 auto renderMesh(meshIn, meshOut, sigma)
 {
 	auto vstream = VS(...)
-	PS(vstream, ...)
+	auto rasterizer_out = Rasterizer(state, ...)
+	PS(rasterizer_out, ...)
 }
+
+
+
+
+Extra: pipeline cache
+_____________________________
 

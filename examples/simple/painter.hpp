@@ -28,22 +28,22 @@
 #include "canvas.hpp"
 #include "pipelines.hpp"
 #include "ui.hpp"
+#include "smudge.hpp"
 
 #include <boost/filesystem.hpp>
+#include <eggs/variant.hpp>
 
 namespace input = ag::extra::input;
 namespace image_io = ag::extra::image_io;
 
 constexpr const char kDefaultBrushTip[] = "simple/img/brushes/brush_tip.png";
-constexpr unsigned kCSThreadGroupSizeX = 16;
-constexpr unsigned kCSThreadGroupSizeY = 16;
-constexpr unsigned kCSThreadGroupSizeZ = 1;
 
-int divRoundUp(int numToRound, int multiple) {
-  return (numToRound + multiple - 1) / multiple;
-}
 
 namespace fs = boost::filesystem;
+
+using ToolVariant = eggs::variant<
+    ColorBrushTool,
+    SmudgeTool>;
 
 class Painter : public samples::GLSample<Painter> {
 public:
@@ -57,8 +57,7 @@ public:
         device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
     texEvalCanvasBlur =
         device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
-    texSmudgeFootprint =
-        device->createTexture2D<ag::RGBA8>(glm::uvec2{512, 512});
+
     input = std::make_unique<input::Input>();
     input->registerEventSource(
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
@@ -75,41 +74,13 @@ public:
     surfOut = device->getOutputSurface();
     setupInput();
     loadBrushTips();
-  }
 
-  template <typename... Resources>
-  void previewCanvas(Canvas& canvas, Texture2D<ag::RGBA8>& out,
-                     ComputePipeline& pipeline, RawBufferSlice& canvasData,
-                     Resources&&... resources) {
-    ag::compute(
-        *device, pipeline,
-        ag::ThreadGroupCount{
-            (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-            (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
-        canvasData,
-        ag::TextureUnit(0, canvas.texShadingProfileLN, samLinearClamp),
-        ag::TextureUnit(1, canvas.texBlurParametersLN, samLinearClamp),
-        ag::TextureUnit(2, canvas.texDetailMaskLN, samLinearClamp),
-        ag::TextureUnit(3, canvas.texBaseColorUV, samLinearClamp),
-        ag::TextureUnit(4, canvas.texHSVOffsetUV, samLinearClamp),
-        ag::TextureUnit(5, canvas.texBlurParametersUV, samLinearClamp),
-        ag::TextureUnit(6, canvas.texShadingTermSmooth, samLinearClamp),
-        ag::TextureUnit(7, canvas.texStencil, samLinearClamp),
-        ag::RWTextureUnit(0, out), std::forward<Resources>(resources)...);
-  }
+    toolResources = std::make_unique<ToolResources>(
+        ToolResources{*device, *pipelines, *canvas, *ui, samLinearRepeat,
+                      samLinearClamp, samNearestRepeat, samNearestClamp, vboQuad});
 
-  // apply a CS over a region of the canvas
-  template <typename... Resources>
-  void applyComputeShaderOverRect(Canvas& canvas, const ag::Box2D& rect,
-                                  ComputePipeline& pipeline,
-                                  RawBufferSlice& canvasData,
-                                  Resources&&... resources) {
-    ag::compute(*device, pipeline,
-                ag::ThreadGroupCount{
-                    (unsigned)divRoundUp(rect.width(), kCSThreadGroupSizeX),
-                    (unsigned)divRoundUp(rect.height(), kCSThreadGroupSizeY),
-                    1u},
-                canvasData, std::forward<Resources>(resources)...);
+    toolInstance = std::make_unique<ToolVariant>(
+        ToolVariant { ColorBrushTool(*toolResources) });
   }
 
   // load brush tips from img directories
@@ -129,7 +100,7 @@ public:
         loadBrushTip((*it).path());
   }
 
-  void loadBrushTip(const fs::path& path) {
+  void loadBrushTip(const fs::path &path) {
     // filter by extension...
     if (path.extension() != ".png")
       return;
@@ -162,20 +133,17 @@ public:
         uCanvasData, GL::kUniformBufferOffsetAlignment);
   }
 
-  void baseColorToShadingOffset(Canvas& canvas) {
+  void baseColorToShadingOffset(Canvas &canvas) {
     auto lightPos =
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
     ag::compute(*device, pipelines->ppBaseColorToOffset,
-                ag::ThreadGroupCount{
-                    (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-                    (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY),
-                    1u},
+                ag::ThreadGroupCount{canvas.width, canvas.height, 1u},
                 canvasData, lightPos, canvas.texShadingProfileLN,
                 canvas.texBaseColorUV, canvas.texShadingTermSmooth,
                 canvas.texStencil, ag::RWTextureUnit(0, canvas.texHSVOffsetUV));
   }
 
-  void renderShading(Canvas& canvas) {
+  void renderShading(Canvas &canvas) {
     struct BlurParams {
       glm::vec2 size;
       int blurSize;
@@ -191,19 +159,35 @@ public:
         canvasData,
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f}));
     ag::compute(*device, pipelines->ppBlurH,
-                ag::ThreadGroupCount{
-                    (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-                    (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY),
-                    1u},
-                params, RWTextureUnit(0, canvas.texShadingTerm),
+                ag::ThreadGroupCount{canvas.width, canvas.height, 1u}, params,
+                RWTextureUnit(0, canvas.texShadingTerm),
                 RWTextureUnit(1, canvas.texShadingTermSmooth0));
     ag::compute(*device, pipelines->ppBlurV,
-                ag::ThreadGroupCount{
-                    (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-                    (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY),
-                    1u},
-                params, RWTextureUnit(0, canvas.texShadingTermSmooth0),
+                ag::ThreadGroupCount{canvas.width, canvas.height, 1u}, params,
+                RWTextureUnit(0, canvas.texShadingTermSmooth0),
                 RWTextureUnit(1, canvas.texShadingTermSmooth));
+  }
+
+  void updateActiveTool()
+  {
+      if (activeTool != ui->activeTool) {
+          activeTool = ui->activeTool;
+          switch (activeTool)
+          {
+          case Tool::Brush:
+              *toolInstance = ColorBrushTool(*toolResources);
+              break;
+          case Tool::Smudge:
+              *toolInstance = SmudgeTool(*toolResources);
+              break;
+          case Tool::Blur:
+          case Tool::Select:
+          case Tool::None:
+          default:
+              // do nothing
+              break;
+          }
+      }
   }
 
   void render() {
@@ -220,6 +204,7 @@ public:
     renderMesh(*canvas);
     renderShading(*canvas);
     input->poll();
+    updateActiveTool();
     renderCanvas();
     if (ui->showReferenceShading)
       drawShadingOverlay(*canvas);
@@ -236,7 +221,8 @@ public:
     auto lightPos =
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
     ag::clear(*device, texEvalCanvas, ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-    if (isMakingStroke && ui->activeTool == Tool::Brush) {
+
+    /*if (isMakingStroke && ui->activeTool == Tool::Brush) {
       auto brushProps = this->brushPropsFromUi();
       // preview canvas
       previewCanvas(*canvas, texEvalCanvasBlur,
@@ -244,11 +230,12 @@ public:
                     lightPos, canvas->texStrokeMask,
                     glm::vec4{brushProps.color[0], brushProps.color[1],
                               brushProps.color[2], brushProps.opacity});
-    } else
-      previewCanvas(*canvas, texEvalCanvasBlur, pipelines->ppEvaluate,
-                    canvasData, lightPos, canvas->texStrokeMask);
+    } else*/
+
+    previewCanvas(*device, *canvas, texEvalCanvasBlur, pipelines->ppEvaluate,
+                    canvasData, samLinearClamp, lightPos, canvas->texStrokeMask);
     // blur pass
-    previewCanvas(*canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData,
+    previewCanvas(*device, *canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData, samLinearClamp,
                   RWTextureUnit(1, texEvalCanvasBlur));
 
     copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f},
@@ -256,30 +243,7 @@ public:
     copyTex(texEvalCanvas, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
-  void onBrushPointerEvent(const BrushProperties& props, unsigned x,
-                           unsigned y) {
-    brushPath.addPointerEvent(PointerEvent{x, y, 1.0f}, props,
-                              [this, props](auto splat) {
-                                this->drawBrushSplat(*canvas, props, splat);
-                              });
-  }
-
-  void onSmudgePointerEvent(const BrushProperties& props, unsigned x,
-                            unsigned y, bool first) {
-    brushPath.addPointerEvent(PointerEvent{x, y, 1.0f}, props,
-                              [this, props, first](auto splat) {
-                                this->smudge(*canvas, props, splat, first);
-                              });
-  }
-
-  void onBlurPointerEvent(const BrushProperties& props, unsigned x,
-                          unsigned y) {
-    brushPath.addPointerEvent(
-        PointerEvent{x, y, 1.0f}, props,
-        [this, props](auto splat) { this->blur(*canvas, props, splat); });
-  }
-
-  void blur(Canvas& canvas, const BrushProperties& brushProps,
+  /*void blur(Canvas& canvas, const BrushProperties& brushProps,
             const SplatProperties& splat) {
     ag::Box2D footprintBox;
     footprintBox = getSplatFootprint(splat.width, splat.width, splat);
@@ -293,185 +257,17 @@ public:
     BlurUniforms u{{footprintBox.xmin, footprintBox.ymin},
                    {footprintBox.width(), footprintBox.height()}};
 
-    /*applyComputeShaderOverRect(
+    applyComputeShaderOverRect(
         canvas, footprintBox, pipelines->ppBlur, canvasData,
         RWTextureUnit(0, canvas.texBaseColorUV),
         RWTextureUnit(1, texSmudgeFootprint), u,
-        ui->brushTipTextures[ui->selectedBrushTip].tex);*/
-  }
+        ui->brushTipTextures[ui->selectedBrushTip].tex);
+  }*/
 
   void setupInput() {
     // on key presses
-    input->keys().subscribe(
-        [this](auto ev) { fmt::print("Key event: {}\n", (int)ev.code); });
-    // on mouse button clicks
-    ui->canvasMouseButtons.subscribe([this](auto ev) {
-      if (ui->activeTool == Tool::Brush) {
-        if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-            ev.state == input::MouseButtonState::Pressed) {
-          isMakingStroke = true;   // go into stroke mode
-          brushPath = BrushPath(); // reset brush path
-          ag::clear(*device, canvas->texStrokeMask,
-                    ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
-          unsigned x, y;
-          ui->getPointerPosition(x, y);
-          this->onBrushPointerEvent(this->brushPropsFromUi(), x, y);
-          // beginStroke();
-        } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-                   ev.state == input::MouseButtonState::Released &&
-                   isMakingStroke) {
-          unsigned x, y;
-          ui->getPointerPosition(x, y);
-          auto brushProps = this->brushPropsFromUi();
-          this->onBrushPointerEvent(brushProps, x, y);
-          this->applyStroke(*canvas, brushProps);
-          isMakingStroke = false; // end stroke mode
-          this->computeHistograms(*canvas);
-          this->baseColorToShadingOffset(*canvas);
-        }
-      } else if (ui->activeTool == Tool::Smudge) {
-        if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-            ev.state == input::MouseButtonState::Pressed) {
-          isMakingStroke = true;   // go into stroke mode
-          brushPath = BrushPath(); // reset brush path
-          ag::clear(*device, texSmudgeFootprint,
-                    ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
-          unsigned x, y;
-          ui->getPointerPosition(x, y);
-          this->onSmudgePointerEvent(this->brushPropsFromUi(), x, y, true);
-        } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-                   ev.state == input::MouseButtonState::Released &&
-                   isMakingStroke) {
-          unsigned x, y;
-          ui->getPointerPosition(x, y);
-          auto brushProps = this->brushPropsFromUi();
-          this->onSmudgePointerEvent(brushProps, x, y, false);
-          isMakingStroke = false; // end stroke mode
-          this->computeHistograms(*canvas);
-          this->baseColorToShadingOffset(*canvas);
-        }
-      } else if (ui->activeTool == Tool::Blur) {
-        if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-            ev.state == input::MouseButtonState::Pressed) {
-          isMakingStroke = true;   // go into stroke mode
-          brushPath = BrushPath(); // reset brush path
-          unsigned x, y;
-          ui->getPointerPosition(x, y);
-          this->onBlurPointerEvent(this->brushPropsFromUi(), x, y);
-        } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-                   ev.state == input::MouseButtonState::Released &&
-                   isMakingStroke) {
-          unsigned x, y;
-          ui->getPointerPosition(x, y);
-          auto brushProps = this->brushPropsFromUi();
-          this->onBlurPointerEvent(brushProps, x, y);
-          isMakingStroke = false; // end stroke mode
-          // this->computeBlurHistogram(*canvas);
-        }
-      }
-    });
-
-    // on mouse move
-    ui->canvasMousePointer.subscribe([this](auto ev) {
-      // brush tool selected
-      if (isMakingStroke == true && ui->activeTool == Tool::Brush) {
-        // on mouse move, add splats with the current brush
-        this->onBrushPointerEvent(this->brushPropsFromUi(), ev.positionX,
-                                  ev.positionY);
-      } else if (isMakingStroke == true && ui->activeTool == Tool::Smudge) {
-        this->onSmudgePointerEvent(this->brushPropsFromUi(), ev.positionX,
-                                   ev.positionY, false);
-      } else if (isMakingStroke == true && ui->activeTool == Tool::Smudge) {
-        this->onBlurPointerEvent(this->brushPropsFromUi(), ev.positionX,
-                                 ev.positionY);
-      }
-    });
-  }
-
-  BrushProperties brushPropsFromUi() {
-    BrushProperties props;
-    props.color[0] = ui->strokeColor[0];
-    props.color[1] = ui->strokeColor[1];
-    props.color[2] = ui->strokeColor[2];
-    props.opacity = ui->strokeOpacity;
-    props.opacityJitter = ui->strokeOpacityJitter;
-    props.width = ui->strokeWidth;
-    props.widthJitter = ui->brushWidthJitter;
-    props.spacing = ui->brushSpacing;
-    props.spacingJitter = ui->brushSpacingJitter;
-    props.rotation = 0.0f;
-    props.rotationJitter = ui->brushRotationJitter;
-    return props;
-  }
-
-  // smudge tool operation:
-  // take a snapshot of the canvas under the brush footprint
-  // when the mouse move, apply snapshot with opacity, repeat
-  // no need for a stroke mask
-  void smudge(Canvas& canvas, const BrushProperties& brushProps,
-              const SplatProperties& splat, bool first) {
-    ag::Box2D footprintBox;
-    if (ui->brushTip == BrushTip::Textured) {
-      auto dim = ui->brushTipTextures[ui->selectedBrushTip].tex.info.dimensions;
-      footprintBox = getSplatFootprint(dim.x, dim.y, splat);
-    } else
-      footprintBox = getSplatFootprint(splat.width, splat.width, splat);
-
-    struct SmudgeUniforms {
-      glm::uvec2 origin;
-      glm::uvec2 size;
-      float opacity;
-    };
-
-    SmudgeUniforms u{{footprintBox.xmin, footprintBox.ymin},
-                     {footprintBox.width(), footprintBox.height()},
-                     first ? 0.0f : ui->strokeOpacity};
-
-    if (ui->brushTip == BrushTip::Textured)
-      applyComputeShaderOverRect(
-          canvas, footprintBox, pipelines->ppSmudge, canvasData,
-          RWTextureUnit(0, canvas.texBaseColorUV),
-          RWTextureUnit(1, texSmudgeFootprint), u,
-          ui->brushTipTextures[ui->selectedBrushTip].tex);
-  }
-
-  void drawBrushSplat(Canvas& canvas, const BrushProperties& brushProps,
-                      const SplatProperties& splat) {
-    /*fmt::print(std::clog, "splat(({},{}),{},{})\n", splat.center.x,
-               splat.center.y, splat.width, splat.rotation);*/
-    uniforms::Splat uSplat;
-    uSplat.center = splat.center;
-    uSplat.width = splat.width;
-    if (ui->brushTip == BrushTip::Round) {
-      auto dim = ui->brushTipTextures[ui->selectedBrushTip].tex.info.dimensions;
-      uSplat.transform = getSplatTransform(dim.x, dim.y, splat);
-    } else
-      uSplat.transform = getSplatTransform(splat.width, splat.width, splat);
-
-    if (ui->brushTip == BrushTip::Round)
-      ag::draw(*device, canvas.texStrokeMask,
-               pipelines->ppDrawRoundSplatToStrokeMask,
-               ag::DrawArrays(ag::PrimitiveType::Triangles, vboQuad),
-               canvasData, uSplat);
-    else if (ui->brushTip == BrushTip::Textured)
-      ag::draw(*device, canvas.texStrokeMask,
-               pipelines->ppDrawTexturedSplatToStrokeMask,
-               ag::DrawArrays(ag::PrimitiveType::Triangles, vboQuad),
-               ag::TextureUnit(0,
-                               ui->brushTipTextures[ui->selectedBrushTip].tex,
-                               samLinearClamp),
-               canvasData, uSplat);
-  }
-
-  void applyStroke(Canvas& canvas, const BrushProperties& brushProps) {
-    ag::compute(
-        *device, pipelines->ppFlattenStroke,
-        ag::ThreadGroupCount{
-            (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-            (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
-        canvasData, glm::vec4{brushProps.color[0], brushProps.color[1],
-                              brushProps.color[2], brushProps.opacity},
-        canvas.texStrokeMask, ag::RWTextureUnit(0, canvas.texBaseColorUV));
+    /*input->keys().subscribe(
+        [this](auto ev) { fmt::print("Key event: {}\n", (int)ev.code); });*/
   }
 
   /*auto getCamera() {
@@ -487,7 +283,7 @@ public:
     return cam;
   }*/
 
-  void renderMesh(Canvas& canvas) {
+  void renderMesh(Canvas &canvas) {
     drawMesh(mesh, *device, ag::SurfaceRT(canvas.texDepth, canvas.texNormals,
                                           canvas.texStencil),
              pipelines->ppRenderGbuffers, sceneData,
@@ -495,7 +291,7 @@ public:
   }
 
   // compute histograms
-  void computeHistograms(Canvas& canvas) {
+  void computeHistograms(Canvas &canvas) {
     // workaround
     ag::ClearColorInt clear = {{0, 0, 0, 0}};
     ag::clearInteger(*device, canvas.texHistH, clear);
@@ -567,11 +363,11 @@ public:
 
     // write back
     ag::copy(*device, gsl::span<const ag::RGBA8>(
-                          (const ag::RGBA8*)HSVCurve.data(), HSVCurve.size()),
+                          (const ag::RGBA8 *)HSVCurve.data(), HSVCurve.size()),
              canvas.texShadingProfileLN);
   }
 
-  void drawShadingOverlay(Canvas& canvas) {
+  void drawShadingOverlay(Canvas &canvas) {
     copyTex(canvas.texShadingTermSmooth, surfOut, width, height,
             glm::vec2{0.0f, 0.0f}, 1.0f);
   }
@@ -594,16 +390,16 @@ private:
   std::unique_ptr<Ui> ui;
   // input
   std::unique_ptr<input::Input> input;
-  // is the user making a stroke
-  bool isMakingStroke;
-  // active tool
-  Tool activeTool;
+
+  // Pointers to resources shared between tools
+  std::unique_ptr<ToolResources> toolResources;
+
+  Tool activeTool = Tool::Brush;
+  std::unique_ptr<ToolVariant> toolInstance;
 
   // evaluated canvas
   Texture2D<ag::RGBA8> texEvalCanvasBlur;
   Texture2D<ag::RGBA8> texEvalCanvas;
-  // splat footprint (for smudge)
-  Texture2D<ag::RGBA8> texSmudgeFootprint;
 
   Buffer<samples::Vertex2D[]> vboQuad;
 

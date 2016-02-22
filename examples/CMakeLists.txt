@@ -14,4 +14,5 @@ endfunction()
 # Ah, cmake, you never cease to amaze me.
 autograph_add_sample(TARGET sample_simple SOURCES simple/*.cpp simple/imgui/*.cpp REQUIRES input image_io assimp rxcpp docopt_s)
 autograph_add_sample(TARGET sample_input SOURCES input/*.cpp REQUIRES input image_io rxcpp assimp)
-autograph_add_sample(TARGET sample_vulkan_test SOURCES vulkan_test/*.cpp REQUIRES image_io vulkan vkcpp)
+autograph_add_sample(TARGET sample_vulkan_test SOURCES vulkan_test/*.cpp REQUIRES image_io vulkan)
+autograph_add_sample(TARGET sample_renderpass SOURCES renderpass/*.cpp REQUIRES rxcpp input image_io)

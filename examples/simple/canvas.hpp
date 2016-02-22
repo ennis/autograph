@@ -21,7 +21,13 @@ constexpr unsigned kShadingCurveSamplesSize = 256;
 // lit sphere resolution
 // constexpr unsigned kLitSphereWidth = 512;
 // constexpr unsigned kLitSphereHeight = 512;
+constexpr unsigned kCSThreadGroupSizeX = 16;
+constexpr unsigned kCSThreadGroupSizeY = 16;
+constexpr unsigned kCSThreadGroupSizeZ = 1;
 
+
+///////////////////////////////////////
+// Canvas
 struct Canvas {
 
   Canvas(Device& device, unsigned width_, unsigned height_)
@@ -106,5 +112,47 @@ struct Canvas {
   Texture2D<ag::RGBA8> texBlurParametersUV;
   // TODO shading detail map?
 };
+
+int divRoundUp(int numToRound, int multiple) {
+  return (numToRound + multiple - 1) / multiple;
+}
+
+// Invoke the 'evaluate' CS
+template <typename... Resources>
+void previewCanvas(Device& device, Canvas& canvas, Texture2D<ag::RGBA8>& out,
+                   ComputePipeline& pipeline, RawBufferSlice& canvasData, Sampler& sampler,
+                   Resources&&... resources) {
+  ag::compute(
+      device, pipeline,
+      ag::ThreadGroupCount{
+          (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
+          (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
+      canvasData,
+      ag::TextureUnit(0, canvas.texShadingProfileLN, sampler),
+      ag::TextureUnit(1, canvas.texBlurParametersLN, sampler),
+      ag::TextureUnit(2, canvas.texDetailMaskLN, sampler),
+      ag::TextureUnit(3, canvas.texBaseColorUV, sampler),
+      ag::TextureUnit(4, canvas.texHSVOffsetUV, sampler),
+      ag::TextureUnit(5, canvas.texBlurParametersUV, sampler),
+      ag::TextureUnit(6, canvas.texShadingTermSmooth, sampler),
+      ag::TextureUnit(7, canvas.texStencil, sampler),
+      ag::RWTextureUnit(0, out), std::forward<Resources>(resources)...);
+}
+
+// apply a CS over a region of the canvas
+/*template <typename... Resources>
+void applyComputeShaderOverRect(Device& device, Canvas& canvas, const ag::Box2D& rect,
+                                ComputePipeline& pipeline,
+                                RawBufferSlice& canvasData,
+                                Resources&&... resources) {
+  ag::compute(device, pipeline,
+              ag::ThreadGroupCount{
+                  (unsigned)divRoundUp(rect.width(), kCSThreadGroupSizeX),
+                  (unsigned)divRoundUp(rect.height(), kCSThreadGroupSizeY),
+                  1u},
+              canvasData, std::forward<Resources>(resources)...);
+}*/
+
+
 
 #endif

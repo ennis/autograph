@@ -37,3 +37,6 @@
 [submodule "ext/vkcpp"]
 	path = ext/vkcpp
 	url = https://github.com/nvpro-pipeline/vkcpp
+[submodule "ext/variant"]
+	path = ext/variant
+	url = https://github.com/eggs-cpp/variant.git

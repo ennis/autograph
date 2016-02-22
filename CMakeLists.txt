@@ -56,7 +56,7 @@ target_link_libraries(shaderpp ${Boost_LIBRARIES})
 target_include_directories(shaderpp PUBLIC ext/GSL/include ${Boost_INCLUDE_DIR})
 
 target_link_libraries(autograph shaderpp cppformat glloadgen glfw ${Boost_LIBRARIES} ${GLFW_LIBRARIES})
-target_include_directories(autograph PUBLIC src ext/glm ext/GSL/include)
+target_include_directories(autograph PUBLIC src ext/glm ext/GSL/include ext/variant/include)
 
 ############## Extras ##############
 function(target_link_autograph_extra)
