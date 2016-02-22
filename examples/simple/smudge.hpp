@@ -4,14 +4,11 @@
 
 #include "brush_tool.hpp"
 
-class Smudge 
-{
+class Smudge {
 public:
- Smudge(const ToolResources& resources_) : res(resources_) {
+  Smudge(const ToolResources& resources_) : res(resources_) {}
 
-  }
-
-    void beginStroke(const PointerEvent& event) {
+  void beginStroke(const PointerEvent& event) {
     brushPath = {};
     brushProps = brushPropsFromUi(res.ui);
     brushPath.addPointerEvent(event, brushProps,
@@ -28,10 +25,9 @@ public:
     // splat){paintSplat(splat);});
   }
 
-
 private:
   BrushPath brushPath;
-	ToolResources& res;
+  ToolResources& res;
 };
 
 #endif

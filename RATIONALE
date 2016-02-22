@@ -886,6 +886,7 @@ draw<N, Resources...>(RT<params>, ) -> auto
 => a variable number of draw resources
 => each draw resource can have a variable number of dynamic parameters
 => Arcane template wizardry
+	=> does not scale
 
 renderpass(rendertarget, mesh, texture) 
 
@@ -900,6 +901,7 @@ cannot use stateless ag::draw with renderpasses (ag::draw re-specifies all the s
 		=> with renderpasses: partial application of ag::draw
 			=>  
     Bikeshedding: StatePack, BindPack, StateSet, BindSet, BindingSet, StateBundle
+
 
 
 
@@ -925,3 +927,86 @@ auto renderMesh(meshIn, meshOut, sigma)
 	PS(vstream, ...)
 }
 
+
+
+About synchronization:
+_____________________________
+
+OpenGL: commands are executed sequentially (no out-of-order execution)
+Vulkan: commands within a command list, queue submissions can happen out-of-order
+
+Autograph: 2 choices
+	- maintain implicit ordering of operations in a command list
+	- modify API to expose explicit synchronization
+
+ag::draw returns a GPUFuture (back to first design...)
+
+
+Composable renderpasses:
+_____________________________
+
+A renderpass is a function generator with three levels of parameters:
+
+(- template parameters: compilation-time)
+- renderpass parameters: renderpass creation time (runtime)
+- dynamic parameters: draw call time (runtime)
+
+// callable object
+RenderPass<ReturnType, DynamicState...>
+
+A render pass can output multiple images
+
+
+
+auto initRenderPass() 
+{
+	
+	auto rp = makeRenderPass([&](ag::image<>, ag::image<>, ...) {
+
+	});
+
+	makeRenderPass(...) -> execute lambda with dummy parameters for construction
+
+	OR:
+
+	RenderPass is a class, with operator()
+}
+
+
+ag::renderpass::RenderPassBase (type-erased)
+	- required resources (images, samplers, descriptors)
+
+
+
+ag::renderpass::RenderPass<Output, Inputs...>
+
+ag::renderpass::ClearNode
+	- input node: Image 
+	- output node: Cleared image
+
+
+ag::renderpass::RawImage
+	- dimension, width, height, depth, 
+	  format, mips, array count, faces
+ag::renderpass::Image1DNode<Pixel>
+ag::renderpass::Image2DNode<Pixel>
+ag::renderpass::Image3DNode<Pixel>
+	- width, height, depth, format
+ag::renderpass::Image1DArrayNode<Pixel>
+ag::renderpass::Image2DArrayNode<Pixel>
+
+ag::renderpass::DrawNodeBase
+ag::renderpass::DrawNode<Generator>
+	- source image (resource entry in renderpass)
+	- state pack
+	- draw call generator (callable)
+
+ag::renderpass::CopyNode
+	- source image (entry)
+
+
+Example with the painter pipeline:
+
+
+auto clearedCanvas = rp::clear(width, height, color);
+auto baseColorPreview = preview(clearedCanvas, ...)

@@ -64,12 +64,9 @@ public:
         std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
     ui = std::make_unique<Ui>(gl.getWindow(), *input);
     samples::Vertex2D vboQuadData[] = {
-        {-1.0f, -1.0f, 0.0f, 0.0f},
-        {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, -1.0f, 1.0f, 0.0f},
-        {-1.0f, 1.0f, 0.0f, 1.0f},
-        {1.0f, 1.0f, 1.0f, 1.0f},
-        {1.0f, -1.0f, 1.0f, 0.0f},
+        {-1.0f, -1.0f, 0.0f, 0.0f}, {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, -1.0f, 1.0f, 0.0f},  {-1.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, 1.0f, 1.0f, 1.0f},   {1.0f, -1.0f, 1.0f, 0.0f},
     };
     vboQuad = device->createBuffer(vboQuadData);
     surfOut = device->getOutputSurface();
