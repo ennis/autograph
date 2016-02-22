@@ -1,6 +1,8 @@
 #ifndef BRUSH_TOOL_HPP
 #define BRUSH_TOOL_HPP
 
+#include <autograph/compute.hpp>
+
 #include "canvas.hpp"
 #include "ui.hpp"
 #include "brush_path.hpp"
@@ -30,7 +32,7 @@ struct ToolResources {
 // continueStroke(Device&, PointerEvent), endStroke(Device&, PointerEvent)
 template <typename Callbacks> class BrushTool {
 public:
-  BrushTool(ToolResources& resources) {
+  BrushTool(ToolResources& resources) : ui(&resources.ui) {
     canvasMouseButtons = resources.ui.canvasMouseButtons;
     canvasMousePointer = resources.ui.canvasMousePointer;
     callbacks = std::make_unique<Callbacks>(resources);
@@ -38,14 +40,14 @@ public:
       if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
           ev.state == input::MouseButtonState::Pressed) {
         unsigned x, y;
-        this->ui.getPointerPosition(x, y);
+        this->ui->getPointerPosition(x, y);
         PointerEvent pointerEvent{x, y, 1.0f}; // no pressure yet :(
         strokeStatus = StrokeStatus::InsideStroke;
         this->callbacks->beginStroke(pointerEvent);
       } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
                  ev.state == input::MouseButtonState::Released) {
         unsigned x, y;
-        this->ui.getPointerPosition(x, y);
+        this->ui->getPointerPosition(x, y);
         PointerEvent pointerEvent{x, y, 1.0f}; // no pressure yet :(
         this->callbacks->endStroke(pointerEvent);
         strokeStatus = StrokeStatus::OutsideStroke;
@@ -62,6 +64,7 @@ public:
   }
 
 protected:
+  Ui* ui;
   std::unique_ptr<Callbacks> callbacks;
   StrokeStatus strokeStatus = StrokeStatus::OutsideStroke;
   rxcpp::observable<input::MouseButtonEvent> canvasMouseButtons;
@@ -69,6 +72,7 @@ protected:
 };
 
 // color brush tool callbacks
+// noncopyable, nonmovable
 class ColorBrush {
 public:
   ColorBrush(const ToolResources& resources_) : res(resources_) {
@@ -87,21 +91,29 @@ public:
     brushPath = {};
     brushProps = brushPropsFromUi(res.ui);
     brushPath.addPointerEvent(event, brushProps,
-                              [&](auto splat) { paintSplat(splat); });
+                              [this](auto splat) { this->paintSplat(splat); });
   }
 
   void continueStroke(const PointerEvent& event) {
     brushPath.addPointerEvent(event, brushProps,
-                              [&](auto splat) { paintSplat(splat); });
+                              [this](auto splat) { this->paintSplat(splat); });
   }
 
   void endStroke(const PointerEvent& event) {
-    // brushPath.addPointerEvent(event, brushProps, [&](auto
-    // splat){paintSplat(splat);});
+      ag::compute(
+          res.device, res.pipelines.ppFlattenStroke,
+          ag::ThreadGroupCount{res.canvas.width, res.canvas.height, 1u},
+          glm::vec2{res.canvas.width, res.canvas.height},
+                  glm::vec4{brushProps.color[0], brushProps.color[1],
+                                brushProps.color[2], brushProps.opacity},
+          texStrokeMask, ag::RWTextureUnit(0, res.canvas.texBaseColorUV));
   }
 
   //
-  void previewCanvas(Texture2D<ag::RGBA8>& texTarget) {}
+  void previewCanvas(Texture2D<ag::RGBA8>& texTarget)
+  {
+
+  }
 
   void paintSplat(const SplatProperties& splat) {
     // draw splat to stroke mask
@@ -119,7 +131,7 @@ public:
       ag::draw(res.device, res.canvas.texStrokeMask,
                res.pipelines.ppDrawRoundSplatToStrokeMask,
                ag::DrawArrays(ag::PrimitiveType::Triangles, res.vboQuad),
-               glm::vec2{canvas.width, canvas.height}, uSplat);
+               glm::vec2{res.canvas.width, res.canvas.height}, uSplat);
     else if (res.ui.brushTip == BrushTip::Textured)
       ag::draw(res.device, res.canvas.texStrokeMask,
                res.pipelines.ppDrawTexturedSplatToStrokeMask,
@@ -127,7 +139,7 @@ public:
                ag::TextureUnit(
                    0, res.ui.brushTipTextures[res.ui.selectedBrushTip].tex,
                    res.samLinearClamp),
-               glm::vec2{canvas.width, canvas.height}, uSplat);
+               glm::vec2{res.canvas.width, res.canvas.height}, uSplat);
   }
 
 private:
@@ -137,5 +149,7 @@ private:
   BrushPath brushPath;
   Texture2D<ag::RGBA8> texStrokeMask;
 };
+
+using ColorBrushTool = BrushTool<ColorBrush>;
 
 #endif // !BRUSH_TOOL_HPP
