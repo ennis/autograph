@@ -8,7 +8,7 @@ layout(binding=1, rgba8) writeonly uniform image2D tex1;
 
 layout(binding=0, std140) uniform U0 { vec2 size; int blurSize; float sigma; };
 
-layout(local_size_x = 1, local_size_y = 1) in;
+layout(local_size_x = 16, local_size_y = 16) in;
 
 void main() 
 {  

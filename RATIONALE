@@ -1026,6 +1026,11 @@ auto clearedCanvas = rp::clear(width, height, color);
 auto baseColorPreview = preview(clearedCanvas, ...)
 
 
+
+To the backend: pass a directed graph of resources & nodes
+
+
+
 Extra: pipeline cache
 _____________________________
 

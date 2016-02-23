@@ -17,7 +17,7 @@ layout(binding = 3) uniform sampler2D texMask;
 layout(binding = 0, rgba8) writeonly uniform image2D mapHSVOffsetUV;
 
 
-layout(local_size_x = 1, local_size_y = 1) in;
+layout(local_size_x = 16, local_size_y = 16) in;
 
 void main() {
   ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);

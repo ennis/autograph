@@ -155,7 +155,7 @@ public:
       for (const auto& tip : brushTipTextures)
         tipTexNames.push_back(tip.name.c_str());
       ImGui::Combo("Tip texture", &selectedBrushTip, tipTexNames.data(),
-                   tipTexNames.size());
+                   (int)tipTexNames.size());
     }
 
     ImGui::SliderFloat("Brush opacity jitter", &strokeOpacityJitter, 0.0f,
@@ -214,6 +214,7 @@ public:
   bool useTexturedBrush = false;
   bool showReferenceShading = true;
   bool showIsolines = true;
+  bool overrideShadingCurve = true;
 
   // debug
   bool showHSVOffset = false;

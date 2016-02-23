@@ -27,23 +27,17 @@
 #include "camera.hpp"
 #include "canvas.hpp"
 #include "pipelines.hpp"
-#include "ui.hpp"
 #include "smudge.hpp"
+#include "ui.hpp"
 
 #include <boost/filesystem.hpp>
-#include <eggs/variant.hpp>
 
 namespace input = ag::extra::input;
 namespace image_io = ag::extra::image_io;
 
 constexpr const char kDefaultBrushTip[] = "simple/img/brushes/brush_tip.png";
 
-
 namespace fs = boost::filesystem;
-
-using ToolVariant = eggs::variant<
-    ColorBrushTool,
-    SmudgeTool>;
 
 class Painter : public samples::GLSample<Painter> {
 public:
@@ -72,12 +66,11 @@ public:
     setupInput();
     loadBrushTips();
 
-    toolResources = std::make_unique<ToolResources>(
-        ToolResources{*device, *pipelines, *canvas, *ui, samLinearRepeat,
-                      samLinearClamp, samNearestRepeat, samNearestClamp, vboQuad});
+    toolResources = std::make_unique<ToolResources>(ToolResources{
+        *device, *pipelines, *canvas, *ui, samLinearRepeat, samLinearClamp,
+        samNearestRepeat, samNearestClamp, vboQuad});
 
-    toolInstance = std::make_unique<ToolVariant>(
-        ToolVariant { ColorBrushTool(*toolResources) });
+	toolInstance = std::make_unique<ColorBrushTool>(*toolResources);
   }
 
   // load brush tips from img directories
@@ -97,7 +90,7 @@ public:
         loadBrushTip((*it).path());
   }
 
-  void loadBrushTip(const fs::path &path) {
+  void loadBrushTip(const fs::path& path) {
     // filter by extension...
     if (path.extension() != ".png")
       return;
@@ -130,24 +123,24 @@ public:
         uCanvasData, GL::kUniformBufferOffsetAlignment);
   }
 
-  void baseColorToShadingOffset(Canvas &canvas) {
+  void baseColorToShadingOffset(Canvas& canvas) {
     auto lightPos =
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
     ag::compute(*device, pipelines->ppBaseColorToOffset,
-                ag::ThreadGroupCount{canvas.width, canvas.height, 1u},
+		ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
                 canvasData, lightPos, canvas.texShadingProfileLN,
                 canvas.texBaseColorUV, canvas.texShadingTermSmooth,
                 canvas.texStencil, ag::RWTextureUnit(0, canvas.texHSVOffsetUV));
   }
 
-  void renderShading(Canvas &canvas) {
+  void renderShading(Canvas& canvas) {
     struct BlurParams {
       glm::vec2 size;
       int blurSize;
       float sigma;
     };
     auto params =
-        BlurParams{{(float)canvas.width, (float)canvas.height}, 21, 12.0f};
+        BlurParams{{(float)canvas.width, (float)canvas.height}, 3, 1.0f};
     auto lightPos =
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
     ag::draw(
@@ -156,35 +149,34 @@ public:
         canvasData,
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f}));
     ag::compute(*device, pipelines->ppBlurH,
-                ag::ThreadGroupCount{canvas.width, canvas.height, 1u}, params,
+                ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16), params,
                 RWTextureUnit(0, canvas.texShadingTerm),
                 RWTextureUnit(1, canvas.texShadingTermSmooth0));
     ag::compute(*device, pipelines->ppBlurV,
-                ag::ThreadGroupCount{canvas.width, canvas.height, 1u}, params,
+		ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16), params,
                 RWTextureUnit(0, canvas.texShadingTermSmooth0),
                 RWTextureUnit(1, canvas.texShadingTermSmooth));
   }
 
-  void updateActiveTool()
-  {
-      if (activeTool != ui->activeTool) {
-          activeTool = ui->activeTool;
-          switch (activeTool)
-          {
-          case Tool::Brush:
-              *toolInstance = ColorBrushTool(*toolResources);
-              break;
-          case Tool::Smudge:
-              *toolInstance = SmudgeTool(*toolResources);
-              break;
-          case Tool::Blur:
-          case Tool::Select:
-          case Tool::None:
-          default:
-              // do nothing
-              break;
-          }
+  void updateActiveTool() {
+    if (activeTool != ui->activeTool) {
+      activeTool = ui->activeTool;
+      switch (activeTool) {
+      case Tool::Brush:
+        toolInstance = std::make_unique<ColorBrushTool>(*toolResources);
+        break;
+      case Tool::Smudge:
+        toolInstance = std::make_unique<SmudgeTool>(*toolResources);
+        break;
+      case Tool::Blur:
+		  
+      case Tool::Select:
+      case Tool::None:
+      default:
+        // do nothing
+        break;
       }
+    }
   }
 
   void render() {
@@ -202,7 +194,11 @@ public:
     renderShading(*canvas);
     input->poll();
     updateActiveTool();
-    renderCanvas();
+	if (!ui->overrideShadingCurve)
+		computeHistograms(*canvas);
+	else
+		loadShadingCurve(*canvas);
+	renderCanvas();
     if (ui->showReferenceShading)
       drawShadingOverlay(*canvas);
     if (ui->showHSVOffset)
@@ -230,9 +226,10 @@ public:
     } else*/
 
     previewCanvas(*device, *canvas, texEvalCanvasBlur, pipelines->ppEvaluate,
-                    canvasData, samLinearClamp, lightPos, canvas->texStrokeMask);
+                  canvasData, samLinearClamp, lightPos);
     // blur pass
-    previewCanvas(*device, *canvas, texEvalCanvas, pipelines->ppEvaluate, canvasData, samLinearClamp,
+    previewCanvas(*device, *canvas, texEvalCanvas, pipelines->ppEvaluateBlurPass,
+                  canvasData, samLinearClamp,
                   RWTextureUnit(1, texEvalCanvasBlur));
 
     copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f},
@@ -280,7 +277,7 @@ public:
     return cam;
   }*/
 
-  void renderMesh(Canvas &canvas) {
+  void renderMesh(Canvas& canvas) {
     drawMesh(mesh, *device, ag::SurfaceRT(canvas.texDepth, canvas.texNormals,
                                           canvas.texStencil),
              pipelines->ppRenderGbuffers, sceneData,
@@ -288,7 +285,7 @@ public:
   }
 
   // compute histograms
-  void computeHistograms(Canvas &canvas) {
+  void computeHistograms(Canvas& canvas) {
     // workaround
     ag::ClearColorInt clear = {{0, 0, 0, 0}};
     ag::clearInteger(*device, canvas.texHistH, clear);
@@ -298,9 +295,7 @@ public:
 
     ag::compute(
         *device, pipelines->ppComputeShadingCurveHSV,
-        ag::ThreadGroupCount{
-            (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-            (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
+		ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
         canvasData,
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f}),
         canvas.texNormals, canvas.texStencil, canvas.texBaseColorUV,
@@ -355,26 +350,35 @@ public:
       HSVCurve[i][0].value = (uint8_t)(ah * 255.0f);
       HSVCurve[i][1].value = (uint8_t)(as * 255.0f);
       HSVCurve[i][2].value = (uint8_t)(av * 255.0f);
-      HSVCurve[i][3].value = 1.0f;
+      HSVCurve[i][3].value = 255;
     }
 
     // write back
     ag::copy(*device, gsl::span<const ag::RGBA8>(
-                          (const ag::RGBA8 *)HSVCurve.data(), HSVCurve.size()),
+                          (const ag::RGBA8*)HSVCurve.data(), HSVCurve.size()),
              canvas.texShadingProfileLN);
   }
 
-  void drawShadingOverlay(Canvas &canvas) {
+  void loadShadingCurve(Canvas& canvas)
+  {
+	  std::vector<ag::RGBA8> HSVCurve(kShadingCurveSamplesSize);
+	  for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i)
+	  {
+		  HSVCurve[i][0].value = 0;
+		  HSVCurve[i][1].value = 0;
+		  HSVCurve[i][2].value = (uint8_t)(glm::smoothstep(0.2f, 0.8f, (float)i / (float)kShadingCurveSamplesSize)*255.0f);
+		  HSVCurve[i][3].value = 255;
+		}
+	  ag::copy(*device, gsl::span<const ag::RGBA8>(
+		  (const ag::RGBA8*)HSVCurve.data(), HSVCurve.size()),
+		  canvas.texShadingProfileLN);
+  }
+
+  void drawShadingOverlay(Canvas& canvas) {
     copyTex(canvas.texShadingTermSmooth, surfOut, width, height,
             glm::vec2{0.0f, 0.0f}, 1.0f);
   }
-
-  // create textures
-  // load pipelines
-
-  // render normal map
-  // render isolines
-
+  
 private:
   ag::Surface<GL, float, ag::RGBA8> surfOut;
   // shaders
@@ -392,7 +396,7 @@ private:
   std::unique_ptr<ToolResources> toolResources;
 
   Tool activeTool = Tool::Brush;
-  std::unique_ptr<ToolVariant> toolInstance;
+  std::unique_ptr<ToolInstance> toolInstance;
 
   // evaluated canvas
   Texture2D<ag::RGBA8> texEvalCanvasBlur;

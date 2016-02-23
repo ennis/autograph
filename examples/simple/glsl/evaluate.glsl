@@ -117,7 +117,7 @@ void main()
   /////////////////////////////////////////////
   // fetch blur sigma
   float sigma = texture(mapBlurParametersLN, ldotn).r;
-  int windowSize = 3*int(ceil(sigma));
+  int windowSize = max(3*int(ceil(sigma)),1);
 
   /////////////////////////////////////////////
   //
@@ -127,7 +127,7 @@ void main()
     for (int x = -windowSize; x < windowSize; ++x) {
       vec2 p = vec2(texelCoords + ivec2(x, y));
       vec2 d = center - p;
-      S += G(dot(d,d), sq(sigma)) * imageLoad(imgSource, texelCoords);
+	  S += G(dot(d,d), sq(sigma)) * imageLoad(imgSource, texelCoords);
     }
   }
   

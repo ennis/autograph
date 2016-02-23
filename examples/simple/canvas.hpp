@@ -33,8 +33,6 @@ struct Canvas {
   Canvas(Device& device, unsigned width_, unsigned height_)
       : width(width_), height(height_) {
 
-    texStrokeMask = device.createTexture2D<ag::R8>(glm::uvec2{width, height});
-
     texHistH = device.createTexture1D<ag::R32UI>(kShadingCurveSamplesSize);
     texHistS = device.createTexture1D<ag::R32UI>(kShadingCurveSamplesSize);
     texHistV = device.createTexture1D<ag::R32UI>(kShadingCurveSamplesSize);
@@ -83,9 +81,6 @@ struct Canvas {
   unsigned width;
   unsigned height;
 
-  // mask
-  Texture2D<ag::R8> texStrokeMask;
-
   // rendered from geometry
   Texture2D<ag::Depth32> texDepth;
   Texture2D<ag::Unorm10x3_1x2> texNormals;
@@ -113,9 +108,6 @@ struct Canvas {
   // TODO shading detail map?
 };
 
-int divRoundUp(int numToRound, int multiple) {
-  return (numToRound + multiple - 1) / multiple;
-}
 
 // Invoke the 'evaluate' CS
 template <typename... Resources>
@@ -124,9 +116,7 @@ void previewCanvas(Device& device, Canvas& canvas, Texture2D<ag::RGBA8>& out,
                    Resources&&... resources) {
   ag::compute(
       device, pipeline,
-      ag::ThreadGroupCount{
-          (unsigned)divRoundUp(canvas.width, kCSThreadGroupSizeX),
-          (unsigned)divRoundUp(canvas.height, kCSThreadGroupSizeY), 1u},
+	  ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
       canvasData,
       ag::TextureUnit(0, canvas.texShadingProfileLN, sampler),
       ag::TextureUnit(1, canvas.texBlurParametersLN, sampler),
