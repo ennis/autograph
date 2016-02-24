@@ -29,6 +29,7 @@
 #include "pipelines.hpp"
 #include "smudge.hpp"
 #include "ui.hpp"
+#include "blur.hpp"
 
 #include <boost/filesystem.hpp>
 
@@ -169,6 +170,8 @@ public:
         toolInstance = std::make_unique<SmudgeTool>(*toolResources);
         break;
       case Tool::Blur:
+          toolInstance = std::make_unique<BlurTool>(*toolResources);
+          break;
 		  
       case Tool::Select:
       case Tool::None:
@@ -207,6 +210,7 @@ public:
     if (ui->showBaseColor)
       copyTex(canvas->texBaseColorUV, surfOut, width, height,
               glm::vec2{0.0f, 0.0f}, 1.0f);
+    updateBlurHist(*canvas);
     ui->render(*device);
   }
 
@@ -281,7 +285,7 @@ public:
     drawMesh(mesh, *device, ag::SurfaceRT(canvas.texDepth, canvas.texNormals,
                                           canvas.texStencil),
              pipelines->ppRenderGbuffers, sceneData,
-             glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f}));
+             glm::scale(glm::mat4{1.0f}, glm::vec3{0.2f}));
   }
 
   // compute histograms
@@ -377,6 +381,17 @@ public:
   void drawShadingOverlay(Canvas& canvas) {
     copyTex(canvas.texShadingTermSmooth, surfOut, width, height,
             glm::vec2{0.0f, 0.0f}, 1.0f);
+  }
+
+  void updateBlurHist(Canvas& canvas)
+  {
+      // read back histograms
+      std::vector<ag::RGBA8> histBlur(kShadingCurveSamplesSize);
+      ag::copySync(*device, canvas.texBlurParametersLN, gsl::as_span(histBlur));
+
+      for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i) {
+          ui->histBlurRadius[i] = float(histBlur[i][0].value) / 255.0f;
+      }
   }
   
 private:

@@ -116,20 +116,22 @@ void main()
 
   /////////////////////////////////////////////
   // fetch blur sigma
-  float sigma = texture(mapBlurParametersLN, ldotn).r;
-  int windowSize = max(3*int(ceil(sigma)),1);
+  float sigma = texture(mapBlurParametersLN, ldotn).r*10.0f;
+  int windowSize = 3*int(ceil(sigma));
 
   /////////////////////////////////////////////
   //
   vec4 S = vec4(0.0f);
   vec2 center = vec2(texelCoords);
-  for (int y = -windowSize; y < windowSize; ++y) {
-    for (int x = -windowSize; x < windowSize; ++x) {
-      vec2 p = vec2(texelCoords + ivec2(x, y));
-      vec2 d = center - p;
-	  S += G(dot(d,d), sq(sigma)) * imageLoad(imgSource, texelCoords);
+  for (int y = -windowSize; y <= windowSize; ++y) {
+    for (int x = -windowSize; x <= windowSize; ++x) {
+      ivec2 p = texelCoords + ivec2(x, y);
+      vec2 d = center - vec2(p);
+      int t = max(2*windowSize+1,1);
+	  S += /*G(dot(d,d), sq(sigma)) **/ imageLoad(imgSource, p) / (t*t);
     }
   }
+ // S.a = 1.0f;
   
   imageStore(imgTarget, texelCoords, S);
 }

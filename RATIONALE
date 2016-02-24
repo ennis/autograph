@@ -387,6 +387,8 @@ TOP PRIORITY ITEMS
 * replace associated consts with static constexpr **functions**
 *?? Simpler pipeline creation (for OpenGL)
 * move blur in imageproc extra
+* Texture types should be parameterized by a typeless surface format (number of channels, bits per channel)
+	* Concrete types in texture views
 
 
 DONE Rename source files in backend

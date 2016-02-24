@@ -49,6 +49,7 @@ struct Pipelines {
     ShaderSource base_color_to_offset =
         loadShaderSource(samplesRoot / "simple/glsl/base_color_to_offset.glsl");
     ShaderSource blur = loadShaderSource(samplesRoot / "simple/glsl/blur.glsl");
+    ShaderSource blur_brush = loadShaderSource(samplesRoot / "simple/glsl/blur_brush.glsl");
 
     {
       GraphicsPipelineInfo g;
@@ -169,6 +170,14 @@ struct Pipelines {
 
     {
       ComputePipelineInfo c;
+      auto CSSource = blur_brush.preprocess(PipelineStage::Compute,
+                                                      nullptr, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppBlurBrush = device.createComputePipeline(c);
+    }
+
+    {
+      ComputePipelineInfo c;
 
       const char *defines_h[] = {"BLUR_H"};
       auto CSSource =
@@ -216,6 +225,9 @@ struct Pipelines {
 
   // [base_color_to_offset.glsl]
   ComputePipeline ppBaseColorToOffset;
+
+  // [blur_brush.glsl]
+  ComputePipeline ppBlurBrush;
 
   // Process passes
   // [process_dynamic_color.glsl]

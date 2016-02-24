@@ -52,7 +52,7 @@ class Ui {
 public:
   Ui(GLFWwindow* window, input::Input& input_)
       : input(input_), histH(kShadingCurveSamplesSize),
-        histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize) {
+        histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize),  histBlurRadius(kShadingCurveSamplesSize) {
 
     std::fill(begin(histH), end(histH), 0.0f);
     std::fill(begin(histS), end(histS), 0.0f);
@@ -189,6 +189,8 @@ public:
                          "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
     ImGui::PlotHistogram("V curve", histV.data(), kShadingCurveSamplesSize, 0,
                          "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
+    ImGui::PlotHistogram("Blur radius", histBlurRadius.data(), kShadingCurveSamplesSize, 0,
+                         "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
 
     ImGui::Render();
   }
@@ -237,6 +239,7 @@ public:
   std::vector<float> histH;
   std::vector<float> histS;
   std::vector<float> histV;
+  std::vector<float> histBlurRadius;
 
   // mouse events on canvas (triggered when the mouse is not focused on the
   // canvas)
