@@ -1,11 +1,17 @@
 
-* Camera move
+**** Layers
+	* Un shader/une passe par process
+	* Selection
+
+**** Camera move
+	Save camera parameters
+
+
+* Layer masks
+
 
 * Load / save
 
-* Layers
-
-* Layer masks
 
 * Undo list
 
@@ -20,7 +26,6 @@
 
 * Separate rendering from event handling
 	* rendering must happen during a specific period
-
 
 * Redraw scene only if parameters have changed
 	=> Observables for scene parameters

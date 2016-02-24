@@ -28,6 +28,7 @@ struct BrushProperties {
   float spacingJitter;
   float rotation;
   float rotationJitter;
+  float smoothness;
 };
 
 BrushProperties brushPropsFromUi(Ui& ui) {
@@ -43,6 +44,7 @@ BrushProperties brushPropsFromUi(Ui& ui) {
   props.spacingJitter = ui.brushSpacingJitter;
   props.rotation = 0.0f;
   props.rotationJitter = ui.brushRotationJitter;
+  props.smoothness = ui.brushSmoothness;
   return props;
 }
 
@@ -52,6 +54,7 @@ struct SplatProperties {
   float color[3];
   float opacity;
   float width; // scale
+  float smoothness;
   float rotation;
 };
 
@@ -94,6 +97,7 @@ SplatProperties evalSplat(const BrushProperties& props, glm::vec2 center) {
   ret.width = evalJitter(props.width, props.widthJitter);
   ret.rotation = evalJitter(props.rotation,
                             2.0f * glm::pi<float>() * props.rotationJitter);
+  ret.smoothness = props.smoothness;
   return ret;
 }
 

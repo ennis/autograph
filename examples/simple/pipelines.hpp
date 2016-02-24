@@ -23,6 +23,7 @@ struct Splat {
   glm::mat3x4 transform;
   glm::vec2 center;
   float width;
+  float smoothness;
 };
 }
 

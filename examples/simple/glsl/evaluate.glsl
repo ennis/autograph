@@ -100,8 +100,8 @@ void main() {
 float G(float x2y2, float sigma2)
 {
   // degenerate case
-  if (sigma2 < 0.01f) return x2y2 < 0.01f ? 1.0f : 0.0f;
-  return 1.0f/(sigma2*TWOPI)*exp(-0.5*x2y2/(2.0f*sigma2));
+  if (sigma2 < 0.3f) return x2y2 < 0.3f ? 1.0f : 0.0f;
+  return 1.0f/(sigma2*TWOPI)*exp(-x2y2/(2.0f*sigma2));
 }
 
 void main()
@@ -117,7 +117,7 @@ void main()
   /////////////////////////////////////////////
   // fetch blur sigma
   float sigma = texture(mapBlurParametersLN, ldotn).r*10.0f;
-  int windowSize = 3*int(ceil(sigma));
+  int windowSize = int(ceil(3.0f*sigma));
 
   /////////////////////////////////////////////
   //
@@ -127,8 +127,8 @@ void main()
     for (int x = -windowSize; x <= windowSize; ++x) {
       ivec2 p = texelCoords + ivec2(x, y);
       vec2 d = center - vec2(p);
-      int t = max(2*windowSize+1,1);
-	  S += /*G(dot(d,d), sq(sigma)) **/ imageLoad(imgSource, p) / (t*t);
+      //int t = max(2*windowSize+1,1);
+	  S += G(dot(d,d), sq(sigma)) * imageLoad(imgSource, p);
     }
   }
  // S.a = 1.0f;

@@ -136,6 +136,7 @@ public:
     uniforms::Splat uSplat;
     uSplat.center = splat.center;
     uSplat.width = splat.width;
+    uSplat.smoothness = splat.smoothness;
     if (res.ui.brushTip == BrushTip::Round) {
       auto dim =
           res.ui.brushTipTextures[res.ui.selectedBrushTip].tex.info.dimensions;

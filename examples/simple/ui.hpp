@@ -158,6 +158,8 @@ public:
                    (int)tipTexNames.size());
     }
 
+    ImGui::SliderFloat("Smoothness", &brushSmoothness, 0.0f,
+                       1.0f);
     ImGui::SliderFloat("Brush opacity jitter", &strokeOpacityJitter, 0.0f,
                        1.0f);
     ImGui::SliderFloat("Brush width jitter", &brushWidthJitter, 0.0f, 100.0f);
@@ -170,6 +172,7 @@ public:
                        50.0f);
 
     ImGui::Checkbox("Use textured brush", &useTexturedBrush);
+    ImGui::Checkbox("Override shading curve", &overrideShadingCurve);
     ImGui::Checkbox("Show reference shading", &showReferenceShading);
     ImGui::Checkbox("Show isolines", &showIsolines);
     ImGui::Checkbox("DEBUG - Show base color", &showBaseColor);
@@ -234,6 +237,7 @@ public:
   float brushWidthJitter = 0.0f;
   float brushSpacing = 1.0f;
   float brushSpacingJitter = 0.0f;
+  float brushSmoothness;
 
   // histograms
   std::vector<float> histH;

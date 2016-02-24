@@ -32,7 +32,7 @@ void main() {
 #ifdef TEXTURED
   float Sa = 1.0 - texture(texBrushTip, fTexcoord).r;
 #else
-  float Sa = roundBrushKernel(pos, splat.center, splat.width);
+  float Sa = roundBrushKernel(pos, splat.center, splat.width, splat.smoothness);
 #endif
   color = vec4(Sa);
 }
