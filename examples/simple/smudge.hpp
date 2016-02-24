@@ -8,6 +8,7 @@ class SmudgeTool : public BrushTool {
 public:
   SmudgeTool(const ToolResources& resources_)
       : BrushTool(resources_), res(resources_) {
+      fmt::print(std::clog, "Init smudge tool");
     texSmudgeFootprint =
         res.device.createTexture2D<ag::RGBA8>(glm::uvec2{512, 512});
   }

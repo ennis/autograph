@@ -2,6 +2,7 @@
 #define CAMERA_HPP
 
 #include <glm/glm.hpp>
+#include "brush_tool.hpp"
 
 struct Frustum {
   float left;
@@ -39,5 +40,39 @@ struct Camera {
 const glm::vec3 CamFront = glm::vec3(0, 0, 1);
 const glm::vec3 CamRight = glm::vec3(1, 0, 0);
 const glm::vec3 CamUp = glm::vec3(0, 1, 0);
+
+/*class TrackballCameraController : public ToolInstance
+{
+public:
+  TrackballCameraController(const ToolResources& resources) : res(resources)
+  {
+    // subscribe on key and mouse events
+    canvasMouseButtons = resources.ui.canvasMouseButtons;
+    canvasMousePointer = resources.ui.canvasMousePointer;
+    canvasMouseButtons.subscribe([this](auto ev) {});
+    canvasMousePointer.subscribe([this](auto ev) {});
+
+  }
+
+  void updateCamera()
+  {
+
+  }
+
+  virtual ~TrackballCameraController()
+  {}
+
+private:
+  enum class Mode {
+    Idle,
+    Rotate,
+    Pan
+  };
+
+  Mode curMode;
+  ToolResources resources;
+  rxcpp::observable<input::MouseButtonEvent> canvasMouseButtons;
+  rxcpp::observable<input::MousePointerEvent> canvasMousePointer;
+};*/
 
 #endif

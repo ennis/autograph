@@ -281,7 +281,7 @@ public:
     drawMesh(mesh, *device, ag::SurfaceRT(canvas.texDepth, canvas.texNormals,
                                           canvas.texStencil),
              pipelines->ppRenderGbuffers, sceneData,
-             glm::scale(glm::mat4{1.0f}, glm::vec3{0.2f}));
+             glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f}));
   }
 
   // compute histograms

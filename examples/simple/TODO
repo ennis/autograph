@@ -1,0 +1,28 @@
+
+* Camera move
+
+* Load / save
+
+* Layers
+
+* Layer masks
+
+* Undo list
+
+* Tools and brushes
+
+* Better UI toolkit 
+	* more practical
+	* extendable by tools
+	* declarative
+
+* Better input events
+
+* Separate rendering from event handling
+	* rendering must happen during a specific period
+
+
+* Redraw scene only if parameters have changed
+	=> Observables for scene parameters
+		* camera
+		* light position

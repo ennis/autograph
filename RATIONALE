@@ -330,13 +330,13 @@ Draw call:
 	TextureUnit(0, TextureType)
 	BufferSlot(...)
 
-* Upload texture data!
-
 
 First simplification pass
 _____________________________
 
 TOP PRIORITY ITEMS
+* Do not use raw arrays in predefined pixel types
+	use std::array
 * Render target specification and caching (render target descriptors, etc.)
 	RenderTargets(depth, color0, color1, ...) -> RenderTarget<Depth, Colors...>
 	MakeRenderTargetNoDepth(color0, color1, ...) -> ...
@@ -409,7 +409,7 @@ Minimum dependencies are always good. Consider removing glm from the requirement
 (so that people can use eigen instead)
 Issue: cannot include predefined pixel types in the library. (except array types)
 	=> that's good
-
+People should define their own pixel types
 
 
 Formalization: binders

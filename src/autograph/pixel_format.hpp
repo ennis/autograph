@@ -2,10 +2,11 @@
 #define PIXEL_TYPE_HPP
 
 #include <cstdint>
+#include <array>
 
 namespace ag {
 
-// TODO: distinguish "surface format" from "interpretation format"
+// TODO: distinguish "surface format" (number of channels, number of bits) from "interpretation format" (float, uint, unorm, sint, snorm)
 
 enum class PixelFormat {
   // 32x4
@@ -97,26 +98,26 @@ struct PixelTypeTraits<float>
     : public PixelTypeTraitsImpl<PixelFormat::Float, float> {};
 template <>
 struct PixelTypeTraits<float[2]>
-    : public PixelTypeTraitsImpl<PixelFormat::Float2, float[2]> {};
+    : public PixelTypeTraitsImpl<PixelFormat::Float2, std::array<float,2> > {};
 template <>
 struct PixelTypeTraits<float[3]>
-    : public PixelTypeTraitsImpl<PixelFormat::Float3, float[3]> {};
+    : public PixelTypeTraitsImpl<PixelFormat::Float3, std::array<float,3> > {};
 template <>
 struct PixelTypeTraits<float[4]>
-    : public PixelTypeTraitsImpl<PixelFormat::Float4, float[4]> {};
+    : public PixelTypeTraitsImpl<PixelFormat::Float4, std::array<float,4> > {};
 
 template <>
 struct PixelTypeTraits<uint8_t>
     : public PixelTypeTraitsImpl<PixelFormat::Uint8, uint8_t> {};
 template <>
-struct PixelTypeTraits<uint8_t[2]>
-    : public PixelTypeTraitsImpl<PixelFormat::Uint8x2, uint8_t[2]> {};
+struct PixelTypeTraits<std::array<uint8_t, 2> >
+    : public PixelTypeTraitsImpl<PixelFormat::Uint8x2, std::array<uint8_t, 2> > {};
 template <>
-struct PixelTypeTraits<uint8_t[3]>
-    : public PixelTypeTraitsImpl<PixelFormat::Uint8x3, uint8_t[3]> {};
+struct PixelTypeTraits<std::array<uint8_t, 3> >
+    : public PixelTypeTraitsImpl<PixelFormat::Uint8x3, std::array<uint8_t, 3> > {};
 template <>
-struct PixelTypeTraits<uint8_t[4]>
-    : public PixelTypeTraitsImpl<PixelFormat::Uint8x4, uint8_t[4]> {};
+struct PixelTypeTraits<std::array<uint8_t, 4> >
+    : public PixelTypeTraitsImpl<PixelFormat::Uint8x4, std::array<uint8_t, 4> > {};
 
 
 template <>
@@ -130,17 +131,17 @@ template <>
 struct PixelTypeTraits<Normalized<uint8_t>>
     : public PixelTypeTraitsImpl<PixelFormat::Unorm8, Normalized<uint8_t>> {};
 template <>
-struct PixelTypeTraits<Normalized<uint8_t>[2]>
+struct PixelTypeTraits<std::array<Normalized<uint8_t>, 2>>
     : public PixelTypeTraitsImpl<PixelFormat::Unorm8x2,
-                                 Normalized<uint8_t>[2]> {};
+                                 std::array<Normalized<uint8_t>, 2> > {};
 template <>
-struct PixelTypeTraits<Normalized<uint8_t>[3]>
+struct PixelTypeTraits<std::array<Normalized<uint8_t>, 3>>
     : public PixelTypeTraitsImpl<PixelFormat::Unorm8x3,
-                                 Normalized<uint8_t>[3]> {};
+                                 std::array<Normalized<uint8_t>, 3> > {};
 template <>
-struct PixelTypeTraits<Normalized<uint8_t>[4]>
+struct PixelTypeTraits<std::array<Normalized<uint8_t>, 4>>
     : public PixelTypeTraitsImpl<PixelFormat::Unorm8x4,
-                                 Normalized<uint8_t>[4]> {};
+                                 std::array<Normalized<uint8_t>, 4> > {};
 
 // Packed formats
 struct Snorm10x3_1x2
@@ -174,9 +175,9 @@ template <>
 struct PixelTypeTraits<Depth24_Stencil8>
     : public PixelTypeTraitsImpl<PixelFormat::Depth24_Stencil8, Depth24_Stencil8> {};
 
-using RGBA8 = Normalized<uint8_t>[4];
-using RGB8 = Normalized<uint8_t>[3];
-using RG8 = Normalized<uint8_t>[2];
+using RGBA8 = std::array<Normalized<uint8_t>, 4>;
+using RGB8 = std::array<Normalized<uint8_t>, 3>;
+using RG8 = std::array<Normalized<uint8_t>, 2>;
 using R32F = float;
 using R8 = Normalized<uint8_t>;
 using R32UI = uint32_t;

@@ -9,6 +9,7 @@
 #include "pipelines.hpp"
 #include "types.hpp"
 #include "ui.hpp"
+#include "camera.hpp"
 
 enum class StrokeStatus { InsideStroke, OutsideStroke };
 
@@ -18,6 +19,7 @@ struct ToolResources {
   Pipelines& pipelines;
   Canvas& canvas;
   Ui& ui;
+  //Camera& camera;
   //
   Sampler& samLinearRepeat;
   Sampler& samLinearClamp;
@@ -38,9 +40,8 @@ public:
 class BrushTool : public ToolInstance {
 public:
   BrushTool(const ToolResources& resources) : ui(resources.ui) {
-    canvasMouseButtons = resources.ui.canvasMouseButtons;
-    canvasMousePointer = resources.ui.canvasMousePointer;
-    canvasMouseButtons.subscribe([this](auto ev) {
+      fmt::print(std::clog, "Creating BrushTool\n");
+    resources.ui.canvasMouseButtons.subscribe(subscription, [this](const input::MouseButtonEvent& ev) {
       if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
           ev.state == input::MouseButtonState::Pressed) {
         unsigned x, y;
@@ -58,7 +59,7 @@ public:
       }
     });
 
-    canvasMousePointer.subscribe([this](auto ev) {
+    resources.ui.canvasMousePointer.subscribe(subscription, [this](const input::MousePointerEvent&  ev) {
       if (strokeStatus == StrokeStatus::InsideStroke) {
         PointerEvent pointerEvent{ev.positionX, ev.positionY,
                                   1.0f}; // no pressure yet :(
@@ -71,13 +72,15 @@ public:
   virtual void endStroke(const PointerEvent& ev) = 0;
   virtual void continueStroke(const PointerEvent& ev) = 0;
 
-  virtual ~BrushTool() {}
+  virtual ~BrushTool() {
+      fmt::print(std::clog, "Deleting BrushTool\n");
+      subscription.unsubscribe();
+  }
 
 protected:
   Ui& ui;
   StrokeStatus strokeStatus = StrokeStatus::OutsideStroke;
-  rxcpp::observable<input::MouseButtonEvent> canvasMouseButtons;
-  rxcpp::observable<input::MousePointerEvent> canvasMousePointer;
+  rxcpp::composite_subscription subscription;
 };
 
 // color brush tool callbacks
@@ -87,7 +90,7 @@ public:
   ColorBrushTool(const ToolResources& resources_)
       : BrushTool(resources_), res(resources_) {
     // allocate stroke mask
-	  fmt::print("Init ColorBrushTool\n");
+          fmt::print(std::clog, "Init ColorBrushTool\n");
     texStrokeMask = res.device.createTexture2D<ag::RGBA8>(
         {res.canvas.width, res.canvas.height});
   }
