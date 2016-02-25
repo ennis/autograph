@@ -1027,10 +1027,11 @@ Example with the painter pipeline:
 auto clearedCanvas = rp::clear(width, height, color);
 auto baseColorPreview = preview(clearedCanvas, ...)
 
-
-
 To the backend: pass a directed graph of resources & nodes
 
+Pb: GPU nodes that read and write the same texture simultaneously?
+=> in-place modification
+=> doable
 
 
 Extra: pipeline cache

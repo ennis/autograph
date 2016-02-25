@@ -2,7 +2,7 @@
 #define SMUDGE_HPP
 // smudge tool
 
-#include "brush_tool.hpp"
+#include "../brush_tool.hpp"
 
 class SmudgeTool : public BrushTool {
 public:

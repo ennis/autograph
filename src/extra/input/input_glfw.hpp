@@ -38,6 +38,7 @@ public:
 
   void onScroll(GLFWwindow* window, double xoffset, double yoffset) {
     // TODO (scroll event?)
+      mouseScrollEvents.push_back(MouseScrollEvent {yoffset});
   }
 
   void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -61,9 +62,12 @@ public:
       subscribers.sub_mouse_buttons.on_next(e);
     for (const auto& e : mousePointerEvents)
       subscribers.sub_mouse_pointer.on_next(e);
+    for (const auto& e : mouseScrollEvents)
+      subscribers.sub_mouse_scroll.on_next(e);
 	keyEvents.clear();
 	mouseButtonEvents.clear();
 	mousePointerEvents.clear();
+    mouseScrollEvents.clear();
     // TODO stylus, I guess
   }
 
@@ -71,6 +75,7 @@ private:
   std::vector<KeyEvent> keyEvents;
   std::vector<MouseButtonEvent> mouseButtonEvents;
   std::vector<MousePointerEvent> mousePointerEvents;
+  std::vector<MouseScrollEvent> mouseScrollEvents;
 
   GLFWwindow* window;
   static GLFWInputEventSource* instance;

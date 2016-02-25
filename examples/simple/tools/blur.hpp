@@ -1,8 +1,8 @@
 #ifndef BLUR_HPP
 #define BLUR_HPP
 
-#include "brush_tool.hpp"
-#include "brush_path.hpp"
+#include "../brush_tool.hpp"
+#include "../brush_path.hpp"
 
 // Blur brush in LdotN space
 

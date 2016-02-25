@@ -34,8 +34,12 @@ struct MouseButtonEvent {
 };
 
 struct MousePointerEvent {
-  unsigned positionX; // in client area
+  unsigned positionX; // in client area pixels
   unsigned positionY;
+};
+
+struct MouseScrollEvent {
+    double delta;   // in some mysterious units
 };
 
 //////////////////// Device info
@@ -54,17 +58,10 @@ struct InputSubscribers {
   rxcpp::rxsub::subject<KeyEvent>::subscriber_type sub_keys;
   rxcpp::rxsub::subject<MouseButtonEvent>::subscriber_type sub_mouse_buttons;
   rxcpp::rxsub::subject<MousePointerEvent>::subscriber_type sub_mouse_pointer;
+  rxcpp::rxsub::subject<MouseScrollEvent>::subscriber_type sub_mouse_scroll;
   rxcpp::rxsub::subject<StylusEvent>::subscriber_type sub_stylus;
 };
 
-// input backends:
-// GLFWInput (GLFWwindow*): only glfw (cross-platform)
-// Win32Input (HWND)
-// GLFW_Win32Input (GLFWwindow*, HWND): GLFW for mouse, win32 for stylus support
-//
-// Graphics backend:
-// DX (HWND)
-// OpenGL (GLFWwindow?)
 
 class InputEventSource {
 public:
@@ -80,11 +77,13 @@ public:
       : subscribers(InputSubscribers{subject_keys.get_subscriber(),
                                      subject_mouse_buttons.get_subscriber(),
                                      subject_mouse_pointer.get_subscriber(),
+                    subject_mouse_scroll.get_subscriber(),
                                      subject_stylus.get_subscriber()}) 
   {
 	  obs_keys = subject_keys.get_observable();
 	  obs_mouse_buttons = subject_mouse_buttons.get_observable();
 	  obs_mouse_pointer = subject_mouse_pointer.get_observable();
+          obs_mouse_scroll = subject_mouse_scroll.get_observable();
 	  obs_stylus = subject_stylus.get_observable();
   }
 
@@ -96,6 +95,7 @@ public:
   auto& mouseButtons() const { return obs_mouse_buttons; }
   auto& stylus() const { return obs_stylus; }
   auto& mousePointer() const { return obs_mouse_pointer; }
+  auto& mouseScroll() const { return obs_mouse_scroll; }
 
   // returns a behavior that hold the last known key state of the specified key
   auto keyState(uint32_t keyCode, KeyState init_state = KeyState::Released) {
@@ -116,6 +116,7 @@ private:
   rxcpp::rxsub::subject<KeyEvent> subject_keys;
   rxcpp::rxsub::subject<MouseButtonEvent> subject_mouse_buttons;
   rxcpp::rxsub::subject<MousePointerEvent> subject_mouse_pointer;
+  rxcpp::rxsub::subject<MouseScrollEvent> subject_mouse_scroll;
   rxcpp::rxsub::subject<StylusEvent> subject_stylus;
 
   // subscribers
@@ -125,6 +126,7 @@ private:
   rxcpp::observable<KeyEvent> obs_keys;
   rxcpp::observable<MouseButtonEvent> obs_mouse_buttons;
   rxcpp::observable<MousePointerEvent> obs_mouse_pointer;
+  rxcpp::observable<MouseScrollEvent> obs_mouse_scroll;
   rxcpp::observable<StylusEvent> obs_stylus;
 
 

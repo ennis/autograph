@@ -2,6 +2,8 @@
 #define CAMERA_HPP
 
 #include <glm/glm.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+
 #include "brush_tool.hpp"
 
 struct Frustum {
@@ -41,38 +43,128 @@ const glm::vec3 CamFront = glm::vec3(0, 0, 1);
 const glm::vec3 CamRight = glm::vec3(1, 0, 0);
 const glm::vec3 CamUp = glm::vec3(0, 1, 0);
 
-/*class TrackballCameraController : public ToolInstance
-{
+struct TrackballCameraSettings {
+    TrackballCameraSettings() = default;
+  glm::vec3 eye = glm::vec3{0.0f, 0.0f, 0.0f};
+  float fieldOfView = 70.0f;
+  float nearPlane = 0.05f;
+  float farPlane = 100.0f;
+  float sensitivity = 1.0f;
+};
+
+struct TrackballCamera {
+  enum class Mode { Pan, Rotate, Idle };
+
+  TrackballCamera(const TrackballCameraSettings &init) : vEye(init.eye) {}
+
+  glm::mat4 getLookAt() {
+    auto lookAt = glm::lookAt(glm::vec3(0, 0, -2), glm::vec3(0, 0, 0), CamUp) *
+                  glm::rotate(glm::rotate((float)sceneRotX, CamRight),
+                              (float)sceneRotY, CamUp);
+  }
+
+  void updatePanVectors() {
+    auto invLookAt = glm::inverse(getLookAt());
+    wCamRight = glm::vec3(invLookAt * glm::vec4(CamRight, 0.0f));
+    wCamUp = glm::vec3(invLookAt * glm::vec4(-CamUp, 0.0f));
+    wCamFront = glm::vec3(invLookAt * glm::vec4(CamFront, 0.0f));
+  }
+
+  void onMouseMove(double raw_dx, double raw_dy, Mode mode) {
+    auto dx = settings.sensitivity * raw_dx;
+    auto dy = settings.sensitivity * raw_dy;
+    if (mode == Mode::Rotate) {
+      auto rot_speed = 0.1;
+      auto twopi = glm::pi<double>() * 2.0;
+      sceneRotX += std::fmod(rot_speed * dy, twopi);
+      sceneRotY += std::fmod(rot_speed * dx, twopi);
+      updatePanVectors();
+    } else if (mode == Mode::Pan) {
+      auto pan_speed = 1.0;
+      vEye += (float)(dx * pan_speed) * wCamRight + (float)(dy * pan_speed) * wCamUp;
+    }
+  }
+
+  void onScrollWheel(double delta) {
+    auto scroll = delta * settings.sensitivity;
+    auto scroll_speed = 10.0;
+    vEye += (float)(scroll * scroll_speed) * wCamFront;
+  }
+
+  Camera getCamera(float aspect_ratio) {
+    Camera cam;
+    auto lookAt = getLookAt();
+    cam.mode = Camera::Mode::Perspective;
+    cam.viewMat = lookAt * glm::translate(vEye);
+    cam.projMat = glm::perspective(settings.fieldOfView, aspect_ratio,
+                                   settings.nearPlane, settings.farPlane);
+    cam.wEye = glm::vec3(glm::inverse(cam.viewMat) *
+                         glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    return cam;
+  }
+
+  bool panning = false;
+  bool rotating = false;
+
+  TrackballCameraSettings settings;
+  double sceneRotX = 0.0;
+  double sceneRotY = 0.0;
+  glm::vec3 vEye;
+  glm::vec3 wCamRight;
+  glm::vec3 wCamUp;
+  glm::vec3 wCamFront;
+};
+
+// Tool that moves the camera
+class TrackballCameraController : public ToolInstance {
 public:
-  TrackballCameraController(const ToolResources& resources) : res(resources)
-  {
+  TrackballCameraController(const ToolResources &resources,
+                            TrackballCamera& trackball_)
+      : res(resources), trackball(trackball_) {
     // subscribe on key and mouse events
     canvasMouseButtons = resources.ui.canvasMouseButtons;
     canvasMousePointer = resources.ui.canvasMousePointer;
-    canvasMouseButtons.subscribe([this](auto ev) {});
-    canvasMousePointer.subscribe([this](auto ev) {});
 
+    canvasMouseButtons.subscribe([this](auto ev) {
+      if (ev.button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (ev.state == input::MouseButtonState::Pressed) {
+          this->rotating = true;
+        } else if (ev.state == input::MouseButtonState::Released) {
+          this->rotating = false;
+        }
+      } else if (ev.button == GLFW_MOUSE_BUTTON_MIDDLE) {
+          if (ev.state == input::MouseButtonState::Pressed) {
+            this->panning = true;
+          } else if (ev.state == input::MouseButtonState::Released) {
+            this->panning = false;
+          }
+      }
+    });
+
+   canvasMousePointer.subscribe([this](auto ev) {
+      this->trackball.onMouseMove(
+          (double)ev.positionX - (double)lastPosX,
+          (double)ev.positionY - (double)lastPosY,
+          panning ? TrackballCamera::Mode::Pan
+                  : (rotating ? TrackballCamera::Mode::Rotate
+                              : TrackballCamera::Mode::Idle));
+      lastPosX = (double)ev.positionX;
+      lastPosY = (double)ev.positionY;
+    });
+
+    resources.ui.canvasMouseScroll.subscribe(
+        [this](auto ev) { this->trackball.onScrollWheel(ev.delta); });
   }
-
-  void updateCamera()
-  {
-
-  }
-
-  virtual ~TrackballCameraController()
-  {}
 
 private:
-  enum class Mode {
-    Idle,
-    Rotate,
-    Pan
-  };
-
-  Mode curMode;
-  ToolResources resources;
+  ToolResources res;
+  TrackballCamera &trackball;
+  bool panning = false;
+  bool rotating = false;
+  double lastPosX = 0.0;
+  double lastPosY = 0.0;
   rxcpp::observable<input::MouseButtonEvent> canvasMouseButtons;
   rxcpp::observable<input::MousePointerEvent> canvasMousePointer;
-};*/
+};
 
 #endif

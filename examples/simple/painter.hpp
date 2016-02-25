@@ -27,9 +27,8 @@
 #include "camera.hpp"
 #include "canvas.hpp"
 #include "pipelines.hpp"
-#include "smudge.hpp"
-#include "ui.hpp"
-#include "blur.hpp"
+#include "tools/smudge.hpp"
+#include "tools/blur.hpp"
 
 #include <boost/filesystem.hpp>
 
@@ -43,7 +42,8 @@ namespace fs = boost::filesystem;
 class Painter : public samples::GLSample<Painter> {
 public:
   Painter(unsigned width, unsigned height)
-      : GLSample(width, height, "Painter") {
+      : GLSample(width, height, "Painter"), trackball(TrackballCameraSettings{})
+  {
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
     mesh = loadMesh("common/meshes/skull.obj");
@@ -101,15 +101,16 @@ public:
   }
 
   void makeSceneData() {
-    const auto aspectRatio = (float)canvas->width / (float)canvas->height;
+    /*const auto aspectRatio = (float)canvas->width / (float)canvas->height;
     const auto eyePos = glm::vec3(0, 1, 1);
     const auto lookAt =
         glm::lookAt(eyePos, glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
-    const auto proj = glm::perspective(45.0f, aspectRatio, 0.01f, 100.0f);
+    const auto proj = glm::perspective(45.0f, aspectRatio, 0.01f, 100.0f);*/
+
     uniforms::Scene scene;
-    scene.viewMatrix = lookAt;
-    scene.projMatrix = proj;
-    scene.viewProjMatrix = proj * lookAt;
+    scene.viewMatrix = camera.viewMat;
+    scene.projMatrix = camera.projMat;
+    scene.viewProjMatrix = camera.projMat * camera.viewMat;
     scene.viewportSize.x = (float)canvas->width;
     scene.viewportSize.y = (float)canvas->height;
     sceneData = device->pushDataToUploadBuffer(
@@ -172,7 +173,9 @@ public:
       case Tool::Blur:
           toolInstance = std::make_unique<BlurTool>(*toolResources);
           break;
-		  
+      case Tool::Camera:
+          toolInstance = std::make_unique<TrackballCameraController>(*toolResources, trackball);
+          break;
       case Tool::Select:
       case Tool::None:
       default:
@@ -184,7 +187,8 @@ public:
 
   void render() {
     using namespace glm;
-    makeSceneData();
+      updateCamera();
+      makeSceneData();
     makeCanvasData();
     ag::clear(*device, surfOut, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
     ag::clearDepth(*device, surfOut, 1.0f);
@@ -212,6 +216,11 @@ public:
               glm::vec2{0.0f, 0.0f}, 1.0f);
     updateBlurHist(*canvas);
     ui->render(*device);
+  }
+
+  void updateCamera()
+  {
+      camera = trackball.getCamera((float)canvas->width / (float)canvas->height);
   }
 
   void renderCanvas() {
@@ -418,6 +427,10 @@ private:
   Texture2D<ag::RGBA8> texEvalCanvas;
 
   Buffer<samples::Vertex2D[]> vboQuad;
+
+  /////////// Camera state
+  TrackballCamera trackball;
+  Camera camera;
 
   ///////////
   RawBufferSlice canvasData;

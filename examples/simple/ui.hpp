@@ -69,6 +69,9 @@ public:
     canvasMousePointer = input.mousePointer().filter(
         [this](auto ev) { return !lastMouseButtonOnGUI; });
 
+    canvasMouseScroll = input.mouseScroll().filter(
+                [this](auto ev) { return ImGui::IsMouseHoveringAnyWindow(); });
+
     input.mousePointer().subscribe([this](auto ev) {
       this->mouseX = ev.positionX;
       this->mouseY = ev.positionY;
@@ -104,10 +107,13 @@ public:
     case Tool::Select:
       nActiveTool = 4;
       break;
+    case Tool::Camera:
+        nActiveTool = 5;
+        break;
     }
 
-    const char* toolNames[] = {"None", "Brush", "Blur", "Smudge", "Select"};
-    ImGui::Combo("Tool", &nActiveTool, toolNames, 5);
+    const char* toolNames[] = {"None", "Brush", "Blur", "Smudge", "Select", "Camera"};
+    ImGui::Combo("Tool", &nActiveTool, toolNames, 6);
 
     switch (nActiveTool) {
     case 0:
@@ -125,6 +131,9 @@ public:
     case 4:
       activeTool = Tool::Select;
       break;
+    case 5:
+        activeTool = Tool::Camera;
+        break;
     }
 
     int nBrushTip = 0;
@@ -250,7 +259,8 @@ public:
   rxcpp::observable<input::MouseButtonEvent> canvasMouseButtons;
   // mouse pointer position (last value + events)
   rxcpp::observable<input::MousePointerEvent> canvasMousePointer;
-  //
+  // scroll events
+  rxcpp::observable<input::MouseScrollEvent> canvasMouseScroll;
 
   void getPointerPosition(unsigned& x, unsigned& y) const {
     x = mouseX;

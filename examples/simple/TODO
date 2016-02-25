@@ -2,10 +2,45 @@
 **** Layers
 	* Un shader/une passe par process
 	* Selection
+	* CPU/GPU
+	* Cible pour l'outil brosse:
+		(texture+pipeline)
+
+	Layers VS processes? Idem
+
+	Interface:
+		- draw(Texture, Rect)
+
+	Contraintes pour un shader de layer:
+		#include "layer.hpp"
+		main => layerMain(in image2D source, in image2D mask) 
+
+	* Special layers
+
+Différence entre:
+- process
+	formule de rendu d'un pixel
+	i.e. fonction f(x,y,ldotn,ao,...) -> RGB
+	ils peuvent être superposés à l'aide de layers (blending)
+
+	un même process peut être lié à différents paramètres
+	i.e. Blur 2D lié:
+		- à L.N
+		- à la position (XY) 
+
+- layers
+	associé à un process
+
+- g-buffers/parameter maps
+
 
 **** Camera move
 	Save camera parameters
 
+* chargement d'un mesh depuis un fichier
+
+* remove tool enum
+	* dynamically add tools to the UI
 
 * Layer masks
 
@@ -20,9 +55,12 @@
 * Better UI toolkit 
 	* more practical
 	* extendable by tools
-	* declarative
+	* declarative (data binding)
+	* less barriers to modification
 
 * Better input events
+	* It is particularly badly designed (must modify 8 different locations to add a new event type)
+	* Fusionner les différents types d'events
 
 * Separate rendering from event handling
 	* rendering must happen during a specific period
@@ -31,3 +69,21 @@
 	=> Observables for scene parameters
 		* camera
 		* light position
+
+* pour les effets non portés par la géométrie: distance fields
+ex: glow
+	DF: distance aux aplats d'une certaine intensité 
+	calcul en temps réel?
+ex: shading:
+	DF à la shadow shape?
+	f(distance) -> intensité
+
+* multi-parameter mapping 
+
+* afficher une grille ou des axes
+
+
+* Ne pas utiliser des observers avec [this] dans la lambda capture
+	=> crash quand l'objet est déplacé
+
+* Trouver une meilleure solution pour les observables avec états
