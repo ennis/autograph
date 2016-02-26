@@ -54,16 +54,16 @@ public:
 
   void onChar(GLFWwindow* window, unsigned int codepoint) {}
 
-  void poll(InputSubscribers& subscribers) override {
+  void poll(InputSubjects& subjects) override {
     // flush all events
     for (const auto& e : keyEvents)
-      subscribers.sub_keys.on_next(e);
+      subjects.keys.get_subscriber().on_next(e);
     for (const auto& e : mouseButtonEvents)
-      subscribers.sub_mouse_buttons.on_next(e);
+      subjects.mouse_buttons.get_subscriber().on_next(e);
     for (const auto& e : mousePointerEvents)
-      subscribers.sub_mouse_pointer.on_next(e);
+      subjects.mouse_pointer.get_subscriber().on_next(e);
     for (const auto& e : mouseScrollEvents)
-      subscribers.sub_mouse_scroll.on_next(e);
+      subjects.mouse_scroll.get_subscriber().on_next(e);
 	keyEvents.clear();
 	mouseButtonEvents.clear();
 	mousePointerEvents.clear();
