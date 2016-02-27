@@ -41,9 +41,9 @@ public:
     if (res.ui.brushTip == BrushTip::Textured) {
       auto dim =
           res.ui.brushTipTextures[res.ui.selectedBrushTip].tex.info.dimensions;
-      footprintBox = getSplatFootprint(dim.x, dim.y, splat);
+      footprintBox = getSplatFootprint((unsigned)dim.x, (unsigned)dim.y, splat);
     } else
-      footprintBox = getSplatFootprint(splat.width, splat.width, splat);
+      footprintBox = getSplatFootprint((unsigned)splat.width, (unsigned)splat.width, splat);
 
     struct SmudgeUniforms {
       glm::uvec2 origin;

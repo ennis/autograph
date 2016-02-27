@@ -640,7 +640,7 @@ void OpenGLBackend::readTexture1D(TextureHandle::pointer handle,
                                   Box1D region, gsl::span<gsl::byte> outData) {
   auto gl_fmt = pixelFormatToGL(info.format);
   gl::GetTextureImage(handle.id, mipLevel, gl_fmt.externalFormat, gl_fmt.type,
-                      outData.size(), outData.data());
+                      (GLsizei)outData.size(), outData.data());
 }
 
 void OpenGLBackend::readTexture2D(TextureHandle::pointer handle,
@@ -648,7 +648,7 @@ void OpenGLBackend::readTexture2D(TextureHandle::pointer handle,
                                   Box2D region, gsl::span<gsl::byte> outData) {
   auto gl_fmt = pixelFormatToGL(info.format);
   gl::GetTextureImage(handle.id, mipLevel, gl_fmt.externalFormat, gl_fmt.type,
-                      outData.size(), outData.data());
+                      (GLsizei)outData.size(), outData.data());
 }
 
 void OpenGLBackend::readTexture3D(TextureHandle::pointer handle,
@@ -656,7 +656,7 @@ void OpenGLBackend::readTexture3D(TextureHandle::pointer handle,
                                   Box3D region, gsl::span<gsl::byte> outData) {
   auto gl_fmt = pixelFormatToGL(info.format);
   gl::GetTextureImage(handle.id, mipLevel, gl_fmt.externalFormat, gl_fmt.type,
-                      outData.size(), outData.data());
+                      (GLsizei)outData.size(), outData.data());
 }
 
 void OpenGLBackend::draw(PrimitiveType primitiveType, unsigned first,

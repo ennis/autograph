@@ -41,27 +41,25 @@ class BrushTool : public ToolInstance {
 public:
   BrushTool(const ToolResources& resources) : ui(resources.ui) {
       fmt::print(std::clog, "Creating BrushTool\n");
-    resources.ui.canvasMouseButtons.subscribe(subscription, [this](const input::MouseButtonEvent& ev) {
+    resources.ui.canvasMouseButtons.subscribe(subscription, [this](const input::mouse_button_event& ev) {
       if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-          ev.state == input::MouseButtonState::Pressed) {
-        unsigned x, y;
-        this->ui.getPointerPosition(x, y);
-        PointerEvent pointerEvent{x, y, 1.0f}; // no pressure yet :(
+          ev.state == input::mouse_button_state::pressed) {
+		auto cursor_pos = this->ui.cursorPosition.get_value();
+        PointerEvent pointerEvent{std::get<0>(cursor_pos), std::get<1>(cursor_pos), 1.0f}; // no pressure yet :(
         strokeStatus = StrokeStatus::InsideStroke;
         this->beginStroke(pointerEvent);
       } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-                 ev.state == input::MouseButtonState::Released) {
-        unsigned x, y;
-        this->ui.getPointerPosition(x, y);
-        PointerEvent pointerEvent{x, y, 1.0f}; // no pressure yet :(
-        this->endStroke(pointerEvent);
+                 ev.state == input::mouse_button_state::released) {
+		  auto cursor_pos = this->ui.cursorPosition.get_value();
+		  PointerEvent pointerEvent{ std::get<0>(cursor_pos), std::get<1>(cursor_pos), 1.0f }; // no pressure yet :(
+		  this->endStroke(pointerEvent);
         strokeStatus = StrokeStatus::OutsideStroke;
       }
     });
 
-    resources.ui.canvasMousePointer.subscribe(subscription, [this](const input::MousePointerEvent&  ev) {
+    resources.ui.cursorPosition.get_observable().subscribe(subscription, [this](const std::tuple<unsigned,unsigned>& pos) {
       if (strokeStatus == StrokeStatus::InsideStroke) {
-        PointerEvent pointerEvent{ev.positionX, ev.positionY,
+        PointerEvent pointerEvent{ std::get<0>(pos), std::get<1>(pos),
                                   1.0f}; // no pressure yet :(
         this->continueStroke(pointerEvent);
       }
@@ -140,9 +138,9 @@ public:
     if (res.ui.brushTip == BrushTip::Round) {
       auto dim =
           res.ui.brushTipTextures[res.ui.selectedBrushTip].tex.info.dimensions;
-      uSplat.transform = getSplatTransform(dim.x, dim.y, splat);
+      uSplat.transform = getSplatTransform((unsigned)dim.x, (unsigned)dim.y, splat);
     } else
-      uSplat.transform = getSplatTransform(splat.width, splat.width, splat);
+      uSplat.transform = getSplatTransform((unsigned)splat.width, (unsigned)splat.width, splat);
 
     if (res.ui.brushTip == BrushTip::Round)
       ag::draw(res.device, texStrokeMask,

@@ -82,7 +82,7 @@ function(add_extra)
 endfunction()
 
 add_extra(TARGET image_io REQUIRES autograph stb)
-add_extra(TARGET input REQUIRES rxcpp glfw)
+add_extra(TARGET input REQUIRES rxcpp variant glfw)
 
 add_subdirectory(examples)
 

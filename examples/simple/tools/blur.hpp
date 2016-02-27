@@ -43,7 +43,7 @@ public:
             };
 
             // splat a gaussian kernel on the 1D parameter map, centered on LdotN
-            ag::Box2D footprintBox = getSplatFootprint(splat.width, splat.width, splat);
+            ag::Box2D footprintBox = getSplatFootprint((unsigned)splat.width, (unsigned)splat.width, splat);
             ag::compute(res.device, res.pipelines.ppBlurBrush, ag::makeThreadGroupCount2D(kShadingCurveSamplesSize, 1u, 16u, 1u),
                         Uniforms { splat.center, splat.width },
                         res.canvas.texShadingTermSmooth,

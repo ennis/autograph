@@ -3,15 +3,17 @@
 
 #include "input.hpp"
 
-#include <vector>
 #include <GLFW/glfw3.h>
+#include <vector>
 
 namespace ag {
 namespace extra {
 namespace input {
-class GLFWInputEventSource : public InputEventSource {
+class glfw_input_event_source : public input_event_source {
 public:
-  GLFWInputEventSource(GLFWwindow* window_) : window(window_) {
+  glfw_input_event_source(rxcpp::subscriber<input_event> subscriber_,
+                          GLFWwindow* window_)
+      : subscriber(subscriber_), window(window_) {
     glfwSetCharCallback(window, GLFWCharHandler);
     glfwSetCursorEnterCallback(window, GLFWCursorEnterHandler);
     glfwSetCursorPosCallback(window, GLFWCursorPosHandler);
@@ -21,92 +23,72 @@ public:
     instance = this;
   }
 
-  ~GLFWInputEventSource() override {}
+  ~glfw_input_event_source() override {}
 
-  void onMouseButton(GLFWwindow* window, int button, int action, int mods) {
-    mouseButtonEvents.push_back(MouseButtonEvent{
-        (unsigned)button, action == GLFW_PRESS ? MouseButtonState::Pressed
-                                               : MouseButtonState::Released});
+  void on_mouse_button(GLFWwindow* window, int button, int action, int mods) {
+    subscriber.on_next(mouse_button_event{
+        (unsigned)button, action == GLFW_PRESS ? mouse_button_state::pressed
+                                               : mouse_button_state::released});
   }
 
-  void onCursorPos(GLFWwindow* window, double xpos, double ypos) {
-    mousePointerEvents.push_back(
-        MousePointerEvent{(unsigned)xpos, (unsigned)ypos});
+  void on_cursor_pos(GLFWwindow* window, double xpos, double ypos) {
+    subscriber.on_next(cursor_event{(unsigned)xpos, (unsigned)ypos});
   }
 
-  void onCursorEnter(GLFWwindow* window, int entered) {}
-
-  void onScroll(GLFWwindow* window, double xoffset, double yoffset) {
-    // TODO (scroll event?)
-      mouseScrollEvents.push_back(MouseScrollEvent {yoffset});
+  void on_cursor_enter(GLFWwindow* window, int entered) {
+    // TODO
   }
 
-  void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    keyEvents.push_back(KeyEvent{
+  void on_scroll(GLFWwindow* window, double xoffset, double yoffset) {
+    subscriber.on_next(mouse_scroll_event{xoffset, yoffset});
+  }
+
+  void on_key(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    subscriber.on_next(key_event{
         (unsigned)key,
         action == GLFW_PRESS
-            ? KeyEventType::Pressed
+            ? key_state::pressed
             : (action == GLFW_REPEAT
-                   ? KeyEventType::Repeat
-                   : (action == GLFW_RELEASE ? KeyEventType::Released
-                                             : KeyEventType::Released))});
+                   ? key_state::repeat
+                   : (action == GLFW_RELEASE ? key_state::released
+                                             : key_state::released))});
   }
 
-  void onChar(GLFWwindow* window, unsigned int codepoint) {}
-
-  void poll(InputSubjects& subjects) override {
-    // flush all events
-    for (const auto& e : keyEvents)
-      subjects.keys.get_subscriber().on_next(e);
-    for (const auto& e : mouseButtonEvents)
-      subjects.mouse_buttons.get_subscriber().on_next(e);
-    for (const auto& e : mousePointerEvents)
-      subjects.mouse_pointer.get_subscriber().on_next(e);
-    for (const auto& e : mouseScrollEvents)
-      subjects.mouse_scroll.get_subscriber().on_next(e);
-	keyEvents.clear();
-	mouseButtonEvents.clear();
-	mousePointerEvents.clear();
-    mouseScrollEvents.clear();
-    // TODO stylus, I guess
-  }
+  void on_char(GLFWwindow* window, unsigned int codepoint) {}
 
 private:
-  std::vector<KeyEvent> keyEvents;
-  std::vector<MouseButtonEvent> mouseButtonEvents;
-  std::vector<MousePointerEvent> mousePointerEvents;
-  std::vector<MouseScrollEvent> mouseScrollEvents;
+  rxcpp::subscriber<input_event> subscriber;
 
   GLFWwindow* window;
-  static GLFWInputEventSource* instance;
+  static glfw_input_event_source* instance;
 
   // GLFW event handlers
   static void GLFWMouseButtonHandler(GLFWwindow* window, int button, int action,
                                      int mods) {
-    instance->onMouseButton(window, button, action, mods);
+    instance->on_mouse_button(window, button, action, mods);
   }
 
   static void GLFWCursorPosHandler(GLFWwindow* window, double xpos,
                                    double ypos) {
-    instance->onCursorPos(window, xpos, ypos);
+    instance->on_cursor_pos(window, xpos, ypos);
   }
 
   static void GLFWCursorEnterHandler(GLFWwindow* window, int entered) {
-    instance->onCursorEnter(window, entered);
+    instance->on_cursor_enter(window, entered);
   }
 
   static void GLFWScrollHandler(GLFWwindow* window, double xoffset,
                                 double yoffset) {
-    instance->onScroll(window, xoffset, yoffset);
+    instance->on_scroll(window, xoffset, yoffset);
   }
 
   static void GLFWKeyHandler(GLFWwindow* window, int key, int scancode,
                              int action, int mods) {
-    instance->onKey(window, key, scancode, action, mods);
+    instance->on_key(window, key, scancode, action, mods);
   }
 
   static void GLFWCharHandler(GLFWwindow* window, unsigned int codepoint) {
-    instance->onChar(window, codepoint);
+    instance->on_char(window, codepoint);
   }
 
   static void GLFWErrorCallback(int error, const char* description) {}

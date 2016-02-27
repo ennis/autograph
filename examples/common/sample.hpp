@@ -49,12 +49,12 @@ void drawMesh(Mesh<D>& mesh, ag::Device<D>& device, RenderTarget&& rt,
               ShaderResources&&... resources) {
   if (mesh.ibo)
     ag::draw(device, rt, pipeline, ag::DrawIndexed(ag::PrimitiveType::Triangles,
-                                                   0, mesh.ibo->size(), 0),
+                                                   0, (uint32_t)mesh.ibo->size(), 0),
              ag::VertexBuffer(mesh.vbo), ag::IndexBuffer(mesh.ibo.value()),
              std::forward<ShaderResources>(resources)...);
   else
     ag::draw(device, rt, pipeline,
-             ag::DrawArrays(ag::PrimitiveType::Triangles, 0, mesh.vbo.size()),
+             ag::DrawArrays(ag::PrimitiveType::Triangles, 0, (uint32_t)mesh.vbo.size()),
              ag::VertexBuffer(mesh.vbo),
              std::forward<ShaderResources>(resources)...);
 }

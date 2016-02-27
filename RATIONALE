@@ -954,6 +954,7 @@ Vulkan: commands within a command list, queue submissions can happen out-of-orde
 Autograph: 2 choices
 	- maintain implicit ordering of operations in a command list
 	- modify API to expose explicit synchronization
+	- remove the command list API, use only renderpasses (back to very first design...)
 
 ag::draw returns a GPUFuture (back to first design...)
 
@@ -1036,4 +1037,17 @@ Pb: GPU nodes that read and write the same texture simultaneously?
 
 Extra: pipeline cache
 _____________________________
+
+
+
+
+
+Concurrent projects:
+* autograph
+* shaders in c++ for autograph
+* autograph: input
+* autograph: renderpasses
+* painter
+* painter: coroutines
+* painter: reactive UI
 

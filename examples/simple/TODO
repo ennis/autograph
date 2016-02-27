@@ -87,7 +87,6 @@ ex: shading:
 	=> crash quand l'objet est déplacé
 
 * Trouver une meilleure solution pour les observables avec états
-	
 
 
 Path getBrushPath(coro, ...) 
@@ -127,9 +126,10 @@ input_event
 		+ stylus_properties_event
 
 Input class: only one event stream
-	observable<input_event_ptr>
+	observable<input_event>
 
-
+Issue: lifetime of events
+	+ 
 
 UI:
 mouse position: signal
@@ -147,4 +147,51 @@ mouse button state(button index): signal
 
 mouse move (raw data): event stream
 mouse click: event stream
+
+
+
+
+UI bindings:
+
+* Simple à utiliser
+	idéalement: instanciation d'un objet
+* Reactif
+	observables
+* Bindings bidirectionnels
+* RAII
+	Les widgets disparaissent quand l'objet est détruit
+* Popups?
+* Bindings de listes?
+	idéalement: juste un std::vector ou un std::list
+	Pb: la liste peut changer, mais on ne veut pas passer l'intégralité du vecteur en copie
+		les éléments individuels peuvent changer -> quelle UI?
+			-> une liste d'UI elements?
+			-> ou: UI element qui pointe vers un élement d'une liste?
+* Ownership?
+	UI element
+	VS
+	extérieur (par reference)
+	=> UI element /= element
+
+* Différence entre UI element et valeur
+	=> UI element owns its state ?
+
+* Combo box == enum class
+
+ui::element
+	ui::reactive<type>
+		-> can subscribe
+		-> forward to utils::reactive<type, binding>
+		ui::slider<type>
+		ui::text<type>
+		ui::number_input<type>
+		ui::extras::histogram<type>
+	ui::reactive_collection<container<type> >
+		-> forward to utils::reactive_collection<collection<type>,binding>
+		- on_value_added
+		- on_value_changed
+		ui::list<type>
+		ui::combo<enum class type>: must have min/max
+			combo.set_name(s)(...)
+
 

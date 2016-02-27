@@ -62,6 +62,10 @@ endif()
 add_library(vkcpp INTERFACE)
 target_include_directories(vkcpp INTERFACE vkcpp)
 
+# variant 
+add_library(variant INTERFACE)
+target_include_directories(variant INTERFACE variant/include)
+
 # glslang
 
 #add_subdirectory(glslang)

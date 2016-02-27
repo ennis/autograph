@@ -27,8 +27,8 @@
 #include "camera.hpp"
 #include "canvas.hpp"
 #include "pipelines.hpp"
-#include "tools/smudge.hpp"
 #include "tools/blur.hpp"
+#include "tools/smudge.hpp"
 
 #include <boost/filesystem.hpp>
 
@@ -42,20 +42,19 @@ namespace fs = boost::filesystem;
 class Painter : public samples::GLSample<Painter> {
 public:
   Painter(unsigned width, unsigned height)
-      : GLSample(width, height, "Painter"), trackball(TrackballCameraSettings{})
-  {
+      : GLSample(width, height, "Painter"),
+        trackball(TrackballCameraSettings{}) {
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
-    mesh = loadMesh("common/meshes/skull.obj");
+    mesh = loadMesh("common/meshes/rock2.obj");
     canvas = std::make_unique<Canvas>(*device, width, height);
     texEvalCanvas =
         device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
     texEvalCanvasBlur =
         device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
 
-    input = std::make_unique<input::Input>();
-    input->registerEventSource(
-        std::make_unique<input::GLFWInputEventSource>(gl.getWindow()));
+    input = std::make_unique<input::input2>();
+    input->make_event_source<input::glfw_input_event_source>(gl.getWindow());
     ui = std::make_unique<Ui>(gl.getWindow(), *input);
     samples::Vertex2D vboQuadData[] = {
         {-1.0f, -1.0f, 0.0f, 0.0f}, {-1.0f, 1.0f, 0.0f, 1.0f},
@@ -71,7 +70,7 @@ public:
         *device, *pipelines, *canvas, *ui, samLinearRepeat, samLinearClamp,
         samNearestRepeat, samNearestClamp, vboQuad});
 
-	toolInstance = std::make_unique<ColorBrushTool>(*toolResources);
+    toolInstance = std::make_unique<ColorBrushTool>(*toolResources);
   }
 
   // load brush tips from img directories
@@ -101,12 +100,6 @@ public:
   }
 
   void makeSceneData() {
-    /*const auto aspectRatio = (float)canvas->width / (float)canvas->height;
-    const auto eyePos = glm::vec3(0, 1, 1);
-    const auto lookAt =
-        glm::lookAt(eyePos, glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
-    const auto proj = glm::perspective(45.0f, aspectRatio, 0.01f, 100.0f);*/
-
     uniforms::Scene scene;
     scene.viewMatrix = camera.viewMat;
     scene.projMatrix = camera.projMat;
@@ -129,7 +122,7 @@ public:
     auto lightPos =
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f});
     ag::compute(*device, pipelines->ppBaseColorToOffset,
-		ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
+                ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
                 canvasData, lightPos, canvas.texShadingProfileLN,
                 canvas.texBaseColorUV, canvas.texShadingTermSmooth,
                 canvas.texStencil, ag::RWTextureUnit(0, canvas.texHSVOffsetUV));
@@ -151,12 +144,12 @@ public:
         canvasData,
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f}));
     ag::compute(*device, pipelines->ppBlurH,
-                ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16), params,
-                RWTextureUnit(0, canvas.texShadingTerm),
+                ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
+                params, RWTextureUnit(0, canvas.texShadingTerm),
                 RWTextureUnit(1, canvas.texShadingTermSmooth0));
     ag::compute(*device, pipelines->ppBlurV,
-		ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16), params,
-                RWTextureUnit(0, canvas.texShadingTermSmooth0),
+                ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
+                params, RWTextureUnit(0, canvas.texShadingTermSmooth0),
                 RWTextureUnit(1, canvas.texShadingTermSmooth));
   }
 
@@ -171,11 +164,12 @@ public:
         toolInstance = std::make_unique<SmudgeTool>(*toolResources);
         break;
       case Tool::Blur:
-          toolInstance = std::make_unique<BlurTool>(*toolResources);
-          break;
+        toolInstance = std::make_unique<BlurTool>(*toolResources);
+        break;
       case Tool::Camera:
-          toolInstance = std::make_unique<TrackballCameraController>(*toolResources, trackball);
-          break;
+        toolInstance = std::make_unique<TrackballCameraController>(
+            *toolResources, trackball);
+        break;
       case Tool::Select:
       case Tool::None:
       default:
@@ -187,8 +181,8 @@ public:
 
   void render() {
     using namespace glm;
-      updateCamera();
-      makeSceneData();
+    updateCamera();
+    makeSceneData();
     makeCanvasData();
     ag::clear(*device, surfOut, ag::ClearColor{0.0f, 0.0f, 0.0f, 1.0f});
     ag::clearDepth(*device, surfOut, 1.0f);
@@ -199,13 +193,12 @@ public:
               ag::ClearColor{0.0f, 0.0f, 0.0f, 0.0f});
     renderMesh(*canvas);
     renderShading(*canvas);
-    input->poll();
     updateActiveTool();
-	if (!ui->overrideShadingCurve)
-		computeHistograms(*canvas);
-	else
-		loadShadingCurve(*canvas);
-	renderCanvas();
+    if (!ui->overrideShadingCurve)
+      computeHistograms(*canvas);
+    else
+      loadShadingCurve(*canvas);
+    renderCanvas();
     if (ui->showReferenceShading)
       drawShadingOverlay(*canvas);
     if (ui->showHSVOffset)
@@ -218,9 +211,8 @@ public:
     ui->render(*device);
   }
 
-  void updateCamera()
-  {
-      camera = trackball.getCamera((float)canvas->width / (float)canvas->height);
+  void updateCamera() {
+    camera = trackball.getCamera((float)canvas->width / (float)canvas->height);
   }
 
   void renderCanvas() {
@@ -241,8 +233,8 @@ public:
     previewCanvas(*device, *canvas, texEvalCanvasBlur, pipelines->ppEvaluate,
                   canvasData, samLinearClamp, lightPos);
     // blur pass
-    previewCanvas(*device, *canvas, texEvalCanvas, pipelines->ppEvaluateBlurPass,
-                  canvasData, samLinearClamp,
+    previewCanvas(*device, *canvas, texEvalCanvas,
+                  pipelines->ppEvaluateBlurPass, canvasData, samLinearClamp,
                   RWTextureUnit(1, texEvalCanvasBlur));
 
     copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f},
@@ -250,46 +242,12 @@ public:
     copyTex(texEvalCanvas, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
-  /*void blur(Canvas& canvas, const BrushProperties& brushProps,
-            const SplatProperties& splat) {
-    ag::Box2D footprintBox;
-    footprintBox = getSplatFootprint(splat.width, splat.width, splat);
-
-    struct BlurUniforms {
-      glm::uvec2 origin;
-      glm::uvec2 size;
-      float intensity;
-    };
-
-    BlurUniforms u{{footprintBox.xmin, footprintBox.ymin},
-                   {footprintBox.width(), footprintBox.height()}};
-
-    applyComputeShaderOverRect(
-        canvas, footprintBox, pipelines->ppBlur, canvasData,
-        RWTextureUnit(0, canvas.texBaseColorUV),
-        RWTextureUnit(1, texSmudgeFootprint), u,
-        ui->brushTipTextures[ui->selectedBrushTip].tex);
-  }*/
-
   void setupInput() {
     // on key presses
     /*input->keys().subscribe(
         [this](auto ev) { fmt::print("Key event: {}\n", (int)ev.code); });*/
   }
-
-  /*auto getCamera() {
-      const auto aspect_ratio = (float)canvas->width / (float)canvas->height;
-    const auto eyePos = glm::vec3(0, 10, -3);
-    auto lookAt = glm::lookAt(eyePos, glm::vec3(0, 10, 0), CamUp);
-    auto proj = glm::perspective(45.0f, aspect_ratio, 0.01f, 100.0f);
-    Camera cam;
-    cam.projMat = proj;
-    cam.viewMat = lookAt;
-    cam.wEye = eyePos;
-    cam.mode = Camera::Mode::Perspective;
-    return cam;
-  }*/
-
+  
   void renderMesh(Canvas& canvas) {
     drawMesh(mesh, *device, ag::SurfaceRT(canvas.texDepth, canvas.texNormals,
                                           canvas.texStencil),
@@ -308,7 +266,7 @@ public:
 
     ag::compute(
         *device, pipelines->ppComputeShadingCurveHSV,
-		ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
+        ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
         canvasData,
         glm::normalize(glm::vec3{ui->lightPosXY[0], ui->lightPosXY[1], -2.0f}),
         canvas.texNormals, canvas.texStencil, canvas.texBaseColorUV,
@@ -339,12 +297,13 @@ public:
     }
 
     static constexpr float gaussK[] = {
-        0.000027, 0.00006,  0.000125, 0.000251, 0.000484, 0.000898, 0.001601,
-        0.002743, 0.004515, 0.007141, 0.010853, 0.01585,  0.022243, 0.029995,
-        0.038867, 0.048396, 0.057906, 0.066577, 0.073554, 0.078087, 0.079659,
-        0.078087, 0.073554, 0.066577, 0.057906, 0.048396, 0.038867, 0.029995,
-        0.022243, 0.01585,  0.010853, 0.007141, 0.004515, 0.002743, 0.001601,
-        0.000898, 0.000484, 0.000251, 0.000125, 0.00006,  0.000027};
+        0.000027f, 0.00006f,  0.000125f, 0.000251f, 0.000484f, 0.000898f,
+        0.001601f, 0.002743f, 0.004515f, 0.007141f, 0.010853f, 0.01585f,
+        0.022243f, 0.029995f, 0.038867f, 0.048396f, 0.057906f, 0.066577f,
+        0.073554f, 0.078087f, 0.079659f, 0.078087f, 0.073554f, 0.066577f,
+        0.057906f, 0.048396f, 0.038867f, 0.029995f, 0.022243f, 0.01585f,
+        0.010853f, 0.007141f, 0.004515f, 0.002743f, 0.001601f, 0.000898f,
+        0.000484f, 0.000251f, 0.000125f, 0.00006f,  0.000027f};
 
     // smooth them (a lot)
     for (int i = 0; i < kShadingCurveSamplesSize; ++i) {
@@ -372,19 +331,20 @@ public:
              canvas.texShadingProfileLN);
   }
 
-  void loadShadingCurve(Canvas& canvas)
-  {
-	  std::vector<ag::RGBA8> HSVCurve(kShadingCurveSamplesSize);
-	  for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i)
-	  {
-		  HSVCurve[i][0].value = 0;
-		  HSVCurve[i][1].value = 0;
-		  HSVCurve[i][2].value = (uint8_t)(glm::smoothstep(0.2f, 0.8f, (float)i / (float)kShadingCurveSamplesSize)*255.0f);
-		  HSVCurve[i][3].value = 255;
-		}
-	  ag::copy(*device, gsl::span<const ag::RGBA8>(
-		  (const ag::RGBA8*)HSVCurve.data(), HSVCurve.size()),
-		  canvas.texShadingProfileLN);
+  void loadShadingCurve(Canvas& canvas) {
+    std::vector<ag::RGBA8> HSVCurve(kShadingCurveSamplesSize);
+    for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i) {
+      HSVCurve[i][0].value = 0;
+      HSVCurve[i][1].value = 0;
+      HSVCurve[i][2].value = (uint8_t)(
+          glm::smoothstep(0.2f, 0.8f,
+                          (float)i / (float)kShadingCurveSamplesSize) *
+          255.0f);
+      HSVCurve[i][3].value = 255;
+    }
+    ag::copy(*device, gsl::span<const ag::RGBA8>(
+                          (const ag::RGBA8*)HSVCurve.data(), HSVCurve.size()),
+             canvas.texShadingProfileLN);
   }
 
   void drawShadingOverlay(Canvas& canvas) {
@@ -392,17 +352,16 @@ public:
             glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
-  void updateBlurHist(Canvas& canvas)
-  {
-      // read back histograms
-      std::vector<ag::RGBA8> histBlur(kShadingCurveSamplesSize);
-      ag::copySync(*device, canvas.texBlurParametersLN, gsl::as_span(histBlur));
+  void updateBlurHist(Canvas& canvas) {
+    // read back histograms
+    std::vector<ag::RGBA8> histBlur(kShadingCurveSamplesSize);
+    ag::copySync(*device, canvas.texBlurParametersLN, gsl::as_span(histBlur));
 
-      for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i) {
-          ui->histBlurRadius[i] = float(histBlur[i][0].value) / 255.0f;
-      }
+    for (unsigned i = 0; i < kShadingCurveSamplesSize; ++i) {
+      ui->histBlurRadius[i] = float(histBlur[i][0].value) / 255.0f;
+    }
   }
-  
+
 private:
   ag::Surface<GL, float, ag::RGBA8> surfOut;
   // shaders
@@ -414,7 +373,7 @@ private:
   // UI
   std::unique_ptr<Ui> ui;
   // input
-  std::unique_ptr<input::Input> input;
+  std::unique_ptr<input::input2> input;
 
   // Pointers to resources shared between tools
   std::unique_ptr<ToolResources> toolResources;

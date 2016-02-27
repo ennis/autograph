@@ -12,9 +12,9 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw_gl3.h"
 
+#include "canvas.hpp"
 #include "tool.hpp"
 #include "types.hpp"
-#include "canvas.hpp"
 
 namespace input = ag::extra::input;
 namespace rxsub = rxcpp::rxsub;
@@ -50,9 +50,13 @@ struct BrushTipTexture {
 // ImGui-based user interface
 class Ui {
 public:
-  Ui(GLFWwindow* window, input::Input& input_)
+  Ui(GLFWwindow* window, input::input2& input_)
       : input(input_), histH(kShadingCurveSamplesSize),
-        histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize),  histBlurRadius(kShadingCurveSamplesSize) {
+        histS(kShadingCurveSamplesSize), histV(kShadingCurveSamplesSize),
+        histBlurRadius(kShadingCurveSamplesSize),
+        cursorPosition(std::make_tuple(0u, 0u)) {
+
+    using namespace input;
 
     std::fill(begin(histH), end(histH), 0.0f);
     std::fill(begin(histS), end(histS), 0.0f);
@@ -60,23 +64,34 @@ public:
     // do not register callbacks
     ImGui_ImplGlfwGL3_Init(window, false);
 
-    canvasMouseButtons = input.mouseButtons().filter([this](auto ev) {
-      return (ev.state == input::MouseButtonState::Pressed)
-                 ? !(lastMouseButtonOnGUI = ImGui::IsMouseHoveringAnyWindow())
-                 : !(lastMouseButtonOnGUI = false);
-    });
+    canvasMouseButtons =
+        input_filter<mouse_button_event>(input.events())
+            .filter([this](auto ev) {
+              return (ev.state == input::mouse_button_state::pressed)
+                         ? !(lastMouseButtonOnGUI =
+                                 ImGui::IsMouseHoveringAnyWindow())
+                         : !(lastMouseButtonOnGUI = false);
+            });
 
-    canvasMousePointer = input.mousePointer().filter(
-        [this](auto ev) { return !lastMouseButtonOnGUI; });
+    canvasMousePointer =
+        input_filter<cursor_event>(input.events()).filter([this](auto ev) {
+          return !lastMouseButtonOnGUI;
+        });
 
-    canvasMouseScroll = input.mouseScroll().filter(
-                [this](auto ev) { return ImGui::IsMouseHoveringAnyWindow(); });
+    canvasMouseScroll = input_filter<mouse_scroll_event>(input.events())
+                            .filter([this](auto ev) {
+                              return !ImGui::IsMouseHoveringAnyWindow();
+                            });
 
-    input.mousePointer().subscribe([this](auto ev) {
-      this->mouseX = ev.positionX;
-      this->mouseY = ev.positionY;
-    });
+    // cursor position
+    input_filter<cursor_event>(input.events())
+        .subscribe(subscription, [this](const cursor_event& ev) {
+          this->cursorPosition.get_subscriber().on_next(
+              std::make_tuple(ev.positionX, ev.positionY));
+        });
   }
+
+  ~Ui() { subscription.unsubscribe(); }
 
   void render(Device& device) {
     ImGui_ImplGlfwGL3_NewFrame();
@@ -84,11 +99,6 @@ public:
     ImGui::SliderFloat2("Light pos", lightPosXY.data(), -1.5, 1.5);
     ImGui::SliderFloat("Stroke opacity", &strokeOpacity, 0.0, 1.0);
     ImGui::SliderFloat("Stroke width", &strokeWidth, 1.0, 300.0);
-    /*ImGui::PlotHistogram("Illum curve", illumHist,
-       NUM_ILLUM_HISTOGRAM_ENTRIES,
-                         0, "", 0.0, 1.0, ImVec2(300, 150));*/
-    /*if (ImGui::Button("Reload shaders", ImVec2(150, 20)))
-      loadShaders();*/
 
     int nActiveTool = 0;
     switch (activeTool) {
@@ -108,11 +118,12 @@ public:
       nActiveTool = 4;
       break;
     case Tool::Camera:
-        nActiveTool = 5;
-        break;
+      nActiveTool = 5;
+      break;
     }
 
-    const char* toolNames[] = {"None", "Brush", "Blur", "Smudge", "Select", "Camera"};
+    const char* toolNames[] = {"None",   "Brush",  "Blur",
+                               "Smudge", "Select", "Camera"};
     ImGui::Combo("Tool", &nActiveTool, toolNames, 6);
 
     switch (nActiveTool) {
@@ -132,8 +143,8 @@ public:
       activeTool = Tool::Select;
       break;
     case 5:
-        activeTool = Tool::Camera;
-        break;
+      activeTool = Tool::Camera;
+      break;
     }
 
     int nBrushTip = 0;
@@ -167,8 +178,7 @@ public:
                    (int)tipTexNames.size());
     }
 
-    ImGui::SliderFloat("Smoothness", &brushSmoothness, 0.0f,
-                       1.0f);
+    ImGui::SliderFloat("Smoothness", &brushSmoothness, 0.0f, 1.0f);
     ImGui::SliderFloat("Brush opacity jitter", &strokeOpacityJitter, 0.0f,
                        1.0f);
     ImGui::SliderFloat("Brush width jitter", &brushWidthJitter, 0.0f, 100.0f);
@@ -196,13 +206,17 @@ public:
     ImGui::InputText("Path", saveFileName, 100);
 
     ImGui::PlotHistogram("H curve", histH.data(), kShadingCurveSamplesSize, 0,
-                         "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
+                         "", 0.0, 1.0,
+                         ImVec2((float)kShadingCurveSamplesSize, 60.0f));
     ImGui::PlotHistogram("S curve", histS.data(), kShadingCurveSamplesSize, 0,
-                         "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
+                         "", 0.0, 1.0,
+                         ImVec2((float)kShadingCurveSamplesSize, 60.0f));
     ImGui::PlotHistogram("V curve", histV.data(), kShadingCurveSamplesSize, 0,
-                         "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
-    ImGui::PlotHistogram("Blur radius", histBlurRadius.data(), kShadingCurveSamplesSize, 0,
-                         "", 0.0, 1.0, ImVec2(kShadingCurveSamplesSize, 60));
+                         "", 0.0, 1.0,
+                         ImVec2((float)kShadingCurveSamplesSize, 60.0f));
+    ImGui::PlotHistogram("Blur radius", histBlurRadius.data(),
+                         kShadingCurveSamplesSize, 0, "", 0.0, 1.0,
+                         ImVec2((float)kShadingCurveSamplesSize, 60.0f));
 
     ImGui::Render();
   }
@@ -254,21 +268,20 @@ public:
   std::vector<float> histV;
   std::vector<float> histBlurRadius;
 
+  // current cursor position on the canvas
+  rxcpp::rxsub::behavior<std::tuple<unsigned, unsigned>> cursorPosition;
+
   // mouse events on canvas (triggered when the mouse is not focused on the
   // canvas)
-  rxcpp::observable<input::MouseButtonEvent> canvasMouseButtons;
+  rxcpp::observable<input::mouse_button_event> canvasMouseButtons;
   // mouse pointer position (last value + events)
-  rxcpp::observable<input::MousePointerEvent> canvasMousePointer;
+  rxcpp::observable<input::cursor_event> canvasMousePointer;
   // scroll events
-  rxcpp::observable<input::MouseScrollEvent> canvasMouseScroll;
-
-  void getPointerPosition(unsigned& x, unsigned& y) const {
-    x = mouseX;
-    y = mouseY;
-  }
+  rxcpp::observable<input::mouse_scroll_event> canvasMouseScroll;
 
 private:
-  input::Input& input;
+  input::input2& input;
+  rxcpp::composite_subscription subscription;
   bool lastMouseButtonOnGUI;
   unsigned mouseX;
   unsigned mouseY;

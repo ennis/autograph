@@ -3,7 +3,7 @@
 namespace ag {
 namespace extra {
 namespace input {
-GLFWInputEventSource* GLFWInputEventSource::instance = nullptr;
+	glfw_input_event_source* glfw_input_event_source::instance = nullptr;
 }
 }
 }

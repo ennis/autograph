@@ -49,7 +49,7 @@ struct TrackballCameraSettings {
   float fieldOfView = 70.0f;
   float nearPlane = 0.05f;
   float farPlane = 100.0f;
-  float sensitivity = 1.0f;
+  float sensitivity = 0.3f;
 };
 
 struct TrackballCamera {
@@ -61,6 +61,7 @@ struct TrackballCamera {
     auto lookAt = glm::lookAt(glm::vec3(0, 0, -2), glm::vec3(0, 0, 0), CamUp) *
                   glm::rotate(glm::rotate((float)sceneRotX, CamRight),
                               (float)sceneRotY, CamUp);
+	return lookAt;
   }
 
   void updatePanVectors() {
@@ -121,27 +122,24 @@ public:
   TrackballCameraController(const ToolResources &resources,
                             TrackballCamera& trackball_)
       : res(resources), trackball(trackball_) {
-    // subscribe on key and mouse events
-    canvasMouseButtons = resources.ui.canvasMouseButtons;
-    canvasMousePointer = resources.ui.canvasMousePointer;
 
-    canvasMouseButtons.subscribe([this](auto ev) {
+	resources.ui.canvasMouseButtons.subscribe(subscription, [this](const input::mouse_button_event& ev) {
       if (ev.button == GLFW_MOUSE_BUTTON_LEFT) {
-        if (ev.state == input::MouseButtonState::Pressed) {
+        if (ev.state == input::mouse_button_state::pressed) {
           this->rotating = true;
-        } else if (ev.state == input::MouseButtonState::Released) {
+        } else if (ev.state == input::mouse_button_state::released) {
           this->rotating = false;
         }
       } else if (ev.button == GLFW_MOUSE_BUTTON_MIDDLE) {
-          if (ev.state == input::MouseButtonState::Pressed) {
+          if (ev.state == input::mouse_button_state::pressed) {
             this->panning = true;
-          } else if (ev.state == input::MouseButtonState::Released) {
+          } else if (ev.state == input::mouse_button_state::released) {
             this->panning = false;
           }
       }
     });
 
-   canvasMousePointer.subscribe([this](auto ev) {
+	resources.ui.canvasMousePointer.subscribe(subscription, [this](const input::cursor_event& ev) {
       this->trackball.onMouseMove(
           (double)ev.positionX - (double)lastPosX,
           (double)ev.positionY - (double)lastPosY,
@@ -152,8 +150,13 @@ public:
       lastPosY = (double)ev.positionY;
     });
 
-    resources.ui.canvasMouseScroll.subscribe(
-        [this](auto ev) { this->trackball.onScrollWheel(ev.delta); });
+    resources.ui.canvasMouseScroll.subscribe(subscription, 
+        [this](const input::mouse_scroll_event& ev) { this->trackball.onScrollWheel(ev.dy); });
+  }
+
+  ~TrackballCameraController()
+  {
+	  subscription.unsubscribe();
   }
 
 private:
@@ -163,8 +166,7 @@ private:
   bool rotating = false;
   double lastPosX = 0.0;
   double lastPosY = 0.0;
-  rxcpp::observable<input::MouseButtonEvent> canvasMouseButtons;
-  rxcpp::observable<input::MousePointerEvent> canvasMousePointer;
+  rxcpp::composite_subscription subscription;
 };
 
 #endif

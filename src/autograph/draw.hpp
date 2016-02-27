@@ -26,10 +26,10 @@ template <typename D> struct DrawArrays_ {
   typename D::BufferHandle::pointer buffer;
   size_t offset;
   size_t size;
-  size_t stride;
-  size_t count;
+  uint32_t stride;
+  uint32_t count;
 
-  void draw(Device<D> &device, BindContext &context) {
+  void draw(Device<D>& device, BindContext& context) {
     device.backend.bindVertexBuffer(context.vertexBufferBindingIndex++, buffer,
                                     offset, size, stride);
     device.backend.draw(primitiveType, 0, count);
@@ -39,33 +39,33 @@ template <typename D> struct DrawArrays_ {
 ////////////////////////// Draw command: DrawArrays (reduced form)
 struct DrawArrays0_ {
   PrimitiveType primitiveType;
-  size_t first;
-  size_t count;
+  uint32_t first;
+  uint32_t count;
 
-  template <typename D> void draw(Device<D> &device, BindContext &context) {
+  template <typename D> void draw(Device<D>& device, BindContext& context) {
     device.backend.draw(primitiveType, 0, count);
   }
 };
 
-inline DrawArrays0_ DrawArrays(PrimitiveType primitiveType, size_t first,
-                               size_t count) {
+inline DrawArrays0_ DrawArrays(PrimitiveType primitiveType, uint32_t first,
+                               uint32_t count) {
   return DrawArrays0_{primitiveType, first, count};
 }
 
 ////////////////////////// Draw command: DrawIndexed (reduced form)
 struct DrawIndexed0_ {
   PrimitiveType primitiveType;
-  size_t first;
-  size_t count;
-  size_t baseVertex;
+  uint32_t first;
+  uint32_t count;
+  uint32_t baseVertex;
 
-  template <typename D> void draw(Device<D> &device, BindContext &context) {
+  template <typename D> void draw(Device<D>& device, BindContext& context) {
     device.backend.drawIndexed(primitiveType, 0, count, baseVertex);
   }
 };
 
-inline DrawIndexed0_ DrawIndexed(PrimitiveType primitiveType, size_t first,
-                                 size_t count, size_t baseVertex) {
+inline DrawIndexed0_ DrawIndexed(PrimitiveType primitiveType, uint32_t first,
+                                 uint32_t count, uint32_t baseVertex) {
   return DrawIndexed0_{primitiveType, first, count, baseVertex};
 }
 
@@ -74,22 +74,22 @@ template <typename TVertex> struct DrawArraysImmediate_ {
   PrimitiveType primitiveType;
   gsl::span<TVertex> vertices;
 
-  template <typename D> void draw(Device<D> &device, BindContext &context) {
+  template <typename D> void draw(Device<D>& device, BindContext& context) {
     // upload to default upload buffer
     auto slice = device.pushDataToUploadBuffer(vertices);
     device.backend.bindVertexBuffer(context.vertexBufferBindingIndex++,
                                     slice.handle, slice.offset, slice.byteSize,
                                     sizeof(TVertex));
-    device.backend.draw(primitiveType, 0, vertices.size());
+    device.backend.draw(primitiveType, 0, (uint32_t)vertices.size());
   }
 };
 
 template <typename D, typename TVertex>
 DrawArrays_<D> DrawArrays(PrimitiveType primitiveType,
-                          const Buffer<D, TVertex[]> &vertex_buffer) {
-  return DrawArrays_<D>{primitiveType,   vertex_buffer.handle.get(),
-                        0,               vertex_buffer.byteSize,
-                        sizeof(TVertex), vertex_buffer.size()};
+                          const Buffer<D, TVertex[]>& vertex_buffer) {
+  return DrawArrays_<D>{
+      primitiveType,   vertex_buffer.handle.get(), 0, vertex_buffer.byteSize,
+      (uint32_t)sizeof(TVertex), (uint32_t)vertex_buffer.size()};
 }
 
 template <typename TVertex>
@@ -100,8 +100,8 @@ DrawArraysImmediate_<TVertex> DrawArrays(PrimitiveType primitiveType,
 
 ////////////////////////// ag::draw (no resources)
 template <typename D, typename TSurface, typename Drawable>
-void draw(Device<D> &device, TSurface &&surface,
-          GraphicsPipeline<D> &graphicsPipeline, Drawable &&drawable) {
+void draw(Device<D>& device, TSurface&& surface,
+          GraphicsPipeline<D>& graphicsPipeline, Drawable&& drawable) {
   BindContext context;
   bindRenderTarget(device, context, surface);
   device.backend.bindGraphicsPipeline(graphicsPipeline.handle.get());
@@ -111,9 +111,9 @@ void draw(Device<D> &device, TSurface &&surface,
 ////////////////////////// ag::draw
 template <typename D, typename TSurface, typename Drawable,
           typename... TShaderResources>
-void draw(Device<D> &device, TSurface &&surface,
-          GraphicsPipeline<D> &graphicsPipeline, Drawable &&drawable,
-          TShaderResources &&... resources) {
+void draw(Device<D>& device, TSurface&& surface,
+          GraphicsPipeline<D>& graphicsPipeline, Drawable&& drawable,
+          TShaderResources&&... resources) {
   BindContext context;
   bindImpl(device, context, resources...);
   bindRenderTarget(device, context, surface);
@@ -131,18 +131,18 @@ struct ClearColorInt {
 
 ////////////////////////// ag::clear(Surface)
 template <typename D, typename Depth, typename... Pixels>
-void clear(Device<D> &device, Surface<D, Depth, Pixels...> &surface,
-           const ClearColor &color,
-           std::experimental::optional<const ag::Box2D &> region =
+void clear(Device<D>& device, Surface<D, Depth, Pixels...>& surface,
+           const ClearColor& color,
+           std::experimental::optional<const ag::Box2D&> region =
                std::experimental::nullopt) {
   device.backend.clearColor(surface.handle.get(), color);
 }
 
 ////////////////////////// ag::clear(Surface)
 template <typename D, typename Depth, typename... Pixels>
-void clearDepth(Device<D> &device, Surface<D, Depth, Pixels...> &surface,
+void clearDepth(Device<D>& device, Surface<D, Depth, Pixels...>& surface,
                 float depth,
-                std::experimental::optional<const ag::Box2D &> region =
+                std::experimental::optional<const ag::Box2D&> region =
                     std::experimental::nullopt) {
   device.backend.clearDepth(surface.handle.get(), depth);
 }
@@ -150,62 +150,60 @@ void clearDepth(Device<D> &device, Surface<D, Depth, Pixels...> &surface,
 ////////////////////////// ag::clearDepth(Texture2D)
 /// TODO special overload for depth pixel types
 template <typename D, typename Depth>
-void clearDepth(Device<D> &device, Texture2D<Depth, D> &tex, float depth,
-                std::experimental::optional<const ag::Box2D &> region =
+void clearDepth(Device<D>& device, Texture2D<Depth, D>& tex, float depth,
+                std::experimental::optional<const ag::Box2D&> region =
                     std::experimental::nullopt) {
   device.backend.template clearTexture2DDepth<Depth>(tex, Box2D{}, depth);
 }
 
 ////////////////////////// ag::clear(Texture1D)
 template <typename D, typename Pixel>
-void clear(Device<D> &device, Texture1D<Pixel, D> &tex, const ClearColor &color,
-           std::experimental::optional<const ag::Box1D &> region =
+void clear(Device<D>& device, Texture1D<Pixel, D>& tex, const ClearColor& color,
+           std::experimental::optional<const ag::Box1D&> region =
                std::experimental::nullopt) {
   device.backend.template clearTexture1DFloat<Pixel>(tex, Box1D{}, color);
 }
 
 ////////////////////////// ag::clear(Texture2D)
 template <typename D, typename Pixel>
-void clear(Device<D> &device, Texture2D<Pixel, D> &tex, const ClearColor &color,
-           std::experimental::optional<const ag::Box2D &> region =
+void clear(Device<D>& device, Texture2D<Pixel, D>& tex, const ClearColor& color,
+           std::experimental::optional<const ag::Box2D&> region =
                std::experimental::nullopt) {
-  device.backend.template clearTexture2DFloat<Pixel>(tex, Box2D{},
-                                                     color);
+  device.backend.template clearTexture2DFloat<Pixel>(tex, Box2D{}, color);
 }
 
 ////////////////////////// ag::clear(Texture3D)
 template <typename D, typename Pixel>
-void clear(Device<D> &device, Texture3D<Pixel, D> &tex, const ClearColor &color,
-           std::experimental::optional<const ag::Box3D &> region =
+void clear(Device<D>& device, Texture3D<Pixel, D>& tex, const ClearColor& color,
+           std::experimental::optional<const ag::Box3D&> region =
                std::experimental::nullopt) {
   device.backend.template clearTexture3DFloat<Pixel>(tex, Box3D{}, color);
 }
 
 ////////////////////////// ag::clear(Texture2D<Integer>)
 template <typename D, typename IPixel>
-void clearInteger(Device<D> &device, Texture1D<IPixel, D> &tex,
-           const ClearColorInt &color,
-           std::experimental::optional<const ag::Box1D &> region =
-               std::experimental::nullopt) {
+void clearInteger(Device<D>& device, Texture1D<IPixel, D>& tex,
+                  const ClearColorInt& color,
+                  std::experimental::optional<const ag::Box1D&> region =
+                      std::experimental::nullopt) {
   device.backend.template clearTexture1DInteger<IPixel>(tex, Box1D{}, color);
 }
 
 template <typename D, typename IPixel>
-void clearInteger(Device<D> &device, Texture2D<IPixel, D> &tex,
-           const ClearColorInt &color,
-           std::experimental::optional<const ag::Box2D &> region =
-               std::experimental::nullopt) {
+void clearInteger(Device<D>& device, Texture2D<IPixel, D>& tex,
+                  const ClearColorInt& color,
+                  std::experimental::optional<const ag::Box2D&> region =
+                      std::experimental::nullopt) {
   device.backend.template clearTexture2DInteger<IPixel>(tex, Box2D{}, color);
 }
 
 template <typename D, typename IPixel>
-void clearInteger(Device<D> &device, Texture3D<IPixel, D> &tex,
-           const ClearColorInt &color,
-           std::experimental::optional<const ag::Box3D &> region =
-               std::experimental::nullopt) {
+void clearInteger(Device<D>& device, Texture3D<IPixel, D>& tex,
+                  const ClearColorInt& color,
+                  std::experimental::optional<const ag::Box3D&> region =
+                      std::experimental::nullopt) {
   device.backend.template clearTexture3DInteger<IPixel>(tex, Box3D{}, color);
 }
-
 }
 
 #endif // !DRAW_HPP
