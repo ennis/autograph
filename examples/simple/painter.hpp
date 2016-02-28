@@ -29,6 +29,7 @@
 #include "pipelines.hpp"
 #include "tools/blur.hpp"
 #include "tools/smudge.hpp"
+#include "await.hpp"
 
 #include <boost/filesystem.hpp>
 
@@ -71,6 +72,8 @@ public:
         samNearestRepeat, samNearestClamp, vboQuad});
 
     toolInstance = std::make_unique<ColorBrushTool>(*toolResources);
+	std::clog << "make task\n";
+	task = std::make_unique<co::task>([this]() {this->test_async();});
   }
 
   // load brush tips from img directories
@@ -97,6 +100,23 @@ public:
     ui->brushTipTextures.emplace_back(BrushTipTexture{
         path.stem().string(),
         image_io::loadTexture2D(*device, path.string().c_str())});
+  }
+
+  // coroutine test
+  //[[async]]
+  void test_async()
+  {
+	  std::clog << "Enter test_async\n";
+	  auto ev = co::await(ui->canvasMouseButtons);
+	  fmt::print(std::clog, "First event: button\n");
+	  auto ev2 = co::await(ui->canvasMouseScroll);
+	  fmt::print(std::clog, "Second event: scroll\n");
+
+	  int i = 0;
+	  for (;;) {
+		  co::await(input->events());
+		  fmt::print(std::clog, "Received event index: {}\n", i++);
+	  }
   }
 
   void makeSceneData() {
@@ -363,6 +383,8 @@ public:
   }
 
 private:
+	std::unique_ptr<co::task> task;
+
   ag::Surface<GL, float, ag::RGBA8> surfOut;
   // shaders
   std::unique_ptr<Pipelines> pipelines;

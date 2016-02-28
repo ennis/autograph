@@ -18,7 +18,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # TODO if boost is not found, download it and compile it as an external project
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost COMPONENTS date_time chrono wave thread filesystem system REQUIRED)
+find_package(Boost COMPONENTS date_time chrono wave thread filesystem system context REQUIRED)
 find_package(Vulkan)
 link_directories(${Boost_LIBRARY_DIR})
 

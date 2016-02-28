@@ -1039,9 +1039,6 @@ Extra: pipeline cache
 _____________________________
 
 
-
-
-
 Concurrent projects:
 * autograph
 * shaders in c++ for autograph
@@ -1051,3 +1048,16 @@ Concurrent projects:
 * painter: coroutines
 * painter: reactive UI
 
+=> proposition:
+	evaluer C#
+	autograph en C#/.Net
+
+
+conserver autograph, specialiser pour opengl 4.5
+(abandonner backends multiples)
+
+
+C# vs C++ pour du code générique
+_____________________________
+
+* templates => generics

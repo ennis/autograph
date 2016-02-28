@@ -49,7 +49,7 @@ struct TrackballCameraSettings {
   float fieldOfView = 70.0f;
   float nearPlane = 0.05f;
   float farPlane = 100.0f;
-  float sensitivity = 0.3f;
+  float sensitivity = 0.1f;
 };
 
 struct TrackballCamera {

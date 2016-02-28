@@ -96,9 +96,9 @@ public:
   void render(Device& device) {
     ImGui_ImplGlfwGL3_NewFrame();
     ImGui::ColorEdit3("Stroke color", strokeColor.data());
-    ImGui::SliderFloat2("Light pos", lightPosXY.data(), -1.5, 1.5);
-    ImGui::SliderFloat("Stroke opacity", &strokeOpacity, 0.0, 1.0);
-    ImGui::SliderFloat("Stroke width", &strokeWidth, 1.0, 300.0);
+    ImGui::SliderFloat2("Light pos", lightPosXY.data(), -1.5f, 1.5f);
+    ImGui::SliderFloat("Stroke opacity", &strokeOpacity, 0.0f, 1.0f);
+    ImGui::SliderFloat("Stroke width", &strokeWidth, 1.0f, 300.0f);
 
     int nActiveTool = 0;
     switch (activeTool) {
@@ -260,7 +260,7 @@ public:
   float brushWidthJitter = 0.0f;
   float brushSpacing = 1.0f;
   float brushSpacingJitter = 0.0f;
-  float brushSmoothness;
+  float brushSmoothness = 0.0f;
 
   // histograms
   std::vector<float> histH;

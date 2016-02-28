@@ -129,7 +129,7 @@ Input class: only one event stream
 	observable<input_event>
 
 Issue: lifetime of events
-	+ 
+Les évènements sont copiés
 
 UI:
 mouse position: signal
