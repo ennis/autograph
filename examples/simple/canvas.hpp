@@ -54,7 +54,7 @@ struct Canvas {
         device.createTexture1D<ag::RGBA8>(kShadingCurveSamplesSize);
     texBlurParametersLN =
         device.createTexture1D<ag::RGBA8>(kShadingCurveSamplesSize);
-    texDetailMaskLN = device.createTexture1D<ag::R8>(kShadingCurveSamplesSize);
+    texDetailMaskLN = device.createTexture1D<ag::RGBA8>(kShadingCurveSamplesSize);
 
     texBaseColorUV =
         device.createTexture2D<ag::RGBA8>(glm::uvec2{width, height});
@@ -99,7 +99,7 @@ struct Canvas {
   // L dot N space
   Texture1D<ag::RGBA8> texShadingProfileLN;
   Texture1D<ag::RGBA8> texBlurParametersLN;
-  Texture1D<ag::R8> texDetailMaskLN;
+  Texture1D<ag::RGBA8> texDetailMaskLN;
 
   // UV (XY) space
   Texture2D<ag::RGBA8> texBaseColorUV;
@@ -128,6 +128,7 @@ void previewCanvas(Device& device, Canvas& canvas, Texture2D<ag::RGBA8>& out,
       ag::TextureUnit(7, canvas.texStencil, sampler),
       ag::RWTextureUnit(0, out), std::forward<Resources>(resources)...);
 }
+
 
 // apply a CS over a region of the canvas
 /*template <typename... Resources>

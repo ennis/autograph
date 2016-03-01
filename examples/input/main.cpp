@@ -28,7 +28,7 @@ using GL = ag::opengl::OpenGLBackend;
 
 namespace input = ag::extra::input;
 
-class InputSample : public samples::GLSample<InputSample> {
+/*class InputSample : public samples::GLSample<InputSample> {
 public:
   InputSample(unsigned width, unsigned height)
       : GLSample(width, height, "Input") {
@@ -55,9 +55,10 @@ private:
   input::Input input;
   std::unique_ptr<input::GLFWInputEventSource> glfw_input_source;
   ag::Texture2D<ag::RGBA8, GL> texDefault;
-};
+};*/
 
 int main() {
-  InputSample sample(1000, 800);
-  return sample.run();
+  /*InputSample sample(1000, 800);
+  return sample.run();*/
+    return 0;
 }

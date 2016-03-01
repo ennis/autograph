@@ -1,5 +1,4 @@
 #version 450
-// convert base color values to shading offsets
 #include "brush.glsl"
 #include "canvas.glsl"
 #include "utils.glsl"

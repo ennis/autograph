@@ -10,6 +10,7 @@
 #include "types.hpp"
 #include "ui.hpp"
 #include "camera.hpp"
+#include "shading_curves.hpp"
 
 enum class StrokeStatus { InsideStroke, OutsideStroke };
 
@@ -18,8 +19,9 @@ struct ToolResources {
   Device& device;
   Pipelines& pipelines;
   Canvas& canvas;
+  input::input2& input;
   Ui& ui;
-  //Camera& camera;
+  // Camera& camera;
   //
   Sampler& samLinearRepeat;
   Sampler& samLinearClamp;
@@ -40,30 +42,36 @@ public:
 class BrushTool : public ToolInstance {
 public:
   BrushTool(const ToolResources& resources) : ui(resources.ui) {
-      fmt::print(std::clog, "Creating BrushTool\n");
-    resources.ui.canvasMouseButtons.subscribe(subscription, [this](const input::mouse_button_event& ev) {
-      if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-          ev.state == input::mouse_button_state::pressed) {
-		auto cursor_pos = this->ui.cursorPosition.get_value();
-        PointerEvent pointerEvent{std::get<0>(cursor_pos), std::get<1>(cursor_pos), 1.0f}; // no pressure yet :(
-        strokeStatus = StrokeStatus::InsideStroke;
-        this->beginStroke(pointerEvent);
-      } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
-                 ev.state == input::mouse_button_state::released) {
-		  auto cursor_pos = this->ui.cursorPosition.get_value();
-		  PointerEvent pointerEvent{ std::get<0>(cursor_pos), std::get<1>(cursor_pos), 1.0f }; // no pressure yet :(
-		  this->endStroke(pointerEvent);
-        strokeStatus = StrokeStatus::OutsideStroke;
-      }
-    });
+    fmt::print(std::clog, "Creating BrushTool\n");
+    resources.ui.canvasMouseButtons.subscribe(
+        subscription, [this](const input::mouse_button_event& ev) {
+          if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+              ev.state == input::mouse_button_state::pressed) {
+            auto cursor_pos = this->ui.cursorPosition.get_value();
+            PointerEvent pointerEvent{std::get<0>(cursor_pos),
+                                      std::get<1>(cursor_pos),
+                                      1.0f}; // no pressure yet :(
+            strokeStatus = StrokeStatus::InsideStroke;
+            this->beginStroke(pointerEvent);
+          } else if (ev.button == GLFW_MOUSE_BUTTON_LEFT &&
+                     ev.state == input::mouse_button_state::released) {
+            auto cursor_pos = this->ui.cursorPosition.get_value();
+            PointerEvent pointerEvent{std::get<0>(cursor_pos),
+                                      std::get<1>(cursor_pos),
+                                      1.0f}; // no pressure yet :(
+            this->endStroke(pointerEvent);
+            strokeStatus = StrokeStatus::OutsideStroke;
+          }
+        });
 
-    resources.ui.cursorPosition.get_observable().subscribe(subscription, [this](const std::tuple<unsigned,unsigned>& pos) {
-      if (strokeStatus == StrokeStatus::InsideStroke) {
-        PointerEvent pointerEvent{ std::get<0>(pos), std::get<1>(pos),
-                                  1.0f}; // no pressure yet :(
-        this->continueStroke(pointerEvent);
-      }
-    });
+    resources.ui.cursorPosition.get_observable().subscribe(
+        subscription, [this](const std::tuple<unsigned, unsigned>& pos) {
+          if (strokeStatus == StrokeStatus::InsideStroke) {
+            PointerEvent pointerEvent{std::get<0>(pos), std::get<1>(pos),
+                                      1.0f}; // no pressure yet :(
+            this->continueStroke(pointerEvent);
+          }
+        });
   }
 
   virtual void beginStroke(const PointerEvent& ev) = 0;
@@ -71,8 +79,8 @@ public:
   virtual void continueStroke(const PointerEvent& ev) = 0;
 
   virtual ~BrushTool() {
-      fmt::print(std::clog, "Deleting BrushTool\n");
-      subscription.unsubscribe();
+    fmt::print(std::clog, "Deleting BrushTool\n");
+    subscription.unsubscribe();
   }
 
 protected:
@@ -88,13 +96,12 @@ public:
   ColorBrushTool(const ToolResources& resources_)
       : BrushTool(resources_), res(resources_) {
     // allocate stroke mask
-          fmt::print(std::clog, "Init ColorBrushTool\n");
+    fmt::print(std::clog, "Init ColorBrushTool\n");
     texStrokeMask = res.device.createTexture2D<ag::RGBA8>(
         {res.canvas.width, res.canvas.height});
   }
 
-  virtual ~ColorBrushTool()
-  {}
+  virtual ~ColorBrushTool() {}
 
   void beginStroke(const PointerEvent& event) override {
     // reset state:
@@ -116,13 +123,15 @@ public:
   }
 
   void endStroke(const PointerEvent& event) override {
-	  fmt::print("Flatten\n");
-    ag::compute(res.device, res.pipelines.ppFlattenStroke,
-		ag::makeThreadGroupCount2D(res.canvas.width, res.canvas.height, 16, 16),
-                glm::vec2{res.canvas.width, res.canvas.height},
-                glm::vec4{brushProps.color[0], brushProps.color[1],
-                          brushProps.color[2], brushProps.opacity},
-                texStrokeMask, ag::RWTextureUnit(0, res.canvas.texBaseColorUV));
+    fmt::print("Flatten\n");
+    ag::compute(
+        res.device, res.pipelines.ppFlattenStroke,
+        ag::makeThreadGroupCount2D(res.canvas.width, res.canvas.height, 16, 16),
+        glm::vec2{res.canvas.width, res.canvas.height},
+        glm::vec4{brushProps.color[0], brushProps.color[1], brushProps.color[2],
+                  brushProps.opacity},
+        texStrokeMask, ag::RWTextureUnit(0, res.canvas.texBaseColorUV));
+    computeShadingCurve(res.device, res.pipelines, res.canvas, res.ui);
   }
 
   //
@@ -130,7 +139,7 @@ public:
 
   void paintSplat(const SplatProperties& splat) {
     // draw splat to stroke mask
-	  fmt::print("Splat {} {} {}\n", splat.center.x, splat.center.y, splat.width);
+    fmt::print("Splat {} {} {}\n", splat.center.x, splat.center.y, splat.width);
     uniforms::Splat uSplat;
     uSplat.center = splat.center;
     uSplat.width = splat.width;
@@ -138,9 +147,11 @@ public:
     if (res.ui.brushTip == BrushTip::Round) {
       auto dim =
           res.ui.brushTipTextures[res.ui.selectedBrushTip].tex.info.dimensions;
-      uSplat.transform = getSplatTransform((unsigned)dim.x, (unsigned)dim.y, splat);
+      uSplat.transform =
+          getSplatTransform((unsigned)dim.x, (unsigned)dim.y, splat);
     } else
-      uSplat.transform = getSplatTransform((unsigned)splat.width, (unsigned)splat.width, splat);
+      uSplat.transform = getSplatTransform((unsigned)splat.width,
+                                           (unsigned)splat.width, splat);
 
     if (res.ui.brushTip == BrushTip::Round)
       ag::draw(res.device, texStrokeMask,

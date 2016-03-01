@@ -114,17 +114,20 @@ public:
     case Tool::Smudge:
       nActiveTool = 3;
       break;
-    case Tool::Select:
+    case Tool::Detail:
       nActiveTool = 4;
       break;
-    case Tool::Camera:
+    case Tool::Select:
       nActiveTool = 5;
+      break;
+    case Tool::Camera:
+      nActiveTool = 6;
       break;
     }
 
     const char* toolNames[] = {"None",   "Brush",  "Blur",
-                               "Smudge", "Select", "Camera"};
-    ImGui::Combo("Tool", &nActiveTool, toolNames, 6);
+                               "Smudge", "Detail", "Select", "Camera"};
+    ImGui::Combo("Tool", &nActiveTool, toolNames, 7);
 
     switch (nActiveTool) {
     case 0:
@@ -140,9 +143,12 @@ public:
       activeTool = Tool::Smudge;
       break;
     case 4:
-      activeTool = Tool::Select;
+      activeTool = Tool::Detail;
       break;
     case 5:
+      activeTool = Tool::Select;
+      break;
+    case 6:
       activeTool = Tool::Camera;
       break;
     }

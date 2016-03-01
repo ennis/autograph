@@ -1,6 +1,8 @@
 #ifndef AWAIT_HPP
 #define AWAIT_HPP
 
+#ifdef USE_AWAIT
+
 #include <autograph/error.hpp>
 #include <autograph/utils.hpp>
 #include <boost/context/execution_context.hpp>
@@ -88,5 +90,7 @@ template <typename T> T await(rxcpp::observable<T> obs) {
   return value_tmp;
 }
 }
+
+#endif
 
 #endif

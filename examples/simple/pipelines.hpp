@@ -151,6 +151,12 @@ struct Pipelines {
           evaluate.preprocess(PipelineStage::Compute, defines_blur, nullptr);
       c.CSSource = CSSource.c_str();
       ppEvaluateBlurPass = device.createComputePipeline(c);
+
+      const char *defines_detail[] = {"EVAL_DETAIL"};
+      CSSource =
+          evaluate.preprocess(PipelineStage::Compute, defines_detail, nullptr);
+      c.CSSource = CSSource.c_str();
+      ppEvaluateDetail = device.createComputePipeline(c);
     }
 
     {
@@ -223,6 +229,7 @@ struct Pipelines {
   ComputePipeline ppEvaluatePreviewBaseColorUV;
   // Evaluate (blur pass)
   ComputePipeline ppEvaluateBlurPass;
+  ComputePipeline ppEvaluateDetail;
 
   // [base_color_to_offset.glsl]
   ComputePipeline ppBaseColorToOffset;

@@ -6,13 +6,14 @@
 // dynamic color layer (color curves)
 struct DynamicColorLayer : public TLayer<LayerType::DynamicColor>
 {
-	void draw(Device& device, Texture2D<ag::RGBA8>& target, const ag::Box2D& rect) override 
-	{
-		// 
-	}
+    void draw(Device& device, LayerContext& context) override
+    {
+
+    }
 };
 
 // static color layer (non-varying)
+// use for drawing contours, etc.
 struct ColorLayer : public TLayer<LayerType::Constant>
 {
 

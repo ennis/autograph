@@ -1,36 +1,31 @@
-#ifndef BLUR_HPP
-#define BLUR_HPP
+#ifndef DETAIL_HPP
+#define DETAIL_HPP
 
 #include "../brush_tool.hpp"
 #include "../brush_path.hpp"
 
-// Blur brush in LdotN space
-
-class BlurTool : public BrushTool {
+class DetailTool : public BrushTool {
 public:
-  BlurTool(const ToolResources& resources)
-      : BrushTool(resources), res(resources) {
-    fmt::print(std::clog, "Init BlurTool\n");
-  }
+  DetailTool(const ToolResources& resources)
+      : BrushTool(resources), res(resources) {}
 
-  virtual ~BlurTool() { fmt::print(std::clog, "Deinit BlurTool\n"); }
+  virtual ~DetailTool() {}
 
   void beginStroke(const PointerEvent& event) override {
     brushPath = {};
     brushProps = brushPropsFromUi(res.ui);
     brushPath.addPointerEvent(event, brushProps,
-                              [this](auto splat) { this->blur(splat); });
+                              [this](auto splat) { this->detail(splat); });
   }
 
   void continueStroke(const PointerEvent& event) override {
     brushPath.addPointerEvent(event, brushProps,
-                              [this](auto splat) { this->blur(splat); });
+                              [this](auto splat) { this->detail(splat); });
   }
 
   void endStroke(const PointerEvent& event) override {}
 
-  void blur(const SplatProperties& splat) {
-
+  void detail(const SplatProperties& splat) {
     struct Uniforms {
       glm::vec2 center;
       float width;
@@ -39,11 +34,12 @@ public:
     // splat a gaussian kernel on the 1D parameter map, centered on LdotN
     ag::Box2D footprintBox =
         getSplatFootprint((unsigned)splat.width, (unsigned)splat.width, splat);
+    // Hack: re-use blur tool shader (same parameters)
     ag::compute(
         res.device, res.pipelines.ppBlurBrush,
         ag::makeThreadGroupCount2D(kShadingCurveSamplesSize, 1u, 16u, 1u),
         Uniforms{splat.center, splat.width}, res.canvas.texShadingTermSmooth,
-        RWTextureUnit(0, res.canvas.texBlurParametersLN));
+        RWTextureUnit(0, res.canvas.texDetailMaskLN));
   }
 
 private:
