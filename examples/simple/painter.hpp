@@ -175,6 +175,11 @@ public:
                 ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
                 params, RWTextureUnit(0, canvas.texShadingTermSmooth0),
                 RWTextureUnit(1, canvas.texShadingTermSmooth));
+    // shading gradient
+    ag::compute(*device, pipelines->ppGradient,
+                ag::makeThreadGroupCount2D(canvas.width, canvas.height, 16, 16),
+    glm::vec2{(float)canvas.width, (float)canvas.height}, TextureUnit(0, canvas.texShadingTermSmooth, samLinearClamp),
+                RWTextureUnit(0, canvas.texGradient));
   }
 
   void updateActiveTool() {
@@ -222,7 +227,7 @@ public:
     renderMesh(*canvas);
     renderShading(*canvas);
     updateActiveTool();
-    if (!ui->overrideShadingCurve)
+    if (ui->overrideShadingCurve)
       loadShadingCurve(*canvas);
     renderCanvas();
     if (ui->showReferenceShading)
@@ -233,6 +238,9 @@ public:
     if (ui->showBaseColor)
       copyTex(canvas->texBaseColorUV, surfOut, width, height,
               glm::vec2{0.0f, 0.0f}, 1.0f);
+    if (ui->showGradient)
+        copyTex(canvas->texGradient, surfOut, width, height,
+                glm::vec2{0.0f, 0.0f}, 1.0f);
     updateBlurHist(*canvas);
     ui->render(*device);
   }
@@ -263,13 +271,13 @@ public:
                   pipelines->ppEvaluateBlurPass, canvasData, samLinearClamp,
                   RWTextureUnit(1, texEvalCanvasBlur));
     // detail pass
-    previewCanvas(*device, *canvas, texEvalCanvasBlur,
+    /*previewCanvas(*device, *canvas, texEvalCanvasBlur,
                   pipelines->ppEvaluateDetail, canvasData, samLinearClamp,
-                  RWTextureUnit(1, texEvalCanvas));
+                  RWTextureUnit(1, texEvalCanvas));*/
 
     copyTex(canvas->texNormals, surfOut, width, height, glm::vec2{0.0f, 0.0f},
             1.0f);
-    copyTex(texEvalCanvasBlur, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
+    copyTex(texEvalCanvas, surfOut, width, height, glm::vec2{0.0f, 0.0f}, 1.0f);
   }
 
   void setupInput() {

@@ -202,6 +202,7 @@ public:
     ImGui::Checkbox("Show isolines", &showIsolines);
     ImGui::Checkbox("DEBUG - Show base color", &showBaseColor);
     ImGui::Checkbox("DEBUG - Show shading offsets", &showHSVOffset);
+    ImGui::Checkbox("DEBUG - Show gradient", &showGradient);
 
     if (ImGui::Button("Save"))
       saveCanvas.signal();
@@ -253,6 +254,7 @@ public:
   // debug
   bool showHSVOffset = false;
   bool showBaseColor = false;
+  bool showGradient = false;
 
   char saveFileName[100] = "output.paint";
   std::vector<BrushTipTexture> brushTipTextures;

@@ -76,6 +76,12 @@ inline GLPixelFormat pixelFormatToGL(PixelFormat format) {
     return GLPixelFormat{gl::RGBA8, gl::RGBA, gl::UNSIGNED_BYTE, 4};
   case PixelFormat::Float:
     return GLPixelFormat{gl::R32F, gl::RED, gl::FLOAT, 1};
+  case PixelFormat::Float2:
+    return GLPixelFormat{gl::RG32F, gl::RED, gl::FLOAT, 2};
+  case PixelFormat::Float3:
+    return GLPixelFormat{gl::RGB32F, gl::RED, gl::FLOAT, 3};
+  case PixelFormat::Float4:
+    return GLPixelFormat{gl::RGBA32F, gl::RED, gl::FLOAT, 4};
   case PixelFormat::Uint32:
     return GLPixelFormat{gl::R32UI, gl::RED_INTEGER, gl::UNSIGNED_INT, 1};
   case PixelFormat::Depth32:

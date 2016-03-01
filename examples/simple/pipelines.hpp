@@ -51,6 +51,7 @@ struct Pipelines {
         loadShaderSource(samplesRoot / "simple/glsl/base_color_to_offset.glsl");
     ShaderSource blur = loadShaderSource(samplesRoot / "simple/glsl/blur.glsl");
     ShaderSource blur_brush = loadShaderSource(samplesRoot / "simple/glsl/blur_brush.glsl");
+    ShaderSource gradient = loadShaderSource(samplesRoot / "simple/glsl/gradient.glsl");
 
     {
       GraphicsPipelineInfo g;
@@ -152,11 +153,19 @@ struct Pipelines {
       c.CSSource = CSSource.c_str();
       ppEvaluateBlurPass = device.createComputePipeline(c);
 
-      const char *defines_detail[] = {"EVAL_DETAIL"};
+      /*const char *defines_detail[] = {"EVAL_DETAIL"};
       CSSource =
           evaluate.preprocess(PipelineStage::Compute, defines_detail, nullptr);
       c.CSSource = CSSource.c_str();
-      ppEvaluateDetail = device.createComputePipeline(c);
+      ppEvaluateDetail = device.createComputePipeline(c);*/
+    }
+
+    {
+        ComputePipelineInfo c;
+        auto CSSource =
+            gradient.preprocess(PipelineStage::Compute, nullptr, nullptr);
+        c.CSSource = CSSource.c_str();
+        ppGradient = device.createComputePipeline(c);
     }
 
     {
@@ -218,6 +227,9 @@ struct Pipelines {
   // Shading overlay
   GraphicsPipeline ppShadingOverlay;
 
+  // Gradient
+  ComputePipeline ppGradient;
+
   // Compose stroke mask onto target
   ComputePipeline ppFlattenStroke;
   ComputePipeline ppSmudge;
@@ -229,7 +241,7 @@ struct Pipelines {
   ComputePipeline ppEvaluatePreviewBaseColorUV;
   // Evaluate (blur pass)
   ComputePipeline ppEvaluateBlurPass;
-  ComputePipeline ppEvaluateDetail;
+  //ComputePipeline ppEvaluateDetail;
 
   // [base_color_to_offset.glsl]
   ComputePipeline ppBaseColorToOffset;

@@ -1,3 +1,5 @@
+DONE Better input events
+
 
 **** Layers
 	* Un shader/une passe par process
@@ -57,10 +59,8 @@ Différence entre:
 	* extendable by tools
 	* declarative (data binding)
 	* less barriers to modification
-
-* Better input events
-	* It is particularly badly designed (must modify 8 different locations to add a new event type)
-	* Fusionner les différents types d'events?
+	* Actuellement: pour ajouter un element, il faut modifier 2+ endroits (membre dans Ui, widget dans ui.render)
+		idéalement: une seule ligne, localement dans la fonction/objet qui utilise l'élement
 
 * Separate rendering from event handling
 	* rendering must happen during a specific period
@@ -87,66 +87,6 @@ ex: shading:
 	=> crash quand l'objet est déplacé
 
 * Trouver une meilleure solution pour les observables avec états
-
-
-Path getBrushPath(coro, ...) 
-{
-	position = (await(coro, mouseDown.filter(...))).position;
-	while (!(await(...))) {
-
-	}
-}
-
-mouseDown.subscribe([]{ mouseDown.unsubscribe(), mouseUp.subscribe([](){  }) })
-
-
-event streams:
-
-Input:
-mouse move: event stream
-mouse buttons: event stream
-
-stylus touch events: event stream (changes in absolute positions and pressure)
-stylus proximity events: event stream (enter, touch, leave)
-
-VS 
-single event stream with variants
-
-VS
-base class input_event
-	- type (derived class) 
-
-input_event
-	+ mouse_event
-		+ mouse_button_event(button, status)
-		+ mouse_move_event(dx, dy)
-	+ key_event
-	+ stylus_event
-		+ stylus_proximity_event
-		+ stylus_properties_event
-
-Input class: only one event stream
-	observable<input_event>
-
-Issue: lifetime of events
-Les évènements sont copiés
-
-UI:
-mouse position: signal
-mouse button states: signal
-stylus last position: signal
-stylus state: signal (hovering, touching, out of range)
-
-Painter UI:
-pointer position: signal
-	(merged mouse+stylus)
-
-mouse position (position): signal
-
-mouse button state(button index): signal
-
-mouse move (raw data): event stream
-mouse click: event stream
 
 
 

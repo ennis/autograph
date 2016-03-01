@@ -97,13 +97,13 @@ template <>
 struct PixelTypeTraits<float>
     : public PixelTypeTraitsImpl<PixelFormat::Float, float> {};
 template <>
-struct PixelTypeTraits<float[2]>
+struct PixelTypeTraits<std::array<float,2>>
     : public PixelTypeTraitsImpl<PixelFormat::Float2, std::array<float,2> > {};
 template <>
-struct PixelTypeTraits<float[3]>
+struct PixelTypeTraits<std::array<float, 3>>
     : public PixelTypeTraitsImpl<PixelFormat::Float3, std::array<float,3> > {};
 template <>
-struct PixelTypeTraits<float[4]>
+struct PixelTypeTraits<std::array<float, 4>>
     : public PixelTypeTraitsImpl<PixelFormat::Float4, std::array<float,4> > {};
 
 template <>
@@ -179,6 +179,9 @@ using RGBA8 = std::array<Normalized<uint8_t>, 4>;
 using RGB8 = std::array<Normalized<uint8_t>, 3>;
 using RG8 = std::array<Normalized<uint8_t>, 2>;
 using R32F = float;
+using RG32F = std::array<float,2>;
+using RGB32F = std::array<float,3>;
+using RGBA32F = std::array<float,4>;
 using R8 = Normalized<uint8_t>;
 using R32UI = uint32_t;
 

@@ -55,6 +55,11 @@ layout(local_size_x = 16, local_size_y = 16) in;
 
 
 #ifdef EVAL_MAIN
+// noise function
+float nrand(vec2 n) {
+  return fract(sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453);
+}
+
 /////////////////////////////////////////////
 void main() {
   ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);
@@ -70,8 +75,13 @@ void main() {
   float ldotn = texelFetch(texShadingTermSmooth, texelCoords, 0).r;
 
   /////////////////////////////////////////////
-  // shading curve contrib
-  vec3 hsvcurve = texture(mapShadingProfileLN, ldotn).rgb;
+  // fetch detail term
+  float detail = texture(mapDetailMaskLN, ldotn).r;
+  float offset = detail * nrand(uv) * 0.1f;
+
+  /////////////////////////////////////////////
+  // shading curve contrib + detail offset
+  vec3 hsvcurve = texture(mapShadingProfileLN, ldotn + offset).rgb;
   vec3 rgbcurve = hsv2rgb(hsvcurve);
 
   /////////////////////////////////////////////
@@ -144,33 +154,4 @@ void main()
 
 /////////////////////////////////////////////
 #ifdef EVAL_DETAIL
-// noise function
-float nrand(vec2 n) {
-  return fract(sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453);
-}
-
-void main()
-{
-  ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);
-  vec2 uv = vec2(texelCoords) / canvas.size;
-
-  /////////////////////////////////////////////
-  // shading term
-  float ldotn = texelFetch(texShadingTermSmooth, texelCoords, 0).r;
-
-  /////////////////////////////////////////////
-  // fetch detail term
-  float detail = texture(mapDetailMaskLN, ldotn).r;
-  vec4 S = imageLoad(imgSource, texelCoords);
-  float offset = detail * nrand(uv) * 0.1f;
-
-  /////////////////////////////////////////////
-  // offset to shading curve
-  // TODO: try offsetting spatially along the shading gradient
-  vec3 hsvcurve = texture(mapShadingProfileLN, ldotn + offset).rgb;
-  vec3 rgbcurve = hsv2rgb(hsvcurve);
-  vec4 D = blend(vec4(rgbcurve, detail), S);
-  imageStore(imgTarget, texelCoords, D);
-}
-
 #endif

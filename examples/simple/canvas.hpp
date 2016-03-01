@@ -49,6 +49,7 @@ struct Canvas {
     texNormals =
         device.createTexture2D<ag::Unorm10x3_1x2>(glm::uvec2{width, height});
     texStencil = device.createTexture2D<ag::R8>(glm::uvec2{width, height});
+    texGradient = device.createTexture2D<ag::RGBA32F>(glm::uvec2{width, height});
 
     texShadingProfileLN =
         device.createTexture1D<ag::RGBA8>(kShadingCurveSamplesSize);
@@ -89,6 +90,8 @@ struct Canvas {
   Texture2D<ag::RGBA8> texShadingTerm;
   Texture2D<ag::RGBA8> texShadingTermSmooth;
   Texture2D<ag::RGBA8> texShadingTermSmooth0;
+
+  Texture2D<ag::RGBA32F> texGradient;
 
   //
   Texture1D<ag::R32UI> texHistH;
