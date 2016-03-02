@@ -33,6 +33,8 @@ layout(binding = 5) uniform sampler2D mapBlurParametersXY;
 /////////////// Canvas normal map & stencil
 layout(binding = 6) uniform sampler2D texShadingTermSmooth;
 layout(binding = 7) uniform sampler2D texMask;
+layout(binding = 8) uniform sampler2D texGradient;
+
 
 ///////////////
 #ifdef PREVIEW_BASE_COLOR_UV
@@ -77,6 +79,7 @@ void main() {
   /////////////////////////////////////////////
   // fetch detail term
   float detail = texture(mapDetailMaskLN, ldotn).r;
+  //uv += normalize(texture(texGradient, uv).xy);
   float offset = detail * nrand(uv) * 0.1f;
 
   /////////////////////////////////////////////

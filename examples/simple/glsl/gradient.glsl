@@ -34,5 +34,5 @@ void main()
   gy += texture(texIn, vec2( uv.x    , uv.y + y ) ).r * 2.0;
   gy += texture(texIn, vec2( uv.x + x, uv.y + y ) ).r * 1.0;
 
-  imageStore(imgOut, texelCoords, vec4(gx, gy, atan(gy,gx), 1.0f));
+  imageStore(imgOut, texelCoords, vec4(gx, gy, 0.0f, 1.0f));
 }

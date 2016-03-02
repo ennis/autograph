@@ -1,4 +1,5 @@
 DONE Better input events
+DONE Camera move
 
 
 **** Layers
@@ -17,8 +18,6 @@ DONE Better input events
 		#include "layer.hpp"
 		main => layerMain(in image2D source, in image2D mask) 
 
-	* Special layers
-
 Différence entre:
 - process
 	formule de rendu d'un pixel
@@ -36,8 +35,14 @@ Différence entre:
 - g-buffers/parameter maps
 
 
-**** Camera move
-	Save camera parameters
+
+*** Zoom/move canvas (not on the mesh)
+
+* Save camera parameters
+
+* Image filters
+	glsl, defines, input, output, params
+	multipass (blur) 
 
 * chargement d'un mesh depuis un fichier
 
@@ -46,9 +51,7 @@ Différence entre:
 
 * Layer masks
 
-
 * Load / save
-
 
 * Undo list
 

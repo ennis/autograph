@@ -25,6 +25,7 @@ constexpr unsigned kCSThreadGroupSizeX = 16;
 constexpr unsigned kCSThreadGroupSizeY = 16;
 constexpr unsigned kCSThreadGroupSizeZ = 1;
 
+//class Layer;
 
 ///////////////////////////////////////
 // Canvas
@@ -106,8 +107,8 @@ struct Canvas {
 
   // UV (XY) space
   Texture2D<ag::RGBA8> texBaseColorUV;
-  Texture2D<ag::RGBA8> texHSVOffsetUV;
   Texture2D<ag::RGBA8> texBlurParametersUV;
+  Texture2D<ag::RGBA8> texHSVOffsetUV;
   // TODO shading detail map?
 };
 
@@ -129,12 +130,76 @@ void previewCanvas(Device& device, Canvas& canvas, Texture2D<ag::RGBA8>& out,
       ag::TextureUnit(5, canvas.texBlurParametersUV, sampler),
       ag::TextureUnit(6, canvas.texShadingTermSmooth, sampler),
       ag::TextureUnit(7, canvas.texStencil, sampler),
+      ag::TextureUnit(8, canvas.texGradient, sampler),
       ag::RWTextureUnit(0, out), std::forward<Resources>(resources)...);
 }
 
+/////////////////////////////////
+// Layers
+/*struct SpecialLayers
+{
+    Texture2D<ag::R8>& texStencil;
+    Texture2D<ag::R32F>& texShadingTerm;
+    Texture2D<ag::R32F>& texShadingTermSmooth;
+    Texture2D<ag::Depth32>& texDepth;
+    Texture2D<ag::Unorm10x3_1x2>& texNormals;
+};
+
+
+struct LayerContext {
+  Device& device;
+  int layerIndex; // index of the current layer in the layer stack
+  Texture2D<ag::RGBA8>& target;
+  ag::Box2D dirtyRect; // read/write
+  Camera& camera;
+  Canvas& canvas;
+  Pipelines& pipelines;
+};
+
+
+enum class LayerType {
+  // Shading curves
+  DynamicColor,
+  // Constant color
+  Constant,
+  // LdotN space blur
+  Blur,
+  // Detail layer
+  Detail,
+  ////////////// Special layers
+  // Global layer mask (editable)
+  Special_GlobalMask,
+  Special_LdotN,
+  Special_SmoothedLdotN,
+  Special_Gradient,
+  Special_Normals,
+  // also: occlusion, etc.
+};
+
+enum class LayerFlags {
+  None = 0,
+  ReadOnly = (1 << 0), // cannot be the target of brush operations
+  ProcessOnCPU = (1 << 1),
+  NonLocalProcess = (1 << 2)
+};
+
+struct Layer {
+  Layer(LayerType type_) : type(type_) {}
+
+  virtual ~Layer() {}
+
+  virtual void draw(LayerContext& context) = 0;
+
+  LayerType type;
+  LayerFlags flags = LayerFlags::None;
+};
+
+template <LayerType Type> struct TLayer : public Layer {
+  TLayer() : Layer(Type) {}
+};
 
 // apply a CS over a region of the canvas
-/*template <typename... Resources>
+template <typename... Resources>
 void applyComputeShaderOverRect(Device& device, Canvas& canvas, const ag::Box2D& rect,
                                 ComputePipeline& pipeline,
                                 RawBufferSlice& canvasData,
@@ -145,8 +210,8 @@ void applyComputeShaderOverRect(Device& device, Canvas& canvas, const ag::Box2D&
                   (unsigned)divRoundUp(rect.height(), kCSThreadGroupSizeY),
                   1u},
               canvasData, std::forward<Resources>(resources)...);
-}*/
+}
 
-
+*/
 
 #endif
