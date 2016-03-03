@@ -48,7 +48,7 @@ public:
         trackball(TrackballCameraSettings{}) {
     pipelines = std::make_unique<Pipelines>(*device, samplesRoot);
     // 1000x1000 canvas
-    mesh = loadMesh("common/meshes/skull.obj");
+    mesh = loadMesh("common/meshes/lucy.fbx");
     canvas = std::make_unique<Canvas>(*device, width, height);
     texEvalCanvas =
         device->createTexture2D<ag::RGBA8>(glm::uvec2{width, height});

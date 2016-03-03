@@ -8,6 +8,8 @@ set(CMAKE_MODULE_PATH "${autograph_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(AG_BUILD_EXAMPLES "Build examples" ON)
+
 ############## Hack no1 ##############
 if(UNIX AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -lc++abi")
@@ -22,6 +24,7 @@ find_package(Boost COMPONENTS date_time chrono wave thread filesystem system con
 find_package(Vulkan)
 link_directories(${Boost_LIBRARY_DIR})
 
+add_definitions(-DGLM_FORCE_RADIANS)
 add_subdirectory(ext/)
 
 file(GLOB SHADERPP_SOURCES src/shaderpp/*.cpp)
@@ -78,11 +81,14 @@ function(add_extra)
 		add_library(${AG_EXTRA_TARGET} INTERFACE)
 	endif()
 	target_include_directories(${AG_EXTRA_TARGET} INTERFACE src/extra/)
-	target_link_libraries(${AG_EXTRA_TARGET} ${AG_EXTRA_REQUIRES})
+	target_link_libraries(${AG_EXTRA_TARGET} PUBLIC ${AG_EXTRA_REQUIRES})
 endfunction()
 
 add_extra(TARGET image_io REQUIRES autograph stb)
 add_extra(TARGET input REQUIRES rxcpp variant glfw)
 
+if (AG_BUILD_EXAMPLES)
 add_subdirectory(examples)
+endif()
+
 
