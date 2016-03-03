@@ -41,6 +41,9 @@ target_include_directories(docopt_s INTERFACE docopt.cpp)
 set_property(TARGET docopt PROPERTY FOLDER "External")
 set_property(TARGET docopt_s PROPERTY FOLDER "External")
 
+# filesystem
+add_library(filesystem INTERFACE)
+target_include_directories(filesystem INTERFACE filesystem)
 
 # stb
 add_library(stb INTERFACE)
