@@ -20,74 +20,97 @@
 
 using GL = ag::opengl::OpenGLBackend;
 
-/*namespace renderpass {
-////////////////////////////////////
-// RenderPass
-template <typename D> class RenderPassBase { public: };
+namespace renderpass {
 
-template <typename D, typename Output, typename... Input>
-class RenderPass : public RenderPassBase<D> {
-public:
-  Output apply(Input&&... input);
-};
+struct node;
 
 ////////////////////////////////////
-// Values
-// They do not encode the location of the data (GPU or CPU or somewhere else)
-// They reference an entry in the renderpass that describes how they are
-// computed
-
-template <typename Pixel> struct clear_op {
-    image2D<Pixel>& result; 
+// dummy types
+struct graph_edge {
+	graph_edge() = default;
+  graph_edge(unsigned ni, unsigned pi) : node_index{ni}, port_index{pi} {}
+  unsigned node_index = 0;
+  unsigned port_index = 0;
 };
 
-template <typename Pixel> struct image2D {
-unsigned width;
-unsigned height;
-variant<
-  clear_op&,
-  null_op&> generator;
+struct image : public graph_edge {
+	image() = default;
+  image(unsigned ni, unsigned pi) : graph_edge{ni, pi} {}
+};
 
+template <typename Pixel> struct image_1d : public image {
+	image_1d() = default;
+  image_1d(unsigned ni, unsigned pi) : image{ni, pi} {}
+};
+
+template <typename Pixel> struct image_2d : public image {
+	image_2d() = default;
+	image_2d(unsigned ni, unsigned pi) : image{ ni, pi } {}
+};
+
+template <typename Pixel> struct image_3d : public image {
+	image_3d() = default;
+	image_3d(unsigned ni, unsigned pi) : image{ ni, pi } {}
+};
+
+struct buffer : public graph_edge {
+	buffer() = default;
+	buffer(unsigned ni, unsigned pi) : graph_edge{ ni, pi } {}
+};
+
+template <typename T> struct typed_buffer : public buffer {
+	typed_buffer() = default;
+	typed_buffer(unsigned ni, unsigned pi) : buffer{ ni, pi } {}
+};
+
+// partial specialization for array types
+//template <typename T> struct typed_buffer<T[]> : public buffer {};
+
+////////////////////////////////////
+// nodes
+struct clear_node {
+  unsigned width;
+  unsigned height;
+  ag::PixelFormat format;
+  ag::ClearColor clear_color;
+};
+
+using node = eggs::variant<clear_node>;
+
+////////////////////////////////////
+// render pass
+struct render_pass_graph {
+  template <typename N> unsigned add_node(N&& n) {
+    nodes.emplace_back(std::move(n));
+  }
+
+  std::vector<node> nodes;
 };
 
 ////////////////////////////////////
 // Operations
-
-enum class Operations 
-{
-  ClearImage,
-};
-
-// create a new uninitialized 2D image
-// width: static
-// height: static
-
-template <typename D, typename Pixel>
-Image2D<D, Pixel> image2D(RenderPassBase<D>& rp, unsigned width,
-                          unsigned height) {
-  // allocate a new resource entry in rp: image with static width and height
-  // return Image2D { resource_id }
-}
-
-// clear an image
-// clear color: static
-template <typename D, typename Pixel>
-Image2D<D, Pixel> clear(RenderPassBase<D>& rp,
-                        Image2D<D, Pixel>& image,
-                        const ag::ClearColor& clearColor) 
-{
-  // allocate a new resource entry in rp: image with static width and height
-  // create a new operation: clear() 
-  // set dependencies for new operation
-  // set generator operation for entry
+template <typename Pixel>
+image_2d<Pixel> clear(render_pass_graph& g, unsigned width, unsigned height,
+                      const ag::ClearColor& clear_color) {
+  unsigned n =
+      g.add_node(clear_node{width, height, Pixel::kFormat, clear_color});
+  image_2d<Pixel> img{n, 0};
+  return img;
 }
 
 }
 
-class Painter : public samples::GLSample<Painter> {
+class Renderpass : public samples::GLSample<Renderpass> {
 public:
-  Painter(unsigned width, unsigned height)
-      : GLSample(width, height, "Renderpass") {}
+	Renderpass(unsigned width, unsigned height)
+      : GLSample(width, height, "Renderpass") 
+  {
+	  namespace rp = renderpass;
+	  rp::render_pass_graph g;
+	  auto v = rp::clear<ag::RGBA8>(g, width, height, ag::ClearColor{ 1.0f, 0.0f, 0.0f, 1.0f });
+	  // rp() -> image_2d<...>
+	  // rp(dynamic_tag) -> edge<image_2d<...>> 
+  }
 
   void render() {
     using namespace glm;
@@ -96,9 +119,9 @@ public:
   }
 
 private:
-};*/
+};
 
 int main() {
-  //Painter sample(1000, 800);
-  //return sample.run();
+	Renderpass sample(1000, 800);
+   return sample.run();
 }

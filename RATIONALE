@@ -820,6 +820,7 @@ Rationale: on gsl::span
 _____________________________
 
 Complex and impractical => replace?
+=> ranges?
 
 
 
@@ -974,13 +975,20 @@ RenderPass<ReturnType, DynamicState...>
 A render pass can output multiple images
 
 
-
 auto initRenderPass() 
 {
-	
-	auto rp = makeRenderPass([&](ag::image<>, ag::image<>, ...) {
+	struct gbuffer 
+	{
+		image<...> img1;
+		image<...> img2;
+	};
+
+	auto rp = makeRenderPass([&](rp::image<>, rp::image<>, gbuffer bufs, buffer<glm::vec4> color) {
 
 	});
+
+
+	// gbuffer must be default-constructible
 
 	makeRenderPass(...) -> execute lambda with dummy parameters for construction
 
@@ -989,44 +997,58 @@ auto initRenderPass()
 	RenderPass is a class, with operator()
 }
 
+concrete types:
+ag::image, ag::texture_view, ag::buffer
 
-ag::renderpass::RenderPassBase (type-erased)
-	- required resources (images, samplers, descriptors)
+lifted types:
+renderpass::image, renderpass::buffer
+
+VS
+dynamic<ag::image>? dynamic<ag::buffer>
+	NO: a renderpass buffer may live on the CPU or the GPU and may not have an associated ag::buffer 
+
+Problem:
+types in the renderpass signature must be concrete
+=> what types to use?
+=> how to 'unlift' types?
+
+nodes
+	clear_image2d
+	constant_buffer
+	static_draw_call
+	draw_list
+
+edges
+	+ successors (vector<nodeptrs>)
+	+ predecessor (nodeptr)
+	image
+		+ width, height, depth, format
+		image1d_typed<pixel_type>
+		image2d_typed<pixel_type>
+		image1d_typeless<channels, bits>
+		image1d_typeless<channels, bits>
+	buffer
+		+ size
+		+ data
+		buffer_typed<type>
+		buffer_typed<type[]>
+			+ size()
+	draw_list
+		dynamic_draw_list (contents not known at renderpass creation)
+		static_draw_list (contents known at renderpass creation)
 
 
+edge.is_image_type -> bool
+edge.is_buffer -> bool
 
-ag::renderpass::RenderPass<Output, Inputs...>
-
-ag::renderpass::ClearNode
-	- input node: Image 
-	- output node: Cleared image
-
-
-ag::renderpass::RawImage
-	- dimension, width, height, depth, 
-	  format, mips, array count, faces
-ag::renderpass::Image1DNode<Pixel>
-ag::renderpass::Image2DNode<Pixel>
-ag::renderpass::Image3DNode<Pixel>
-	- width, height, depth, format
-ag::renderpass::Image1DArrayNode<Pixel>
-ag::renderpass::Image2DArrayNode<Pixel>
-
-ag::renderpass::DrawNodeBase
-ag::renderpass::DrawNode<Generator>
-	- source image (resource entry in renderpass)
-	- state pack
-	- draw call generator (callable)
-
-ag::renderpass::CopyNode
-	- source image (entry)
 
 
 Example with the painter pipeline:
 
 
 auto clearedCanvas = rp::clear(width, height, color);
-auto baseColorPreview = preview(clearedCanvas, ...)
+auto baseColorPreview = preview(clearedCanvas, ...);
+
 
 To the backend: pass a directed graph of resources & nodes
 
@@ -1035,29 +1057,122 @@ Pb: GPU nodes that read and write the same texture simultaneously?
 => doable
 
 
+Propagate/thread placeholder parameters
+	auto c = rp::clear(width, height, param<glm::vec4>)
+	c -> render_pass<glm::vec4> 
+
+VS
+
+Specify all dynamic parameters up-front
+	auto render_pass(dynamic<glm::vec4> param)
+	argument types lifted in make_render_pass
+
+VS
+
+Type-erase dynamic parameters
+
+Problem: struct of input arguments
+e.g. 
+struct gbuffer 
+{
+	image2d<.> normals;
+	image2d<.> texcoords;
+}
+
+cannot lift automatically?
+
+
+Renderpasses can contain draw state?
+	- shaders
+	- samplers
+	- static textures
+	- other data
+
+User classes are renderpasses
+ex: copy_image(src, dest&&) -> image&&
+copy_image: CopyImageRenderPass
+
+
+
+auto copy_image(image_2d src, image_2d dest)
+{
+
+	ag::draw(...)
+} 
+
+
+Renderpasses
+_____________________________
+
+v1:
+ - no composition between render passes
+ - buffers, images
+
+v1.1:
+ - draw lists
+ - static draw lists
+
+v2: 
+ - call another pass inside a pass (composition)
+ - passes can own draw state (shaders, buffer data)
+
+v*:
+ - renderpasses are callable objects
+ - provide different pass implementations depending on the location of the data
+ 	(e.g.: one version of blit_image for CPU, another on the GPU?)
+ - load render passes from a file
+ - visual editor
+ - maintain type safety
+
+v*^2:
+ - code generator plugin
+ - annotate functions with the [[renderpass]] attribute -> will create optimized pipelines
+ - converge with C++ shaders
+
+
+
+[[renderpass]]
+template <typename Pixel>
+image_2d<Pixel> blur(image_2d<Pixel> src)
+{
+	auto tmp_x = apply_over(src, [&src](vec2 coords) {
+		// blur H kernel
+	});
+	auto tmp_xy = apply_over(tmp_x, [&src](vec2 coords) {
+		// blur V kernel
+	});
+	return tmp_xy;
+}
+
+template <typename Pixel>
+void ...
+
+
+Renderpasses
+_____________________________
+
+- type safety
+- no redundant code
+- seamless integration between code running on GPU and code running on the CPU
+- support visual (node-based or other) editors
+- based on Vulkan (only one supported API)
+
+Tier 1:
+Shaders: C++ binding generation from other languages (GLSL?)
+Renderpasses: Dynamic creation
+
+Tier 2:
+Shaders: mixed-source
+Renderpasses: load from files
+
+Tier 3:
+Visual editors
+C# binding generation
+other languages
+
+
+
 Extra: pipeline cache
 _____________________________
 
 
-Concurrent projects:
-* autograph
-* shaders in c++ for autograph
-* autograph: input
-* autograph: renderpasses
-* painter
-* painter: coroutines
-* painter: reactive UI
-
-=> proposition:
-	evaluer C#
-	autograph en C#/.Net
-
-
-conserver autograph, specialiser pour opengl 4.5
-(abandonner backends multiples)
-
-
-C# vs C++ pour du code générique
-_____________________________
-
-* templates => generics

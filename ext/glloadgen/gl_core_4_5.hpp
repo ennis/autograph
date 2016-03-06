@@ -175,7 +175,7 @@ namespace gl
 		};
 		
 	} //namespace exts
-	enum
+	enum : unsigned long long
 	{
 		ALPHA                            = 0x1906,
 		ALWAYS                           = 0x0207,
