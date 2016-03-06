@@ -32,14 +32,17 @@
 #include "tools/smudge.hpp"
 #include "tools/detail.hpp"
 
-#include <boost/filesystem.hpp>
+#include <filesystem\path.h>
+
+#define USE_AWAIT
+#include "await.hpp"
 
 namespace input = ag::extra::input;
 namespace image_io = ag::extra::image_io;
 
 constexpr const char kDefaultBrushTip[] = "simple/img/brushes/brush_tip.png";
 
-namespace fs = boost::filesystem;
+namespace fs = filesystem;
 
 class Painter : public samples::GLSample<Painter> {
 public:
@@ -86,7 +89,7 @@ public:
     auto path1 = fs::path(samplesRoot.str().c_str()) / "simple/img/brushes";
     auto path2 = fs::path(samplesRoot.str().c_str()) / "common/img/brushes";
 
-    if (exists(path1) && is_directory(path1))
+    /*if (exists(path1) && is_directory(path1))
       for (auto it = fs::directory_iterator(path1);
            it != fs::directory_iterator(); ++it)
         loadBrushTip((*it).path());
@@ -94,16 +97,16 @@ public:
     if (exists(path2) && is_directory(path2))
       for (auto it = fs::directory_iterator(path2);
            it != fs::directory_iterator(); ++it)
-        loadBrushTip((*it).path());
+        loadBrushTip((*it).path());*/
   }
 
   void loadBrushTip(const fs::path& path) {
     // filter by extension...
-    if (path.extension() != ".png")
+    /*if (path.extension() != ".png")
       return;
     ui->brushTipTextures.emplace_back(BrushTipTexture{
         path.stem().string(),
-        image_io::loadTexture2D(*device, path.string().c_str())});
+        image_io::loadTexture2D(*device, path.string().c_str())});*/
   }
 
   // coroutine test
