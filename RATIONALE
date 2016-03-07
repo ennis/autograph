@@ -1153,9 +1153,15 @@ _____________________________
 
 - type safety
 - no redundant code
+- (maximally) reduce iteration times
 - seamless integration between code running on GPU and code running on the CPU
 - support visual (node-based or other) editors
 - based on Vulkan (only one supported API)
+- JIT kernel compilation?
+	see: Halide (but with support for hardware rasterization)
+	EDSL? Custom compiler?
+- 3d graphics pipeline, compute, image processing, (ray tracing?)
+	- building blocks that abstract the pipeline details
 
 Tier 1:
 Shaders: C++ binding generation from other languages (GLSL?)
